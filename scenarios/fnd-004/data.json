@@ -430,7 +430,7 @@
           "touch_ergonomics"
         ],
         "kind": "accessibility_audit",
-        "reason": "Apple HIG evidence is required before accessibility can pass.",
+        "reason": "Mobile accessibility evidence is required before accessibility can pass.",
         "required": true
       },
       {
@@ -493,14 +493,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-05T20:09:09Z",
+        "completed_at": "2026-07-05T20:55:04Z",
         "evidence_refs": [
           "catalog:fnd-004"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-05T20:09:09Z",
+        "started_at": "2026-07-05T20:55:04Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -738,7 +738,7 @@
   "page": {
     "assets_base": "assets/scenarios/fnd-004/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/fnd-004/",
-    "generated_at": "2026-07-05T20:09:09Z",
+    "generated_at": "2026-07-05T20:55:04Z",
     "navigation": {
       "category_url": "../foundation-and-first-run/",
       "next_url": "../fnd-005/",
@@ -1014,79 +1014,67 @@
   "review_grounding": {
     "all_considered": [
       {
-        "coverage": "Apple HIG criteria for 44 pt targets, contrast, Dynamic Type, VoiceOver, safe areas, iPhone navigation ergonomics, semantic color, and platform-native control choices.",
-        "name": "alirezarezvani/claude-skills@apple-hig-expert",
-        "search_terms": "Apple Human Interface Guidelines iOS accessibility mobile design",
-        "selected": true
-      },
-      {
-        "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer use, Reduce Transparency/Motion behavior, and iOS 26 material restraint.",
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
         "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "Liquid Glass iOS primitives",
+        "search_terms": "liquid glass iOS primitives",
         "selected": true
       },
       {
-        "coverage": "Generated report-page accessibility, semantic navigation, focus states, reduced motion, content overflow, table readability, and static-site performance checks.",
-        "name": "web-design-guidelines",
-        "search_terms": "web interface guidelines accessibility performance navigation state touch interaction",
+        "coverage": "Mobile-first product validation, iOS platform conventions, touch ergonomics, interruption recovery, navigation clarity, performance-as-UX budgets, and state/resilience checks.",
+        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
+        "search_terms": "mobile frontend design UI polish UX",
         "selected": true
       },
       {
-        "coverage": "Search result considered for future Swift/iOS HIG implementation checks; current selected Apple HIG Expert covers the template rubric.",
-        "name": "johnrogers/claude-swift-engineering@ios-hig",
-        "search_terms": "iOS HIG",
+        "coverage": "Search result considered for future glass-specific visual review; current selected Liquid Glass skill covers the material rules used by this template.",
+        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
+        "search_terms": "liquid glass iOS UI polish",
         "selected": false
       },
       {
-        "coverage": "Search result considered for future visual/UI implementation review; current selected skills cover the report criteria.",
+        "coverage": "Search result considered for future iOS implementation review; current selected skills cover mobile flow, platform fit, and material critique.",
         "name": "charleswiltgen/axiom@axiom-ios-ui",
-        "search_terms": "iOS UI",
+        "search_terms": "iOS primitives mobile UI",
         "selected": false
       },
       {
-        "coverage": "Search result considered for future design critique expansion; current selected skills cover Liquid Glass and Apple HIG requirements.",
-        "name": "vabole/apple-skills@ios-design-consultant",
-        "search_terms": "iOS design consultant",
+        "coverage": "Search result considered for future web/front-end implementation review; current work focuses on the iOS scenario report rubric.",
+        "name": "code-yeongyu/oh-my-opencode@frontend",
+        "search_terms": "frontend UI polish",
         "selected": false
       },
       {
-        "coverage": "Search result considered for future mobile UX expansion; current template covers task clarity, cognitive load, thumb ergonomics, interruption recovery, and mobile flow cohesion directly.",
-        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
-        "search_terms": "mobile UX design",
+        "coverage": "Search result considered for alternate Liquid Glass critique; current selected Liquid Glass skill is the primary material source.",
+        "name": "xu-xiang/everything-claude-code-zh@liquid-glass-design",
+        "search_terms": "liquid glass design",
         "selected": false
       },
       {
-        "coverage": "Existing local doctrine represented in NMP architecture dimensions: Rust-owned state and policy, bounded FFI/projections, privacy fail-closed behavior, and replayable clocks.",
-        "name": "nmp-app-architecture",
+        "coverage": "Represented in NMP architecture dimensions: Rust-owned state and policy, bounded FFI/projections, privacy fail-closed behavior, and replayable clocks.",
+        "name": "local NMP architecture doctrine",
         "search_terms": "NMP architecture Rust core thin shell",
         "selected": false
       }
     ],
-    "search_command": "npx skills search \"iOS UI polish Apple Human Interface Guidelines accessibility UX performance mobile design review Liquid Glass\"",
+    "search_command": "npx skills search \"liquid glass iOS primitives mobile frontend design UI polish UX\"",
     "selected_skills": [
       {
-        "coverage": "Apple HIG criteria for 44 pt targets, contrast, Dynamic Type, VoiceOver, safe areas, iPhone navigation ergonomics, semantic color, and platform-native control choices.",
-        "name": "alirezarezvani/claude-skills@apple-hig-expert",
-        "search_terms": "Apple Human Interface Guidelines iOS accessibility mobile design",
-        "selected": true
-      },
-      {
-        "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer use, Reduce Transparency/Motion behavior, and iOS 26 material restraint.",
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
         "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "Liquid Glass iOS primitives",
+        "search_terms": "liquid glass iOS primitives",
         "selected": true
       },
       {
-        "coverage": "Generated report-page accessibility, semantic navigation, focus states, reduced motion, content overflow, table readability, and static-site performance checks.",
-        "name": "web-design-guidelines",
-        "search_terms": "web interface guidelines accessibility performance navigation state touch interaction",
+        "coverage": "Mobile-first product validation, iOS platform conventions, touch ergonomics, interruption recovery, navigation clarity, performance-as-UX budgets, and state/resilience checks.",
+        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
+        "search_terms": "mobile frontend design UI polish UX",
         "selected": true
       }
     ],
     "template_impact": [
-      "Apple HIG Expert drives mandatory accessibility, Dynamic Type, semantic color, safe-area, touch target, and iPhone navigation evidence.",
-      "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, and Reduce Motion/Transparency requirements.",
-      "Web Interface Guidelines drive semantic static pages with skip links, labeled navigation, focus states, reduced motion handling, readable tables, and overflow-safe content."
+      "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, GlassEffect composition, semantic foreground styles, and Reduce Motion/Transparency requirements.",
+      "Mobile UX Design drives mobile-first task focus, thumb-zone/touch target checks, interruption recovery, native iOS navigation expectations, and performance-as-UX budgets.",
+      "The generated page separates scenario facts, evidence, individual dimensions, grouped product judgment, risk, and confidence so isolated passes cannot hide a weak product flow."
     ]
   },
   "risks": [
@@ -1118,9 +1106,9 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "codex/pod0-evidence-validation-pack",
+    "branch": "codex/scenario-page-template-deep-dive",
     "cassettes": [],
-    "completed_at": "2026-07-05T20:09:09Z",
+    "completed_at": "2026-07-05T20:55:04Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1138,12 +1126,12 @@
     "fixtures": [
       "erased sim"
     ],
-    "generator_version": "scenario-report-generator/0.2.0",
+    "generator_version": "scenario-report-generator/0.3.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260705T200909Z-fnd-004",
-    "source_commit": "a852ef228f2b24c47814c42e6498e7fa6e76a487",
-    "started_at": "2026-07-05T20:09:09Z"
+    "run_id": "catalog-scaffold-20260705T205504Z-fnd-004",
+    "source_commit": "7dee1f051f5ce170f2456dfb109af5360b210239",
+    "started_at": "2026-07-05T20:55:04Z"
   },
   "scenario": {
     "bdd": {
@@ -1425,9 +1413,9 @@
         "rubric:review-skill-grounding"
       ],
       "notes": [
-        "Selected skills: alirezarezvani/claude-skills@apple-hig-expert, vabole/apple-skills@ios-liquid-glass, web-design-guidelines."
+        "Selected skills: vabole/apple-skills@ios-liquid-glass, phazurlabs/ux-ui-mastery@Mobile UX Design."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Apple HIG, Liquid Glass/iOS primitives, report-page accessibility/performance, and NMP architecture criteria."
+      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives plus mobile UX, touch, navigation, interruption, and performance-as-UX criteria."
     },
     "risks_follow_up": {
       "evidence_refs": [
