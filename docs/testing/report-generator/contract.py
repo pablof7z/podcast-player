@@ -1,5 +1,5 @@
 SCHEMA_VERSION = "1.0.0"
-GENERATOR_VERSION = "scenario-report-generator/0.3.2"
+GENERATOR_VERSION = "scenario-report-generator/0.3.3"
 SITE_BASE = "https://pablof7z.github.io/podcast-player/"
 SKILL_SEARCH_QUERY = "liquid glass iOS mobile frontend design UI polish"
 
@@ -38,6 +38,10 @@ SECTION_TO_DIMENSION = {
     "verdict": "verdict",
     "next_actions": "next_actions",
     "owner_status": "owner_status",
+    "data_integrity_state_sync": "data_integrity_state_sync",
+    "navigation_state_restoration": "navigation_state_restoration",
+    "device_viewport_coverage": "device_viewport_coverage",
+    "media_session_background_continuity": "media_session_background_continuity",
     "cross_screen_continuity": "cross_screen_continuity",
     "states_resilience": "states_resilience",
     "touch_ergonomics": "touch_ergonomics",
@@ -87,6 +91,10 @@ SECTION_LABELS = {
     "verdict": "Verdict",
     "next_actions": "Next Actions",
     "owner_status": "Owner And Status",
+    "data_integrity_state_sync": "Data Integrity And State Sync",
+    "navigation_state_restoration": "Navigation State And Restoration",
+    "device_viewport_coverage": "Device, Viewport, And Generated-Page Coverage",
+    "media_session_background_continuity": "Media Session And Background Audio Continuity",
     "cross_screen_continuity": "Cross-Screen Continuity",
     "states_resilience": "Empty, Loading, Offline, And Recovery States",
     "touch_ergonomics": "Touch Ergonomics",
@@ -112,6 +120,8 @@ GROUPS = {
         "actual_result",
         "error_recovery",
         "offline_resume_behavior",
+        "data_integrity_state_sync",
+        "navigation_state_restoration",
         "regression_risk",
     ],
     "evidence_reproducibility": [
@@ -120,6 +130,7 @@ GROUPS = {
         "review_skill_grounding",
         "replayability_cassette_provenance",
         "device_os_matrix",
+        "device_viewport_coverage",
         "evidence_confidence",
         "instrumentation_gaps",
         "defects_issues_filed",
@@ -132,6 +143,7 @@ GROUPS = {
         "states_resilience",
         "touch_ergonomics",
         "before_after_deltas",
+        "media_session_background_continuity",
         "motion_haptics",
         "information_architecture",
         "content_hierarchy",
@@ -163,6 +175,12 @@ GROUPS = {
 SKILL_GROUNDING = [
     {
         "selected": True,
+        "name": "ceorkm/mobile-app-ui-design@mobile-app-ui-design",
+        "search_terms": "mobile ux design",
+        "coverage": "Mobile-first user goals, thumb-zone controls, 44 pt targets, visual hierarchy, 8-point spacing, empty/loading/error/success states, and peak-end product moments.",
+    },
+    {
+        "selected": True,
         "name": "vabole/apple-skills@ios-liquid-glass",
         "search_terms": SKILL_SEARCH_QUERY,
         "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
@@ -178,6 +196,18 @@ SKILL_GROUNDING = [
         "name": "local playwright-cli",
         "search_terms": "local browser validation skill",
         "coverage": "Local GitHub Pages validation, screenshots, snapshots, responsive viewport checks, interaction verification, and generated-site smoke testing.",
+    },
+    {
+        "selected": False,
+        "name": "charleswiltgen/axiom@axiom-ios-ui",
+        "search_terms": SKILL_SEARCH_QUERY,
+        "coverage": "Search result considered for additional iOS UI review; selected mobile and Liquid Glass skills cover the needed app-screen and iOS-material gates.",
+    },
+    {
+        "selected": False,
+        "name": "phazurlabs/ux-ui-mastery@mobile ux design",
+        "search_terms": SKILL_SEARCH_QUERY,
+        "coverage": "Search result considered for mobile UX critique; ceorkm/mobile-app-ui-design was loaded for the primary mobile UI/UX rubric.",
     },
     {
         "selected": False,

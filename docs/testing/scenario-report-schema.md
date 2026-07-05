@@ -175,6 +175,10 @@ readiness_gates
 verdict
 next_actions
 owner_status
+data_integrity_state_sync
+navigation_state_restoration
+device_viewport_coverage
+media_session_background_continuity
 cross_screen_continuity
 states_resilience
 touch_ergonomics
@@ -191,6 +195,10 @@ sister_app_nmp_chirp_comparison
 
 `states_resilience` covers empty, loading, denied, unavailable, offline, retry,
 and recovery states.
+`device_viewport_coverage` covers both app-device coverage and generated
+GitHub Pages desktop/mobile viewport smoke checks.
+`media_session_background_continuity` is `N/A` only when the scenario has no
+podcast playback, queue, route, lock-screen, or background continuity exposure.
 
 ## Evidence And Asset Rules
 
@@ -300,6 +308,8 @@ Podcast validation records should capture these domain facts when relevant:
   relay response JSON. Redact private keys and tokens.
 - Audio state: route, duration, position, speed, queue state, background/lock
   screen state, and remote command behavior.
+- Data/state integrity: persisted store, Rust projections, native render state,
+  export/import payloads, and before/after deltas agree after the action.
 - Transcript state: publisher transcript, generated transcript, provider,
   segment seek behavior, and missing transcript fallback.
 - Agent state: provider/model, cassette ID, grounded source references,

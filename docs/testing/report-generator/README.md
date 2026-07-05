@@ -50,6 +50,9 @@ Each scenario record also includes structured `product_context`, `flow_steps`,
 `revalidation_status`, `owner_status`, `instrumentation_gaps`, and `risks`
 fields. These are intentionally first-class JSON fields so future importers can
 populate observed runs without scraping prose.
+This taxonomy also includes explicit data integrity/state sync, navigation
+state/restoration, device/viewport coverage, and media session/background audio
+continuity dimensions.
 
 ## Review Skill Grounding
 
@@ -57,6 +60,8 @@ This pass used:
 
 ```sh
 npx skills search "liquid glass iOS mobile frontend design UI polish"
+npx skills search "mobile ux design"
+npx skills use ceorkm/mobile-app-ui-design@mobile-app-ui-design
 npx skills use vabole/apple-skills@ios-liquid-glass
 # plus local skills: web-design-guidelines and playwright-cli
 ```
@@ -64,6 +69,9 @@ npx skills use vabole/apple-skills@ios-liquid-glass
 `data/skill-grounding.json` records these selected skills and the template
 impact:
 
+- Mobile App UI/UX Design: user-goal framing, thumb-zone controls, 44 pt
+  targets, visual hierarchy, 8-point spacing, empty/loading/error/success
+  states, and peak-end product moments.
 - iOS Liquid Glass: hierarchy, harmony, consistency, control-layer glass use,
   GlassEffect composition, semantic foreground styles, and Reduce
   Motion/Transparency behavior.
