@@ -512,14 +512,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-05T21:17:53Z",
+        "completed_at": "2026-07-05T21:31:08Z",
         "evidence_refs": [
           "catalog:qd-007"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-05T21:17:53Z",
+        "started_at": "2026-07-05T21:31:08Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -787,7 +787,7 @@
   "page": {
     "assets_base": "assets/scenarios/qd-007/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/qd-007/",
-    "generated_at": "2026-07-05T21:17:53Z",
+    "generated_at": "2026-07-05T21:31:08Z",
     "navigation": {
       "category_url": "../queue-and-downloads/",
       "next_url": "../qd-008/",
@@ -1169,7 +1169,7 @@
         "redaction_hash": "pending-redaction-hash"
       }
     ],
-    "completed_at": "2026-07-05T21:17:53Z",
+    "completed_at": "2026-07-05T21:31:08Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1190,9 +1190,9 @@
     "generator_version": "scenario-report-generator/0.3.1",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "blocked",
-    "run_id": "catalog-scaffold-20260705T211753Z-qd-007",
-    "source_commit": "65c8dafff7f2562aa57ddd14f107211045f2c83c",
-    "started_at": "2026-07-05T21:17:53Z"
+    "run_id": "catalog-scaffold-20260705T213108Z-qd-007",
+    "source_commit": "b15d4fdf5e0cca5a4adfbdc3cee40966a4b3cecc",
+    "started_at": "2026-07-05T21:31:08Z"
   },
   "scenario": {
     "bdd": {

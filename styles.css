@@ -30,7 +30,7 @@ dd { margin: 0; }
 .evidence-grid, .screenshot-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .evidence-card, figure { border: 1px solid var(--line); margin: 0; background: #ffffff; }
 .evidence-card a { display: grid; gap: 8px; padding: 10px; color: inherit; text-decoration: none; }
-.evidence-card img, figure img { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; object-position: top center; background: var(--soft); border: 1px solid var(--line); }
+.evidence-card img, figure img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: contain; object-position: center; background: #eef2f5; border: 1px solid var(--line); padding: 8px; }
 .evidence-card span, figcaption { color: var(--muted); font-size: 0.9rem; }
 figcaption { padding: 8px 10px 10px; }
 .report-section { border-top: 1px solid var(--line); padding: 16px 0; }
