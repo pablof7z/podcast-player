@@ -19,7 +19,7 @@ def render_home(records: list[dict[str, Any]], depth: int) -> str:
         stat_band(rollups["by_verdict"]),
         section("Scenario Page System", p("Each BDD catalog scenario now has a stable page, JSON record, source link, structured flow steps, attempts, evidence inventory, skill-grounded quality review, product-cluster coherence, readiness gates, and rollup membership.")),
         section("Evidence-Backed Scenarios", evidence_backed_summary(records, depth)),
-        link_list("Indexes", [("All scenarios", rel("scenarios/", depth)), ("Tags", rel("tags/", depth)), ("Issues", rel("issues/", depth)), ("Performance rollup", rel("rollups/performance/", depth)), ("Raw scenario JSON", rel("data/scenarios.json", depth))]),
+        link_list("Indexes", [("All scenarios", rel("scenarios/", depth)), ("Tags", rel("tags/", depth)), ("Issues", rel("issues/", depth)), ("Provider cassette replay", rel("provider-cassettes/", depth)), ("Performance rollup", rel("rollups/performance/", depth)), ("Raw scenario JSON", rel("data/scenarios.json", depth))]),
     ]
     return page("Pod0 Validation Report", depth, "\n".join(body))
 

@@ -55,6 +55,8 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             write_site(records, out, catalog, root)
 
             self.assertTrue((out / "index.html").exists())
+            self.assertTrue((out / "provider-cassettes" / "index.html").exists())
+            self.assertTrue((out / "data" / "provider-cassettes.json").exists())
             self.assertTrue((out / "scenarios" / "index.html").exists())
             self.assertTrue((out / "scenarios" / "smoke-001" / "index.html").exists())
             self.assertTrue((out / "scenarios" / "smoke-001" / "data.json").exists())
@@ -64,6 +66,8 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             home = (out / "index.html").read_text()
             scenario_page = (out / "scenarios" / "smoke-001" / "index.html").read_text()
             self.assertNotIn("Required Detailed Sections", home)
+            self.assertIn("Provider cassette replay", home)
+            self.assertIn("Provider Cassette Replay Coverage", (out / "provider-cassettes" / "index.html").read_text())
             for section in REQUIRED_SCENARIO_SECTIONS:
                 self.assertIn(section, scenario_page)
 

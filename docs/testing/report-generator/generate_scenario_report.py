@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from catalog import parse_catalog, slugify  # noqa: E402
 from contract import GENERATOR_VERSION, SCHEMA_VERSION, SITE_BASE, SKILL_GROUNDING  # noqa: E402
 from evidence import apply_evidence_overlays, copy_evidence_assets, load_evidence_overlays  # noqa: E402
+from provider_cassettes_report import provider_cassette_data, render_provider_cassette_page  # noqa: E402
 from records import build_report, has_observed_data, rollups_for, summary_for, tags_for_records, validate_output, validate_schema_contract  # noqa: E402
 from render import render_home, render_scenario_index, render_scenario_page, stylesheet, write_rollup_pages, write_tag_pages  # noqa: E402
 
@@ -52,8 +53,11 @@ def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Pa
         copy_repo_assets(repo, out)
     write_text(out / "styles.css", stylesheet())
     write_json(out / "data" / "skill-grounding.json", {"generated_by": GENERATOR_VERSION, "skills": SKILL_GROUNDING})
+    cassette_data = provider_cassette_data(repo, evidence or repo / "docs" / "testing" / "evidence")
+    write_json(out / "data" / "provider-cassettes.json", cassette_data)
     write_data_files(records, out, issues)
     write_text(out / "index.html", render_home(records, 0))
+    write_text(out / "provider-cassettes" / "index.html", render_provider_cassette_page(cassette_data, 1))
     write_text(out / "scenarios" / "index.html", render_scenario_index(records, 1, "All Scenarios"))
     for slug, grouped in group_by_category(records).items():
         write_text(out / "scenarios" / slug / "index.html", render_scenario_index(grouped, 2, grouped[0]["scenario"]["category"]))

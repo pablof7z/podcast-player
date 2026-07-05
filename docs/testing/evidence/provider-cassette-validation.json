@@ -1,0 +1,20 @@
+{
+  "verified_at": "2026-07-05T22:21:54Z",
+  "verified_by": "Codex",
+  "commands": [
+    {
+      "command": "cargo run -p nmp-app-podcast --bin provider-cassettes -- verify tests/fixtures/provider_cassettes",
+      "status": "pass",
+      "summary": "provider cassette verification passed: 7 cassette(s)"
+    },
+    {
+      "command": "POD0_PROVIDER_CASSETTE_DIR=tests/fixtures/provider_cassettes cargo test -p nmp-app-podcast provider_replay --lib",
+      "status": "pass",
+      "summary": "2 provider_replay tests passed; 0 failed"
+    }
+  ],
+  "notes": [
+    "Replay mode fails closed on cassette misses instead of falling through to live provider calls.",
+    "Fixture metadata includes recorded latency, replay latency, 2026 premium-app budget, scenario references, and redaction markers."
+  ]
+}
