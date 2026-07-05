@@ -4,6 +4,18 @@ This is the tactical queue for active work, follow-ups, and pending decisions.
 Do not duplicate these items in `WIP.md`; `WIP.md` only records branches and
 worktrees currently in flight.
 
+- **pod0-validation-command-center (#700-#704).** The live validation report is
+  published at <https://pablof7z.github.io/podcast-player/> from `gh-pages` and
+  is now the public surface for Pod0 scenario evidence, screenshots,
+  screenshot-level UX critique, performance metrics, LLM/STT cassette coverage,
+  issue links, fix PRs, and revalidation status. PR #705 adds the first
+  264-scenario BDD catalog, but it is scenario planning only until runnable
+  automation, cassettes, metric ingestion, and screenshot critique are wired.
+  Track durable direction in `docs/plan/pod0-validation-command-center.md`.
+  Active issues: #700 BDD catalog execution coverage, #701 cassette
+  record/replay, #702 performance metrics, #703 screenshot UX critique, #704
+  NMP/chirp sync audit. Owner: validation command-center agents.
+
 - **open-search-nostr-result-await (#605).** NMP #597 has landed and iOS
   `AddByURLForm` now uses the framework `nmp_app_intent_classify` /
   `nmp_nip21_decode_uri` path for Nostr profile/address inputs, with
