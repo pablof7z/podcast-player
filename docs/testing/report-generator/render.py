@@ -13,7 +13,7 @@ def render_home(records: list[dict[str, Any]], depth: int) -> str:
     body = [
         hero("Pod0 Scenario Validation Report", f"{len(records)} generated scenario pages. Current verdict: incomplete until run evidence is attached."),
         stat_band(rollups["by_verdict"]),
-        section("Scenario Page System", p("Each BDD catalog scenario now has a stable page, JSON record, source link, required sections, score scaffold, skill-grounding rubric, and rollup membership.")),
+        section("Scenario Page System", p("Each BDD catalog scenario now has a stable page, JSON record, source link, structured flow steps, attempts, evidence inventory, skill-grounded quality review, product-cluster coherence, readiness gates, and rollup membership.")),
         link_list("Indexes", [("All scenarios", rel("scenarios/", depth)), ("Tags", rel("tags/", depth)), ("Issues", rel("issues/", depth)), ("Performance rollup", rel("rollups/performance/", depth)), ("Raw scenario JSON", rel("data/scenarios.json", depth))]),
     ]
     return page("Pod0 Validation Report", depth, "\n".join(body))
@@ -21,10 +21,10 @@ def render_home(records: list[dict[str, Any]], depth: int) -> str:
 
 def render_scenario_index(records: list[dict[str, Any]], depth: int, title: str) -> str:
     rows = "\n".join(
-        f"<tr><td><a href=\"{rel('scenarios/' + r['scenario']['slug'] + '/', depth)}\">{e(r['scenario']['id'])}</a></td><td>{e(r['scenario']['title'])}</td><td>{e(r['scenario']['category'])}</td><td>{badge(r['verdict']['overall'])}</td><td>{e(', '.join(missing_evidence_for(r)))}</td></tr>"
+        f"<tr><td><a href=\"{rel('scenarios/' + r['scenario']['slug'] + '/', depth)}\">{e(r['scenario']['id'])}</a></td><td>{e(r['scenario']['title'])}</td><td>{e(r['scenario']['category'])}</td><td>{badge(r['verdict']['overall'])}</td><td>{badge(r['readiness']['ship_gate'])}</td><td>{e(r['coherence']['group_judgment']['status'])}</td><td>{e(', '.join(missing_evidence_for(r)))}</td></tr>"
         for r in records
     )
-    table = f"<table><thead><tr><th>ID</th><th>Scenario</th><th>Category</th><th>Verdict</th><th>Missing Evidence</th></tr></thead><tbody>{rows}</tbody></table>"
+    table = f"<table><caption>{e(title)} scenario records</caption><thead><tr><th>ID</th><th>Scenario</th><th>Category</th><th>Verdict</th><th>Readiness</th><th>Group Coherence</th><th>Missing Evidence</th></tr></thead><tbody>{rows}</tbody></table>"
     return page(title, depth, hero(title, f"{len(records)} scenario page records") + section("Scenario Table", table))
 
 
@@ -43,15 +43,39 @@ def render_scenario_page(record: dict[str, Any], depth: int) -> str:
     body = [
         nav_bar(nav_links),
         hero(f"{scenario['id']} - {scenario['title']}", f"{scenario['category']} - {badge(record['verdict']['overall'])}"),
-        section("BDD", bdd_block(scenario["bdd"])),
-        section("Run Metadata", key_values(metadata_for(record))),
+        section("Scenario Identity And Links", key_values(identity_for(record))),
+        section("Product Intent And Acceptance Criteria", product_context_block(record["product_context"])),
+        section("Flow Overview And Steps", bdd_block(scenario["bdd"]) + flow_step_table(record["flow_steps"])),
+        section("Preconditions, Fixtures, Cassettes, And Runtime Metadata", key_values(metadata_for(record)) + device_table(record["run"]["device_matrix"]) + cassette_table(record["run"].get("cassettes", []))),
+        section("Execution Attempts, Retries, And Branches", attempts_block(record["execution"])),
+        section("Results And Verdict", p(record["verdict"]["summary"]) + key_values({"Overall": record["verdict"]["overall"], "Gate explanation": record["verdict"]["score_gate_explanation"]})),
+        section("Evidence Inventory", missing_evidence_table(record["evidence"]) + artifact_table(record["evidence"]["artifacts"], depth)),
+        section("Quality Review", quality_table(record["quality_review"])),
+        section("Product Coherence And Cluster Judgment", coherence_block(record["coherence"])),
+        section("Readiness Gates", readiness_block(record["readiness"])),
+        section("Instrumentation Gaps And Missing Evidence", gap_table(record["instrumentation_gaps"])),
+        section("Risks, Defects, Issue Links, And Follow-Up", risk_table(record["risks"]) + issue_table(record["issues"]) + action_list(record["next_actions"])),
         section("Grouped Scores", score_table(record["group_scores"])),
         section("Dimension Scores", score_table(record["dimension_scores"])),
-        section("Required Page Sections", "\n".join(render_required_section(key, value) for key, value in record["sections"].items())),
-        section("Evidence Registry", artifact_table(record["evidence"]["artifacts"], depth)),
-        section("Next Actions", action_list(record["next_actions"])),
+        section("Required Detailed Sections", "\n".join(render_required_section(key, value) for key, value in record["sections"].items())),
     ]
     return page(f"{scenario['id']} - {scenario['title']}", depth, "\n".join(body))
+
+
+def identity_for(record: dict[str, Any]) -> dict[str, str]:
+    scenario = record["scenario"]
+    nav = record["page"]["navigation"]
+    return {
+        "Scenario": scenario["id"],
+        "Title": scenario["title"],
+        "Category": scenario["category"],
+        "Tags": ", ".join(scenario["tags"]),
+        "Source": scenario["source_path"],
+        "Canonical URL": record["page"]["canonical_url"],
+        "Previous": nav.get("previous_url", ""),
+        "Next": nav.get("next_url", ""),
+        "Data": "data.json",
+    }
 
 
 def metadata_for(record: dict[str, Any]) -> dict[str, str]:
@@ -67,6 +91,76 @@ def metadata_for(record: dict[str, Any]) -> dict[str, str]:
 
 def bdd_block(bdd: dict[str, list[str]]) -> str:
     return f"<dl><dt>Given</dt><dd>{e('; '.join(bdd['given']))}</dd><dt>When</dt><dd>{e('; '.join(bdd['when']))}</dd><dt>Then</dt><dd>{e('; '.join(bdd['then']))}</dd></dl>"
+
+
+def product_context_block(context: dict[str, Any]) -> str:
+    criteria = "".join(f"<li>{e(item)}</li>" for item in context["acceptance_criteria"])
+    expectations = "".join(f"<li>{e(item)}</li>" for item in context["platform_expectations"])
+    cluster = context["scenario_cluster"]
+    return key_values({"Persona": context["persona"], "Job": context["job_to_be_done"], "User value": context["user_value"], "Cluster": f"{cluster['title']} ({cluster['id']})", "Related scenarios": ", ".join(cluster["related_scenarios"])}) + f"<h3>Acceptance Criteria</h3><ul>{criteria}</ul><h3>Platform Expectations</h3><ul>{expectations}</ul>"
+
+
+def flow_step_table(steps: list[dict[str, Any]]) -> str:
+    rows = "".join(f"<tr><td>{e(step['id'])}</td><td>{e(step['phase'])}</td><td>{e(step['action'])}</td><td>{e(step['expected'])}</td><td>{badge(step['status'])}</td><td>{e(', '.join(step['evidence_required']))}</td></tr>" for step in steps)
+    return f"<table><caption>Step-by-step flow</caption><thead><tr><th>Step</th><th>Phase</th><th>Action</th><th>Expected</th><th>Status</th><th>Evidence Needed</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def device_table(devices: list[dict[str, Any]]) -> str:
+    rows = "".join(f"<tr><td>{e(item['name'])}</td><td>{e(item['os_version'])}</td><td>{e(item['form_factor'])}</td><td>{e(item.get('udid', ''))}</td></tr>" for item in devices)
+    return f"<table><caption>Device, simulator, and runtime matrix</caption><thead><tr><th>Name</th><th>OS</th><th>Form Factor</th><th>UDID</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def cassette_table(cassettes: list[dict[str, Any]]) -> str:
+    if not cassettes:
+        return p("No cassettes declared for this scaffold.")
+    rows = "".join(f"<tr><td>{e(item['id'])}</td><td>{e(item['provider'])}</td><td>{badge(item['mode'])}</td><td>{e(item['redaction_hash'])}</td></tr>" for item in cassettes)
+    return f"<table><caption>Provider, relay, replay, and cassette data</caption><thead><tr><th>ID</th><th>Provider</th><th>Mode</th><th>Redaction Hash</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def attempts_block(execution: dict[str, Any]) -> str:
+    rows = "".join(f"<tr><td>{e(item['id'])}</td><td>{badge(item['status'])}</td><td>{e(item['executor'])}</td><td>{e(', '.join(item['tools']))}</td><td>{e('; '.join(item['commands']) or 'not run')}</td><td>{e(item['notes'])}</td></tr>" for item in execution["attempts"])
+    branches = "".join(f"<li><strong>{e(item['id'])}</strong>: {e(item['trigger'])} -> {e(item['expected'])} ({e(item['status'])})</li>" for item in execution["branch_coverage"])
+    return f"<p>{e(execution['retry_policy'])}</p><table><caption>Execution attempts</caption><thead><tr><th>Attempt</th><th>Status</th><th>Executor</th><th>Tools</th><th>Commands</th><th>Notes</th></tr></thead><tbody>{rows}</tbody></table><h3>Branches</h3><ul>{branches}</ul>"
+
+
+def missing_evidence_table(evidence: dict[str, Any]) -> str:
+    rows = "".join(f"<tr><td>{e(item['kind'])}</td><td>{e(item['reason'])}</td><td>{e(', '.join(item['blocks_dimensions']))}</td></tr>" for item in evidence["missing"])
+    return f"<p>{e(evidence['redaction_summary'])}</p><p><strong>Required evidence kinds:</strong> {e(', '.join(evidence['required_kinds']))}</p><table><caption>Missing evidence inventory</caption><thead><tr><th>Kind</th><th>Reason</th><th>Blocked Dimensions</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def quality_table(quality: dict[str, Any]) -> str:
+    rows = "".join(f"<tr><td>{e(name)}</td><td>{badge(item['status'])}</td><td>{e(item['summary'])}</td><td>{e(', '.join(item['checks']))}</td><td>{e(', '.join(item['gaps']))}</td></tr>" for name, item in quality.items())
+    return f"<table><caption>UI, UX, accessibility, performance, reliability, content, and observability review</caption><thead><tr><th>Area</th><th>Status</th><th>Summary</th><th>Checks</th><th>Gaps</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def coherence_block(coherence: dict[str, Any]) -> str:
+    cluster = coherence["cluster"]
+    themes = "".join(f"<li>{e(item)}</li>" for item in coherence["themes"])
+    risks = "".join(f"<li>{e(item)}</li>" for item in coherence["cross_scenario_risks"])
+    return key_values({"Cluster": f"{cluster['title']} ({cluster['id']})", "Related scenarios": ", ".join(cluster["scenario_ids"]), "Individual judgment": coherence["individual_judgment"]["summary"], "Group judgment": coherence["group_judgment"]["summary"]}) + f"<h3>Cross-Scenario Themes</h3><ul>{themes}</ul><h3>Cross-Scenario Risks</h3><ul>{risks}</ul>"
+
+
+def readiness_block(readiness: dict[str, Any]) -> str:
+    rows = "".join(f"<tr><td>{e(item['id'])}</td><td>{badge(item['status'])}</td><td>{e(item['requirement'])}</td><td>{e(item['owner'])}</td></tr>" for item in readiness["gates"])
+    blockers = "".join(f"<li>{e(item)}</li>" for item in readiness["blocking_reasons"])
+    return f"<p><strong>Ship gate:</strong> {badge(readiness['ship_gate'])}</p><ul>{blockers}</ul><table><caption>Readiness gates</caption><thead><tr><th>Gate</th><th>Status</th><th>Requirement</th><th>Owner</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def gap_table(gaps: list[dict[str, Any]]) -> str:
+    rows = "".join(f"<tr><td>{e(item['id'])}</td><td>{badge(item['severity'])}</td><td>{e(item['summary'])}</td><td>{e(', '.join(item['affected_dimensions']))}</td><td>{e(item['owner'])}</td></tr>" for item in gaps)
+    return f"<table><caption>Instrumentation gaps</caption><thead><tr><th>Gap</th><th>Severity</th><th>Summary</th><th>Affected Dimensions</th><th>Owner</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def risk_table(risks: list[dict[str, Any]]) -> str:
+    rows = "".join(f"<tr><td>{e(item['id'])}</td><td>{badge(item['severity'])}</td><td>{e(item['priority'])}</td><td>{e(item['title'])}</td><td>{e(', '.join(item['affected_dimensions']))}</td><td>{e(item['mitigation'])}</td></tr>" for item in risks)
+    return f"<table><caption>Risks and recommended follow-up</caption><thead><tr><th>ID</th><th>Severity</th><th>Priority</th><th>Risk</th><th>Dimensions</th><th>Mitigation</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def issue_table(issues: list[dict[str, Any]]) -> str:
+    if not issues:
+        return p("No defects are linked yet because this scaffold has not been executed.")
+    rows = "".join(f"<tr><td><a href=\"{e(item['url'])}\">{e(item['id'])}</a></td><td>{badge(item['severity'])}</td><td>{e(item['title'])}</td><td>{badge(item['status'])}</td></tr>" for item in issues)
+    return f"<table><caption>Defects and issue/PR links</caption><thead><tr><th>Issue</th><th>Severity</th><th>Title</th><th>Status</th></tr></thead><tbody>{rows}</tbody></table>"
 
 
 def render_required_section(key: str, value: dict[str, Any]) -> str:
@@ -113,7 +207,8 @@ def page(title: str, depth: int, body: str) -> str:
   <link rel=\"stylesheet\" href=\"{rel('styles.css', depth)}\">
 </head>
 <body>
-  <main>
+  <a class=\"skip-link\" href=\"#content\">Skip to content</a>
+  <main id=\"content\">
     {body}
   </main>
 </body>
@@ -139,7 +234,7 @@ def link_list(title: str, links: list[tuple[str, str]]) -> str:
 
 
 def nav_bar(links: list[tuple[str, str]]) -> str:
-    return "<nav>" + "".join(f"<a href=\"{href}\">{e(label)}</a>" for label, href in links if href) + "</nav>"
+    return "<nav aria-label=\"Scenario navigation\">" + "".join(f"<a href=\"{href}\">{e(label)}</a>" for label, href in links if href) + "</nav>"
 
 
 def stat_band(counts: dict[str, int]) -> str:
@@ -153,12 +248,12 @@ def key_values(values: dict[str, str]) -> str:
 
 def score_table(scores: dict[str, dict[str, Any]]) -> str:
     rows = "".join(f"<tr><td>{e(name)}</td><td>{e(str(item['score']))}</td><td>{badge(item['status'])}</td><td>{e(item['rationale'])}</td></tr>" for name, item in scores.items())
-    return f"<table><thead><tr><th>Dimension</th><th>Score</th><th>Status</th><th>Rationale</th></tr></thead><tbody>{rows}</tbody></table>"
+    return f"<table><caption>Scores and score-gate rationale</caption><thead><tr><th>Dimension</th><th>Score</th><th>Status</th><th>Rationale</th></tr></thead><tbody>{rows}</tbody></table>"
 
 
 def artifact_table(artifacts: list[dict[str, Any]], depth: int) -> str:
     rows = "".join(f"<tr><td>{e(a['id'])}</td><td>{e(a['type'])}</td><td><a href=\"{rel(a['path'], depth)}\">{e(a['path'])}</a></td><td>{e(a['description'])}</td></tr>" for a in artifacts)
-    return f"<table><thead><tr><th>ID</th><th>Type</th><th>Path</th><th>Description</th></tr></thead><tbody>{rows}</tbody></table>"
+    return f"<table><caption>Published artifact registry</caption><thead><tr><th>ID</th><th>Type</th><th>Path</th><th>Description</th></tr></thead><tbody>{rows}</tbody></table>"
 
 
 def action_list(actions: list[dict[str, str]]) -> str:
@@ -187,6 +282,9 @@ def stylesheet() -> str:
 body { margin: 0; font: 16px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; color: var(--ink); background: #ffffff; }
 main { max-width: 1180px; margin: 0 auto; padding: 28px 18px 64px; }
 a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:focus-visible { outline: 3px solid #5aa9d6; outline-offset: 3px; }
+.skip-link { position: absolute; left: 12px; top: 8px; transform: translateY(-160%); background: #ffffff; border: 2px solid var(--accent); padding: 8px 10px; z-index: 2; }
+.skip-link:focus { transform: translateY(0); }
 nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
 nav a, .badge { border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; text-decoration: none; }
 .hero { border-bottom: 3px solid var(--ink); padding: 18px 0 22px; margin-bottom: 24px; }
@@ -195,8 +293,10 @@ h1 { font-size: clamp(2rem, 4vw, 4rem); line-height: 1; margin: 0 0 12px; letter
 h2 { font-size: 1.35rem; margin: 36px 0 12px; }
 h3 { font-size: 1.05rem; margin: 0 0 8px; }
 section { margin: 24px 0; }
-table { width: 100%; border-collapse: collapse; border: 1px solid var(--line); margin: 12px 0; }
+table { width: 100%; border-collapse: collapse; border: 1px solid var(--line); margin: 12px 0; table-layout: fixed; }
+caption { text-align: left; font-weight: 700; margin: 0 0 6px; }
 th, td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); padding: 9px 10px; }
+td { overflow-wrap: anywhere; }
 th { background: var(--soft); font-size: 0.9rem; }
 dl { display: grid; grid-template-columns: minmax(120px, 220px) 1fr; gap: 8px 14px; }
 dt { font-weight: 700; }
@@ -211,4 +311,5 @@ dd { margin: 0; }
 .badge-fail { color: #9d2727; border-color: #d78585; background: #fff0f0; }
 .link-list { columns: 2 280px; }
 @media (max-width: 720px) { main { padding: 18px 12px 48px; } table { display: block; overflow-x: auto; } dl { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
 """

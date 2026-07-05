@@ -66,13 +66,48 @@ Every page starts with:
 - Previous/next scenario links, category index link, and summary rollup link.
 - Verdict badge plus grouped score summary.
 
+## Required Structured Surfaces
+
+The visible sections are backed by first-class JSON so the site can scale to
+hundreds of pages without prose scraping:
+
+- `product_context`: persona, job-to-be-done, user value, acceptance criteria,
+  platform expectations, and scenario cluster.
+- `flow_steps`: ordered precondition/action/result/exit steps with required
+  evidence per step.
+- `execution`: every attempt, retry, command, tool, branch, and rerun note.
+- `review_grounding`: exact `npx skills search` command, loaded skill names,
+  considered skills, and how the skills shaped the template.
+- `quality_review`: UI, UX, performance, accessibility, reliability,
+  privacy/security, content/localization, controls/gestures, offline/resume,
+  and observability review areas.
+- `coherence`: both individual scenario judgment and related-scenario
+  group-level product coherence judgment.
+- `readiness`: release gates and blockers.
+- `evidence.missing`, `instrumentation_gaps`, and `risks`: explicit blockers,
+  affected dimensions, owners, and mitigations.
+
+The selected grounding for this template is:
+
+- `alirezarezvani/claude-skills@apple-hig-expert`, loaded after
+  `npx skills search`, for Apple HIG accessibility, Dynamic Type, 44 pt targets,
+  semantic color, safe areas, and iPhone-native primitives.
+- `vabole/apple-skills@ios-liquid-glass`, loaded after `npx skills search`, for
+  Liquid Glass hierarchy/harmony/consistency, control-layer restraint, and
+  Reduce Motion/Transparency behavior.
+- Local `web-design-guidelines`, with current guidelines fetched, for semantic
+  static report pages, focus states, skip links, readable tables, reduced
+  motion, content overflow, and report-page accessibility/performance.
+
 ## Required Sections
 
 | Section | Must Answer | Required Evidence | Score Gate |
 | --- | --- | --- | --- |
+| Persona/job/acceptance | Who is this flow for, what job must it complete, and what acceptance criteria define success? | Scenario BDD, cluster link, platform expectations. | `3+` requires user value and acceptance criteria tied to evidence. |
 | Flow | What user journey did this scenario validate, and where does it sit in the app? | Step list, source scenario link, navigation breadcrumbs. | `3+` requires a complete path from launch state to exit state. |
 | Attempted test | What exactly was executed, by whom/what, and with which tools? | Commands, simulator/tool session IDs, automation/manual notes. | Missing commands or tool notes force `incomplete`. |
 | Scenario setup | What fixture, account, provider, network, relay, and data state was present? | Fixture manifest, launch args, cassettes, seeded data, relay/provider status. | `3+` requires deterministic or clearly documented live inputs. |
+| Execution attempts | Which attempts, retries, branches, and reruns occurred? | Attempt records, commands, retry causes, branch IDs, stale evidence notes. | Hidden retries or branch mutations force `incomplete`. |
 | Expected behavior | What should a correct Pod0 implementation do? | Given/When/Then text and acceptance criteria. | `3+` requires user-visible and architecture expectations. |
 | Actual result | What happened step by step? | Screenshot/UI tree/log per meaningful step. | Any unobserved critical step caps at `2`. |
 | Artifacts/screenshots/video | What visual and raw evidence supports the result? | Screenshot gallery, videos, UI trees, logs, metric traces, SHA/path/URL. | Missing required screenshot forces `incomplete`. |
@@ -86,8 +121,16 @@ Every page starts with:
 | Privacy/security | Are secrets, signing, private events, and permissions handled safely? | Redaction review, permission prompt screenshots, key/relay behavior, log scan notes. | Leaked secret or public fallback for private data is `1`. |
 | NMP architecture/cohesiveness | Does behavior respect Rust-core/thin-shell ownership? | D0-D10 notes, FFI snapshot/projection evidence, capability-report evidence, source links when inspected. | Native policy, duplicate state, unbounded FFI, polling, or privacy fallback is `1`. |
 | Product coherence in context | Does this scenario fit Pod0's product promise and adjacent flows? | Cross-links to related scenarios, before/after screenshots, comparison to expected Pod0 mental model. | `3+` requires continuity with surrounding product surfaces. |
+| Product cluster coherence | Do related scenarios agree as a product group? | Cluster rollup, related scenario links, shared theme/defect notes. | Individual UI/UX scores cannot pass if group-level coherence is contradictory. |
+| Reliability/flakiness | How stable is the behavior across reruns and retries? | Rerun count, flake notes, retry causes, stale build checks, deterministic replay evidence. | Flaky or stale evidence caps at `2`. |
 | Regression risk | What could this break, and what should be rerun? | Related scenarios, impacted modules, prior bugs, merge-gate references. | Missing risk notes cap at `2`. |
 | Defects/issues filed | Were all imperfections tracked? | GitHub issue links, severity, owner, fix PR link if available. | Any unfiled actionable defect forces `incomplete`. |
+| Risks/follow-up | Which risks remain, who owns them, and what PR/issue/revalidation follows? | Risk records, priorities, issue/PR links, recommended mitigation. | Unowned blocker or major risk prevents pass. |
+| Instrumentation gaps | Which evidence is missing and which dimensions are blocked by it? | Missing-evidence inventory, gap severity, owner, affected dimensions. | Hidden gaps force `incomplete`. |
+| Localization/content quality | Does content survive locale, long text, transcript, and empty/error copy cases? | Locale screenshots, copy review, truncation notes, transcript/metadata checks. | Broken critical content caps at `2`. |
+| Controls/gestures/audio | Are buttons, gestures, sheets, audio controls, haptics, and alternatives correct? | Control audit, gesture alternatives, haptic/audio notes, reachability screenshots. | Gesture-only critical action or inaccessible audio control caps at `2`. |
+| Offline/resume behavior | Does the flow recover across offline state, relaunch, interruption, and stale data? | Offline/relaunch/background evidence, retry/cancel logs. | Permanent spinner or lost state is `1`. |
+| Readiness gates | Which release gates are open, blocked, or done? | Gate table, blockers, owners, linked evidence. | Any blocked release gate keeps verdict below pass. |
 | Verdict | What is the scenario's status and why? | Grouped score summary and concise rationale. | Must match score gates mechanically. |
 | Next actions | What should happen next? | Ordered action list with owners/links. | Blocking follow-up without owner/link caps at `2`. |
 

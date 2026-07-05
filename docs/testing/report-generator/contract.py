@@ -1,11 +1,14 @@
 SCHEMA_VERSION = "1.0.0"
-GENERATOR_VERSION = "scenario-report-generator/0.1.0"
+GENERATOR_VERSION = "scenario-report-generator/0.2.0"
 SITE_BASE = "https://pablof7z.github.io/podcast-player/"
+SKILL_SEARCH_QUERY = "iOS UI polish Apple Human Interface Guidelines accessibility UX performance mobile design review Liquid Glass"
 
 SECTION_TO_DIMENSION = {
+    "persona_job_acceptance": "persona_acceptance",
     "flow": "flow",
     "attempted_test": "attempted_test",
     "scenario_setup": "scenario_setup",
+    "execution_attempts": "execution_attempts",
     "expected_behavior": "expected_behavior",
     "actual_result": "actual_result",
     "artifacts": "artifacts",
@@ -19,8 +22,16 @@ SECTION_TO_DIMENSION = {
     "privacy_security": "privacy_security",
     "nmp_architecture_cohesiveness": "nmp_architecture",
     "product_coherence_in_context": "product_coherence",
+    "product_cluster_coherence": "product_cluster_coherence",
+    "reliability_flakiness": "reliability_flakiness",
     "regression_risk": "regression_risk",
     "defects_issues_filed": "defects_issues_filed",
+    "risks_follow_up": "risks_follow_up",
+    "instrumentation_gaps": "instrumentation_gaps",
+    "localization_content_quality": "localization_content_quality",
+    "controls_gestures_audio": "controls_gestures_audio",
+    "offline_resume_behavior": "offline_resume_behavior",
+    "readiness_gates": "readiness_gates",
     "verdict": "verdict",
     "next_actions": "next_actions",
     "cross_screen_continuity": "cross_screen_continuity",
@@ -38,9 +49,11 @@ SECTION_TO_DIMENSION = {
 }
 
 SECTION_LABELS = {
+    "persona_job_acceptance": "Persona, Job, And Acceptance Criteria",
     "flow": "Flow",
     "attempted_test": "Attempted Test",
     "scenario_setup": "Scenario Setup",
+    "execution_attempts": "Execution Attempts, Retries, And Branches",
     "expected_behavior": "Expected Behavior",
     "actual_result": "Actual Result",
     "artifacts": "Artifacts, Screenshots, Video",
@@ -54,8 +67,16 @@ SECTION_LABELS = {
     "privacy_security": "Privacy And Security",
     "nmp_architecture_cohesiveness": "NMP Architecture And Cohesiveness",
     "product_coherence_in_context": "Product Coherence In Context",
+    "product_cluster_coherence": "Product Cluster Coherence",
+    "reliability_flakiness": "Reliability And Flakiness",
     "regression_risk": "Regression Risk",
     "defects_issues_filed": "Defects And Issues Filed",
+    "risks_follow_up": "Risks, Follow-Up, And Back-Links",
+    "instrumentation_gaps": "Instrumentation Gaps And Missing Evidence",
+    "localization_content_quality": "Localization And Content Quality",
+    "controls_gestures_audio": "Controls, Gestures, Audio, And Haptics",
+    "offline_resume_behavior": "Offline, Interruption, And Resume Behavior",
+    "readiness_gates": "Readiness Gates",
     "verdict": "Verdict",
     "next_actions": "Next Actions",
     "cross_screen_continuity": "Cross-Screen Continuity",
@@ -74,12 +95,15 @@ SECTION_LABELS = {
 
 GROUPS = {
     "functional_correctness": [
+        "persona_acceptance",
         "flow",
         "attempted_test",
         "scenario_setup",
+        "execution_attempts",
         "expected_behavior",
         "actual_result",
         "error_recovery",
+        "offline_resume_behavior",
         "regression_risk",
     ],
     "evidence_reproducibility": [
@@ -88,6 +112,7 @@ GROUPS = {
         "replayability_cassette_provenance",
         "device_os_matrix",
         "evidence_confidence",
+        "instrumentation_gaps",
         "defects_issues_filed",
     ],
     "product_experience": [
@@ -101,6 +126,10 @@ GROUPS = {
         "information_architecture",
         "content_hierarchy",
         "product_coherence",
+        "product_cluster_coherence",
+        "localization_content_quality",
+        "controls_gestures_audio",
+        "readiness_gates",
     ],
     "engineering_quality": [
         "performance",
@@ -109,9 +138,11 @@ GROUPS = {
         "nmp_architecture",
         "observability",
         "analytics_privacy_boundaries",
+        "reliability_flakiness",
     ],
     "follow_through": [
         "defects_issues_filed",
+        "risks_follow_up",
         "verdict",
         "next_actions",
     ],
@@ -119,23 +150,73 @@ GROUPS = {
 
 SKILL_GROUNDING = [
     {
+        "selected": True,
+        "name": "alirezarezvani/claude-skills@apple-hig-expert",
+        "search_terms": "Apple Human Interface Guidelines iOS accessibility mobile design",
+        "coverage": "Apple HIG criteria for 44 pt targets, contrast, Dynamic Type, VoiceOver, safe areas, iPhone navigation ergonomics, semantic color, and platform-native control choices.",
+    },
+    {
+        "selected": True,
         "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "liquid glass iOS primitives",
-        "coverage": "Liquid Glass restraint, Reduce Transparency behavior, system chrome, and iOS 26 visual primitives.",
+        "search_terms": "Liquid Glass iOS primitives",
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer use, Reduce Transparency/Motion behavior, and iOS 26 material restraint.",
     },
     {
-        "name": "vabole/apple-skills@hig",
-        "search_terms": "Apple HIG iOS",
-        "coverage": "Apple platform controls, navigation, typography, accessibility, and native interaction expectations.",
+        "selected": True,
+        "name": "web-design-guidelines",
+        "search_terms": "web interface guidelines accessibility performance navigation state touch interaction",
+        "coverage": "Generated report-page accessibility, semantic navigation, focus states, reduced motion, content overflow, table readability, and static-site performance checks.",
     },
     {
-        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
+        "selected": False,
+        "name": "johnrogers/claude-swift-engineering@ios-hig",
+        "search_terms": "iOS HIG",
+        "coverage": "Search result considered for future Swift/iOS HIG implementation checks; current selected Apple HIG Expert covers the template rubric.",
+    },
+    {
+        "selected": False,
+        "name": "charleswiltgen/axiom@axiom-ios-ui",
+        "search_terms": "iOS UI",
+        "coverage": "Search result considered for future visual/UI implementation review; current selected skills cover the report criteria.",
+    },
+    {
+        "selected": False,
+        "name": "vabole/apple-skills@ios-design-consultant",
+        "search_terms": "iOS design consultant",
+        "coverage": "Search result considered for future design critique expansion; current selected skills cover Liquid Glass and Apple HIG requirements.",
+    },
+    {
+        "selected": False,
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
         "search_terms": "mobile UX design",
-        "coverage": "Task clarity, cognitive load, thumb ergonomics, interruption recovery, and mobile flow cohesion.",
+        "coverage": "Search result considered for future mobile UX expansion; current template covers task clarity, cognitive load, thumb ergonomics, interruption recovery, and mobile flow cohesion directly.",
     },
     {
+        "selected": False,
         "name": "nmp-app-architecture",
         "search_terms": "NMP architecture Rust core thin shell",
-        "coverage": "Rust-owned state and policy, bounded FFI/projections, privacy fail-closed behavior, and replayable clocks.",
+        "coverage": "Existing local doctrine represented in NMP architecture dimensions: Rust-owned state and policy, bounded FFI/projections, privacy fail-closed behavior, and replayable clocks.",
     },
 ]
+
+QUALITY_AREAS = {
+    "ui": "Layout, spacing, typography, visual hierarchy, semantic color, SF Symbols, screenshots, and platform-native finish.",
+    "ux": "Task clarity, user effort, feedback, interruption recovery, cognitive load, and route predictability.",
+    "performance": "Launch, interaction latency, screen-settle time, scroll hitches, memory, CPU, audio, network, and provider latency.",
+    "accessibility": "VoiceOver, Dynamic Type, contrast, Reduce Motion, Reduce Transparency, 44 pt targets, captions, and assistive navigation.",
+    "reliability": "Rerun count, flake history, retry behavior, stale evidence, timeout behavior, and deterministic replay.",
+    "privacy_security": "Secrets, private keys, permissions, logs, analytics, relay visibility, cassette redaction, and export safety.",
+    "content_localization": "Podcast metadata, transcript/agent copy, truncation, empty copy, locale/date/number behavior, and translation safety.",
+    "controls_gestures": "Buttons, menus, sheets, gestures, audio route controls, haptics, keyboard alternatives, and touch reach.",
+    "offline_resume": "Offline state, app relaunch, background playback, interrupted provider calls, downloads, and resume from stale state.",
+    "observability": "Structured logs, metric IDs, provider/request IDs, relay IDs, redacted traces, and issue reproduction context.",
+}
+
+READINESS_GATES = {
+    "required_evidence": "Screenshots/UI trees/logs/cassettes/metrics required by the scenario are attached and redacted.",
+    "skill_grounding": "UI, UX, accessibility, performance, and product judgments cite the loaded review skills or local doctrine.",
+    "score_integrity": "Every dimension and group score follows the evidence gates and matches the final verdict.",
+    "product_coherence": "Individual scenario judgment and related-scenario group judgment are both present.",
+    "defect_tracking": "Every actionable defect has severity, owner, GitHub issue link, and fix/revalidation state.",
+    "release_readiness": "No blocker or major unresolved risk remains without an explicit owner and acceptance rationale.",
+}

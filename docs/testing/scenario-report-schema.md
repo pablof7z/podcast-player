@@ -116,25 +116,37 @@ Each scenario page is generated from one `ScenarioReport` JSON object:
 | `scenario` | Stable scenario identity, source paths, BDD text, category, tags, dependencies. |
 | `run` | Build, executor, device/OS matrix, environment, fixtures, provider/cassette mode. |
 | `page` | Canonical URLs, generated timestamps, nav links, asset base. |
+| `product_context` | Persona, job-to-be-done, user value, acceptance criteria, platform expectations, and scenario cluster. |
+| `flow_steps` | Ordered step-by-step flow with expected state and required evidence per step. |
+| `execution` | Attempts, retries, branches, commands, tools, rerun notes, and branch coverage. |
+| `review_grounding` | Exact skill-search command, selected/considered skills, and how those skills shape the template. |
 | `sections` | Required narrative sections from the page template. |
 | `dimension_scores` | Per-dimension scores and evidence references. |
 | `group_scores` | Functional/product/engineering/follow-through grouped scores. |
+| `quality_review` | Structured UI, UX, performance, accessibility, reliability, privacy/security, content, controls, offline/resume, and observability checks. |
+| `coherence` | Individual scenario judgment plus related-scenario group-level product coherence judgment. |
+| `readiness` | Release gates, blockers, owners, and ship-gate status. |
 | `evidence` | Artifact registry for screenshots, videos, logs, UI trees, metrics, cassettes, relay JSON, source docs. |
 | `metrics` | Measured values, budgets, units, collection methods, and status. |
+| `instrumentation_gaps` | Missing instrumentation/evidence with severity, owner, and affected dimensions. |
+| `risks` | Risk register with severity, priority, status, affected dimensions, and mitigation. |
 | `issues` | Defects, severities, issue links, fix PRs, and revalidation state. |
 | `next_actions` | Ordered follow-up work with owner/link/status. |
 
-The generator should treat `sections`, `dimension_scores`, and `evidence` as the
-source of truth for the visible page. Summary JSON is derived from these fields.
+The generator treats the structured fields above, `sections`, `dimension_scores`,
+and `evidence` as the source of truth for the visible page. Summary JSON is
+derived from these fields.
 
 ## Required Dimension IDs
 
 The schema requires these dimension IDs:
 
 ```text
+persona_acceptance
 flow
 attempted_test
 scenario_setup
+execution_attempts
 expected_behavior
 actual_result
 artifacts
@@ -148,8 +160,16 @@ error_recovery
 privacy_security
 nmp_architecture
 product_coherence
+product_cluster_coherence
+reliability_flakiness
 regression_risk
 defects_issues_filed
+risks_follow_up
+instrumentation_gaps
+localization_content_quality
+controls_gestures_audio
+offline_resume_behavior
+readiness_gates
 verdict
 next_actions
 cross_screen_continuity
@@ -200,6 +220,14 @@ Cassettes:
 - Include provider, model, request class, redaction hash, recorded-at timestamp,
   and whether the scenario used live, replay, or mixed mode.
 
+Missing evidence:
+
+- `evidence.required_kinds` names every evidence class required by the scenario.
+- `evidence.missing` lists every absent required kind, why it matters, and which
+  dimensions it blocks.
+- `instrumentation_gaps` repeats missing evidence as an owner/severity queue so
+  rollups can find gaps without parsing section prose.
+
 Security:
 
 - Published artifacts must be redacted before generation.
@@ -210,7 +238,8 @@ Security:
 
 `/data/rollups.json` should include:
 
-- Counts by verdict, category, tag, device, OS, provider mode, and evidence state.
+- Counts by verdict, category, tag, device, OS, provider mode, evidence state,
+  readiness, product cluster, group-coherence status, and instrumentation gap ID.
 - Average score by dimension and group.
 - Missing evidence counts by evidence type.
 - Open issues by severity and scenario.
