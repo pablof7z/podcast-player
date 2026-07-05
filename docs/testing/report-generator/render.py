@@ -189,7 +189,7 @@ def write_tag_pages(records: list[dict[str, Any]], out: Any) -> dict[Any, str]:
 
 def write_rollup_pages(records: list[dict[str, Any]], out: Any) -> dict[Any, str]:
     pages = {
-        out / "issues" / "index.html": page("Issues", 1, hero("Issues", "No observed defects have been filed from generated scaffolds yet.") + p("Scenario pages remain incomplete until defects discovered during validation are linked here."))
+        out / "issues" / "index.html": page("Issues", 1, issue_rollup_page(records))
     }
     for verdict in count_by(records, lambda r: r["verdict"]["overall"]):
         filtered = [r for r in records if r["verdict"]["overall"] == verdict]
@@ -203,6 +203,22 @@ def write_rollup_pages(records: list[dict[str, Any]], out: Any) -> dict[Any, str
     perf = [r for r in records if "performance-required" in r["scenario"]["tags"]]
     pages[out / "rollups" / "performance" / "index.html"] = render_scenario_index(perf, 2, "Performance Metrics Required")
     return pages
+
+
+def issue_rollup_page(records: list[dict[str, Any]]) -> str:
+    issues = [
+        (record["scenario"]["id"], record["scenario"]["slug"], issue)
+        for record in records
+        for issue in record["issues"]
+    ]
+    if not issues:
+        return hero("Issues", "No observed defects have been linked yet.") + p("Scenario pages remain incomplete until defects discovered during validation are linked here.")
+    rows = "".join(
+        f"<tr><td><a href=\"../scenarios/{e(slug)}/\">{e(scenario_id)}</a></td><td><a href=\"{e(issue['url'])}\">{e(issue['id'])}</a></td><td>{badge(issue['severity'])}</td><td>{e(issue['title'])}</td><td>{badge(issue['status'])}</td></tr>"
+        for scenario_id, slug, issue in issues
+    )
+    table = f"<table><caption>Linked scenario defects</caption><thead><tr><th>Scenario</th><th>Issue</th><th>Severity</th><th>Title</th><th>Status</th></tr></thead><tbody>{rows}</tbody></table>"
+    return hero("Issues", f"{len(issues)} observed defect links from evidence-backed runs.") + section("Linked Defects", table)
 
 
 def page(title: str, depth: int, body: str) -> str:

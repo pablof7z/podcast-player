@@ -1,0 +1,359 @@
+{
+  "scenario_id": "LIB-001",
+  "artifacts": [
+    {
+      "id": "c1-screenshot-all-podcasts",
+      "type": "screenshot",
+      "path": "assets/scenarios/c1-view-library/20260705T193400Z-all-podcasts.jpg",
+      "description": "All Podcasts screen showing seeded This American Life subscription row.",
+      "step_id": "step-02-action",
+      "captured_at": "2026-07-05T19:34:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "8e26182c3ac927556b81da8092e7335034adcdd2acc13001c016d5b6659b76f6",
+      "alt": "All Podcasts screen with This American Life row, Following state, and search/add controls.",
+      "caption": "All Podcasts lists the seeded subscription but does not show filters or unplayed-count indicators.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "c1-screenshot-show-detail",
+      "type": "screenshot",
+      "path": "assets/scenarios/c1-view-library/20260705T193500Z-show-detail.jpg",
+      "description": "Show detail screen for This American Life after opening the podcast row.",
+      "step_id": "step-03-result",
+      "captured_at": "2026-07-05T19:35:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "20ead94559c03b30f1926ba67d55f40dee48f7d0d44d626e53fea2a6b3977425",
+      "alt": "This American Life show detail with three episode rows and Show options button.",
+      "caption": "Podcast navigation reached show detail and exposed episode rows.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "c1-ui-tree",
+      "type": "ui_tree",
+      "path": "assets/scenarios/c1-view-library/20260705T193500Z-ui-tree-excerpt.json",
+      "description": "XcodeBuildMCP semantic UI-tree excerpts for All Podcasts and show detail.",
+      "captured_at": "2026-07-05T19:35:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "pod0-local-run-log",
+      "type": "log",
+      "path": "assets/scenarios/shared/20260705T193205Z-run-log-references.json",
+      "description": "Shared build, runtime, simulator, and command log references for the local evidence run.",
+      "captured_at": "2026-07-05T19:32:05Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    }
+  ],
+  "merge": {
+    "run": {
+      "run_id": "pod0-local-20260705T193400Z-c1",
+      "app_build": "Pod0 1.0.0 build 202606011109",
+      "started_at": "2026-07-05T19:34:00Z",
+      "completed_at": "2026-07-05T19:35:00Z",
+      "executor": "Codex via XcodeBuildMCP",
+      "provider_mode": "none",
+      "device_matrix": [
+        {
+          "name": "iPhone 17",
+          "os_version": "iOS 26.2",
+          "form_factor": "iphone",
+          "udid": "B4E1F31A-044B-4860-860B-C325BE5CC36E"
+        }
+      ],
+      "environment": {
+        "locale": "en_US",
+        "appearance": "light",
+        "dynamic_type": "unspecified",
+        "reduce_motion": false,
+        "reduce_transparency": false,
+        "network_condition": "local simulator default",
+        "launch_arguments": ["--UITestSeed"]
+      },
+      "fixtures": ["UITestSeed subscribed This American Life library"],
+      "cassettes": [],
+      "live_dependency_rationale": "No paid provider or live LLM dependency is used by this library path."
+    },
+    "execution": {
+      "status": "pass_with_issues",
+      "attempts": [
+        {
+          "id": "attempt-001",
+          "status": "pass_with_issues",
+          "started_at": "2026-07-05T19:34:00Z",
+          "completed_at": "2026-07-05T19:35:00Z",
+          "executor": "Codex via XcodeBuildMCP",
+          "tools": ["mcp__xcode.snapshot_ui", "mcp__xcode.tap", "mcp__xcode.screenshot"],
+          "commands": ["build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=--UITestSeed"],
+          "branches": [
+            {
+              "id": "library-list-and-open-show",
+              "status": "pass_with_issues",
+              "trigger": "Open All Podcasts, inspect subscription row, and open the seeded show.",
+              "expected": "Subscribed podcast appears and opens show detail."
+            },
+            {
+              "id": "adjacent-list-management",
+              "status": "not_run",
+              "trigger": "Filter/category scope and long-press unsubscribe from legacy C1.",
+              "expected": "Covered by adjacent LIB rows, not by LIB-001."
+            }
+          ],
+          "notes": "Current evidence covers LIB-001's podcast list row and show-detail navigation. Filter/category and long-press branches are adjacent follow-up.",
+          "evidence_refs": ["c1-screenshot-all-podcasts", "c1-screenshot-show-detail", "c1-ui-tree", "pod0-local-run-log"]
+        }
+      ],
+      "retry_policy": "No retry was needed for list/show capture. Remaining branches require explicit follow-up evidence.",
+      "branch_coverage": [
+        {
+          "id": "library-list-and-open-show",
+          "status": "pass_with_issues",
+          "trigger": "Open All Podcasts and show detail.",
+          "expected": "The seeded subscribed show is visible and navigable."
+        },
+        {
+          "id": "adjacent-list-management",
+          "status": "not_run",
+          "trigger": "Exercise filter/category and long-press unsubscribe controls.",
+          "expected": "Adjacent LIB rows or legacy C1 follow-up prove list-management behavior."
+        }
+      ]
+    },
+    "verdict": {
+      "overall": "pass_with_issues",
+      "summary": "LIB-001 is evidence-backed: the seeded subscribed show appears with title, provider/author summary, episode count, artwork, and navigation to show detail. The broader legacy C1 filter/context-menu branches remain out of scope for this catalog row.",
+      "score_gate_explanation": "Current artifacts prove LIB-001's library row and show-detail path, with follow-up gaps limited to adjacent legacy C1 branches.",
+      "reviewer": "Codex",
+      "reviewed_at": "2026-07-05T19:35:00Z"
+    },
+    "sections": {
+      "attempted_test": {
+        "summary": "Executed LIB-001 locally with XcodeBuildMCP on iPhone 17 using --UITestSeed. Captured All Podcasts and This American Life show detail.",
+        "evidence_refs": ["c1-screenshot-all-podcasts", "c1-screenshot-show-detail", "c1-ui-tree", "pod0-local-run-log"]
+      },
+      "actual_result": {
+        "summary": "All Podcasts listed This American Life with Following state and 3 episodes. Show detail opened and showed three episode rows. Adjacent filter and context-menu behavior is not part of LIB-001 and remains tracked as follow-up.",
+        "evidence_refs": ["c1-screenshot-all-podcasts", "c1-screenshot-show-detail", "c1-ui-tree"]
+      },
+      "artifacts": {
+        "summary": "Attached two current screenshots, a semantic UI-tree excerpt, and shared log references.",
+        "evidence_refs": ["c1-screenshot-all-podcasts", "c1-screenshot-show-detail", "c1-ui-tree", "pod0-local-run-log"]
+      },
+      "review_skill_grounding": {
+        "summary": "Critique uses npx-selected ui-ux-specialist criteria: clear hierarchy, target size, predictable navigation, visible state, and evidence-backed accessibility/performance notes.",
+        "evidence_refs": ["rubric:review-skill-grounding", "c1-ui-tree"]
+      },
+      "ui_polish_report": {
+        "summary": "The list/show-detail hierarchy is readable and native, but the list lacks visible unplayed-count and filter/category affordances expected by the scenario.",
+        "evidence_refs": ["c1-screenshot-all-podcasts", "c1-screenshot-show-detail"]
+      },
+      "ux_polish_report": {
+        "summary": "Subscription discovery and show navigation are understandable; category/filter and long-press unsubscribe paths are not discoverable from captured evidence.",
+        "evidence_refs": ["c1-screenshot-all-podcasts", "c1-ui-tree"]
+      },
+      "performance_metrics": {
+        "summary": "Local UI snapshots captured 69 nodes on All Podcasts and 128 nodes on show detail without visible loading delay.",
+        "evidence_refs": ["c1-ui-tree"]
+      },
+      "accessibility_dynamic_type": {
+        "summary": "Semantic labels are present for podcast and episode rows, but no VoiceOver/Dynamic Type/contrast audit was performed.",
+        "evidence_refs": ["c1-ui-tree"],
+        "notes": ["Missing formal accessibility audit keeps this dimension incomplete."]
+      },
+      "verdict": {
+        "summary": "Evidence-backed pass with issues for LIB-001. The subscribed show row and detail path are captured; adjacent list-management branches remain open.",
+        "evidence_refs": ["c1-screenshot-all-podcasts", "c1-screenshot-show-detail", "c1-ui-tree"]
+      }
+    },
+    "dimension_scores": {
+      "attempted_test": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "A current simulator run was performed, but not every branch was exercised.",
+        "evidence_refs": ["c1-ui-tree", "pod0-local-run-log"]
+      },
+      "actual_result": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "The observed list/show path satisfies LIB-001; adjacent filter and context-menu behavior remain separate follow-up.",
+        "evidence_refs": ["c1-screenshot-all-podcasts", "c1-screenshot-show-detail"]
+      },
+      "artifacts": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Screenshots, UI tree, and log references are attached; no video or full accessibility audit is attached.",
+        "evidence_refs": ["c1-screenshot-all-podcasts", "c1-screenshot-show-detail", "c1-ui-tree", "pod0-local-run-log"]
+      },
+      "ui_polish": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Readable list/detail UI for LIB-001; filter/unplayed-count variants are adjacent follow-up.",
+        "evidence_refs": ["c1-screenshot-all-podcasts"]
+      },
+      "ux_polish": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Show discovery and navigation work for LIB-001; additional list-management tasks are not part of this row.",
+        "evidence_refs": ["c1-screenshot-show-detail"]
+      },
+      "performance": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Snapshot node counts were collected and no visible wait was observed; no Instruments trace is attached.",
+        "evidence_refs": ["c1-ui-tree"]
+      },
+      "evidence_confidence": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Current, dated simulator evidence exists for part of the scenario.",
+        "evidence_refs": ["pod0-local-run-log"]
+      },
+      "verdict": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "LIB-001 is validated with caveats for adjacent untested branches.",
+        "evidence_refs": ["c1-ui-tree"]
+      }
+    },
+    "group_scores": {
+      "functional_correctness": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Core LIB-001 list/show path works; adjacent filter/context-menu branches remain untested.",
+        "dimension_refs": ["actual_result", "flow", "expected_behavior"]
+      },
+      "evidence_reproducibility": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Screenshots, UI trees, and log references make the captured path reproducible.",
+        "dimension_refs": ["artifacts", "device_os_matrix", "evidence_confidence"]
+      },
+      "product_experience": {
+        "score": 2,
+        "status": "incomplete",
+        "rationale": "List/detail UI is coherent, but expected filters/unplayed count are unresolved.",
+        "dimension_refs": ["ui_polish", "ux_polish", "information_architecture"]
+      },
+      "engineering_quality": {
+        "score": 2,
+        "status": "incomplete",
+        "rationale": "Node-count evidence exists; accessibility/performance audits are not complete.",
+        "dimension_refs": ["performance", "accessibility_dynamic_type", "observability"]
+      },
+      "follow_through": {
+        "score": 2,
+        "status": "incomplete",
+        "rationale": "No app defect was filed; remaining gaps need scenario follow-up.",
+        "dimension_refs": ["risks_follow_up", "next_actions", "verdict"]
+      }
+    },
+    "quality_review": {
+      "ui": {
+        "status": "incomplete",
+        "summary": "Readable native list/detail UI; missing filter and unplayed-count evidence prevents a pass.",
+        "checks": ["visual hierarchy", "row state", "platform-native controls"],
+        "evidence_refs": ["c1-screenshot-all-podcasts", "c1-screenshot-show-detail"],
+        "gaps": ["Capture filter/category and unplayed-count behavior."]
+      },
+      "ux": {
+        "status": "incomplete",
+        "summary": "Navigation to show detail is clear; remaining list-management tasks are not validated.",
+        "checks": ["task clarity", "discoverability", "predictable navigation"],
+        "evidence_refs": ["c1-ui-tree"],
+        "gaps": ["Capture context menu and filter escape path."]
+      },
+      "performance": {
+        "status": "pass_with_issues",
+        "summary": "Semantic snapshot counts are captured for the two screens; no visible load delay was observed.",
+        "checks": ["snapshot node count", "screen responsiveness"],
+        "evidence_refs": ["c1-ui-tree"],
+        "gaps": ["No Instruments trace."]
+      },
+      "accessibility": {
+        "status": "incomplete",
+        "summary": "Rows expose useful labels, but no VoiceOver/Dynamic Type/contrast pass was run.",
+        "checks": ["semantic labels", "target size", "Dynamic Type"],
+        "evidence_refs": ["c1-ui-tree"],
+        "gaps": ["Formal accessibility audit missing."]
+      }
+    },
+    "evidence": {
+      "required_kinds": ["source_doc", "screenshot", "ui_tree", "log", "metric_trace", "accessibility_audit"],
+      "missing": [
+        {
+          "kind": "accessibility_audit",
+          "reason": "VoiceOver, Dynamic Type, and contrast were not audited.",
+          "blocks_dimensions": ["accessibility_dynamic_type", "touch_ergonomics"],
+          "required": true
+        }
+      ],
+      "redaction_summary": "Screenshots and UI-tree excerpts contain seeded public podcast data only. No secrets or private keys are exposed."
+    },
+    "metrics": [
+      {
+        "id": "c1-all-podcasts-node-count",
+        "name": "All Podcasts UI-tree node count",
+        "value": 69,
+        "unit": "nodes",
+        "budget": "Informational local metric",
+        "status": "pass",
+        "method": "XcodeBuildMCP snapshot_ui",
+        "evidence_refs": ["c1-ui-tree"]
+      },
+      {
+        "id": "c1-show-detail-node-count",
+        "name": "Show detail UI-tree node count",
+        "value": 128,
+        "unit": "nodes",
+        "budget": "Informational local metric",
+        "status": "pass",
+        "method": "XcodeBuildMCP snapshot_ui",
+        "evidence_refs": ["c1-ui-tree"]
+      }
+    ],
+    "instrumentation_gaps": [
+      {
+        "id": "c1-accessibility-audit-missing",
+        "severity": "major",
+        "summary": "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or target-size audit was run.",
+        "affected_dimensions": ["accessibility_dynamic_type", "touch_ergonomics"],
+        "owner": "validation-agent",
+        "status": "open"
+      }
+    ],
+    "risks": [
+      {
+        "id": "risk-lib001-adjacent-coverage",
+        "severity": "minor",
+        "priority": "p2",
+        "status": "open",
+        "title": "LIB-001 evidence should not be overread as covering adjacent filter or unsubscribe scenarios.",
+        "affected_dimensions": ["regression_risk", "product_cluster_coherence"],
+        "mitigation": "Keep adjacent LIB rows separate and collect their own evidence."
+      }
+    ],
+    "next_actions": [
+      {
+        "id": "capture-adjacent-filter-rows",
+        "title": "Capture separate evidence for LIB filter/category rows.",
+        "status": "open",
+        "owner": "validation-agent"
+      },
+      {
+        "id": "capture-adjacent-unsubscribe-row",
+        "title": "Capture separate evidence for unsubscribe behavior.",
+        "status": "open",
+        "owner": "validation-agent"
+      }
+    ]
+  }
+}

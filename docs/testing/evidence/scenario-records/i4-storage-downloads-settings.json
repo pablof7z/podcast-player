@@ -1,0 +1,470 @@
+{
+  "scenario_id": "SET-005",
+  "artifacts": [
+    {
+      "id": "i4-screenshot-downloads-list",
+      "type": "screenshot",
+      "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194050Z-downloads-list.jpg",
+      "description": "Downloads manager showing one saved downloaded episode at 240 KB.",
+      "step_id": "step-01-preconditions",
+      "captured_at": "2026-07-05T19:40:50Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "008aa94859ac120f0da9ee48c01bafd61b7458f9abc5bca098d939d99ad6731c",
+      "alt": "Downloads manager with one saved This American Life episode marked Downloaded 240 KB.",
+      "caption": "Downloads manager reports one saved 240 KB download.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "i4-screenshot-settings-system-row",
+      "type": "screenshot",
+      "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194100Z-settings-system-row.jpg",
+      "description": "Settings lower section with Data & Storage row showing 4 records.",
+      "step_id": "step-02-action",
+      "captured_at": "2026-07-05T19:41:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "c456fac064b73871ae8ed2730a78002e7e390754403533b885e5865a8ec38d15",
+      "alt": "Settings list showing Data & Storage, 4 records.",
+      "caption": "Data & Storage is reachable from Settings System section.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "i4-screenshot-data-storage-main",
+      "type": "screenshot",
+      "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194110Z-data-storage-main.jpg",
+      "description": "Data & Storage main screen with Export Data, Downloads & Disk, and Clear All Data.",
+      "step_id": "step-02-action",
+      "captured_at": "2026-07-05T19:41:10Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "60cf770c575bda104dc0b4ee415aca2fe0f473add710738646e87f3ffc6bd103",
+      "alt": "Data & Storage screen with Export Data, Downloads & Disk, and Clear All Data controls.",
+      "caption": "Data & Storage exposes the expected main actions.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "i4-screenshot-storage-detail-zero-kb",
+      "type": "screenshot",
+      "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194120Z-storage-detail-zero-kb.jpg",
+      "description": "Downloads & Disk detail incorrectly showing Zero KB and Nothing on disk.",
+      "step_id": "step-03-result",
+      "captured_at": "2026-07-05T19:41:20Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "33d1e243ed134cba0a4de3683d005001ec7655aa4aaefc2b715dc2c5adc4485e",
+      "alt": "Storage detail showing Zero KB and Nothing on disk.",
+      "caption": "Storage detail contradicts the downloads manager saved 240 KB item.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "i4-screenshot-export-data",
+      "type": "screenshot",
+      "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194130Z-export-data.jpg",
+      "description": "Export Data detail showing 4 records and JSON schema v1.",
+      "step_id": "step-04-exit",
+      "captured_at": "2026-07-05T19:41:30Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "8e05d1c746f68b7296b7a39b7b939441cb14b103e6335ffbfa894cf86897c414",
+      "alt": "Export Data screen with record breakdown and Export & Share button.",
+      "caption": "Export path is visible and record count matches the visible breakdown.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "i4-ui-tree",
+      "type": "ui_tree",
+      "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194130Z-ui-tree-excerpt.json",
+      "description": "XcodeBuildMCP semantic UI-tree excerpts for Downloads, Data & Storage, disk detail, and export.",
+      "captured_at": "2026-07-05T19:41:30Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "pod0-local-run-log",
+      "type": "log",
+      "path": "assets/scenarios/shared/20260705T193205Z-run-log-references.json",
+      "description": "Shared build, runtime, simulator, and command log references for the local evidence run.",
+      "captured_at": "2026-07-05T19:32:05Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    }
+  ],
+  "merge": {
+    "run": {
+      "run_id": "pod0-local-20260705T194050Z-set-005",
+      "app_build": "Pod0 1.0.0 build 202606011109",
+      "started_at": "2026-07-05T19:40:50Z",
+      "completed_at": "2026-07-05T19:41:30Z",
+      "executor": "Codex via XcodeBuildMCP",
+      "provider_mode": "none",
+      "device_matrix": [
+        {
+          "name": "iPhone 17",
+          "os_version": "iOS 26.2",
+          "form_factor": "iphone",
+          "udid": "B4E1F31A-044B-4860-860B-C325BE5CC36E"
+        }
+      ],
+      "environment": {
+        "locale": "en_US",
+        "appearance": "light",
+        "dynamic_type": "unspecified",
+        "reduce_motion": false,
+        "reduce_transparency": false,
+        "network_condition": "local simulator default",
+        "launch_arguments": ["--UITestSeed"]
+      },
+      "fixtures": ["UITestSeed downloaded episode and storage settings state"],
+      "cassettes": [],
+      "live_dependency_rationale": "No paid provider or live LLM dependency is used by storage/download settings."
+    },
+    "execution": {
+      "status": "fail",
+      "attempts": [
+        {
+          "id": "attempt-001",
+          "status": "fail",
+          "started_at": "2026-07-05T19:40:50Z",
+          "completed_at": "2026-07-05T19:41:30Z",
+          "executor": "Codex via XcodeBuildMCP",
+          "tools": ["mcp__xcode.tap", "mcp__xcode.swipe", "mcp__xcode.snapshot_ui", "mcp__xcode.screenshot"],
+          "commands": ["build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=--UITestSeed"],
+          "branches": [
+            {
+              "id": "downloads-list",
+              "status": "pass",
+              "trigger": "Settings -> Downloads",
+              "expected": "Downloads manager lists saved download and removal affordances."
+            },
+            {
+              "id": "storage-summary",
+              "status": "fail",
+              "trigger": "Settings -> Data & Storage -> Downloads & Disk",
+              "expected": "Storage detail reflects downloaded bytes."
+            },
+            {
+              "id": "export-data",
+              "status": "pass",
+              "trigger": "Settings -> Data & Storage -> Export Data",
+              "expected": "Export detail lists record count and share path."
+            }
+          ],
+          "notes": "Downloads manager reports one saved 240 KB episode, but Downloads & Disk reports Zero KB and Nothing on disk. Export Data shows 4 records and JSON schema v1.",
+          "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-data-storage-main", "i4-screenshot-storage-detail-zero-kb", "i4-screenshot-export-data", "i4-ui-tree", "pod0-local-run-log"]
+        }
+      ],
+      "retry_policy": "Re-run I4 after fixing #717; destructive Clear All Data remains a deliberate teardown branch.",
+      "branch_coverage": [
+        {
+          "id": "downloads-list",
+          "status": "pass",
+          "trigger": "Open Downloads manager.",
+          "expected": "Saved download is visible."
+        },
+        {
+          "id": "storage-summary",
+          "status": "fail",
+          "trigger": "Open Downloads & Disk.",
+          "expected": "Storage summary matches saved downloads."
+        },
+        {
+          "id": "export-data",
+          "status": "pass",
+          "trigger": "Open Export Data.",
+          "expected": "Export screen lists records and share action."
+        },
+        {
+          "id": "clear-all-data",
+          "status": "not_run",
+          "trigger": "Tap Clear All Data and confirm.",
+          "expected": "Content is wiped while credentials and identity are preserved."
+        }
+      ]
+    },
+    "verdict": {
+      "overall": "fail",
+      "summary": "SET-005 fails because Downloads reports one saved 240 KB episode while Downloads & Disk reports Zero KB and Nothing on disk in the same seeded run.",
+      "score_gate_explanation": "The storage accounting contradiction is a current functional defect tracked by #717.",
+      "reviewer": "Codex",
+      "reviewed_at": "2026-07-05T19:41:30Z"
+    },
+    "sections": {
+      "attempted_test": {
+        "summary": "Executed SET-005 locally with XcodeBuildMCP using --UITestSeed. Captured Downloads manager, Data & Storage main, Downloads & Disk, and Export Data.",
+        "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-data-storage-main", "i4-screenshot-storage-detail-zero-kb", "i4-screenshot-export-data", "i4-ui-tree", "pod0-local-run-log"]
+      },
+      "actual_result": {
+        "summary": "Downloads manager shows one saved downloaded episode at 240 KB. Downloads & Disk reports Zero KB and Nothing on disk. Export Data shows 4 records with JSON schema v1.",
+        "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-storage-detail-zero-kb", "i4-screenshot-export-data", "i4-ui-tree"],
+        "notes": ["Filed https://github.com/pablof7z/podcast-player/issues/717."]
+      },
+      "artifacts": {
+        "summary": "Attached five current screenshots, a semantic UI-tree excerpt, and shared log references.",
+        "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-settings-system-row", "i4-screenshot-data-storage-main", "i4-screenshot-storage-detail-zero-kb", "i4-screenshot-export-data", "i4-ui-tree", "pod0-local-run-log"]
+      },
+      "ui_polish_report": {
+        "summary": "Downloads, Data & Storage, and Export Data screens are readable and native; the failing state is data consistency, not visual layout.",
+        "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-data-storage-main", "i4-screenshot-export-data"]
+      },
+      "ux_polish_report": {
+        "summary": "Storage accounting contradiction breaks user trust in cleanup and disk usage. Export copy correctly excludes API and private keys.",
+        "evidence_refs": ["i4-screenshot-storage-detail-zero-kb", "i4-screenshot-export-data"]
+      },
+      "performance_metrics": {
+        "summary": "Local UI-tree node counts were collected for Downloads (183), Data & Storage (171), Storage detail (174), and Export Data (213).",
+        "evidence_refs": ["i4-ui-tree"]
+      },
+      "privacy_security": {
+        "summary": "Export Data copy states API keys and the Nostr private key are never included; Clear All Data copy states credentials and identity are preserved.",
+        "evidence_refs": ["i4-screenshot-data-storage-main", "i4-screenshot-export-data"]
+      },
+      "defects_issues_filed": {
+        "summary": "Filed #717 for the Downloads & Disk storage mismatch.",
+        "evidence_refs": ["i4-ui-tree"],
+        "notes": ["https://github.com/pablof7z/podcast-player/issues/717"]
+      },
+      "verdict": {
+        "summary": "Evidence-backed fail for SET-005 due to storage accounting mismatch. Clear All Data teardown remains intentionally unrun.",
+        "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-storage-detail-zero-kb", "i4-ui-tree"]
+      }
+    },
+    "dimension_scores": {
+      "attempted_test": {
+        "score": 4,
+        "status": "pass",
+        "rationale": "A current simulator run exercised downloads, data/storage, disk detail, and export paths.",
+        "evidence_refs": ["i4-ui-tree", "pod0-local-run-log"]
+      },
+      "actual_result": {
+        "score": 1,
+        "status": "fail",
+        "rationale": "Storage detail contradicts the downloads manager in the same run.",
+        "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-storage-detail-zero-kb"],
+        "issue_refs": ["#717"]
+      },
+      "artifacts": {
+        "score": 4,
+        "status": "pass",
+        "rationale": "Screenshots, UI tree, metrics, log references, and issue link are attached.",
+        "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-data-storage-main", "i4-screenshot-storage-detail-zero-kb", "i4-screenshot-export-data", "i4-ui-tree"]
+      },
+      "ui_polish": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "The screens are readable and stable; the failure is data inconsistency.",
+        "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-data-storage-main"]
+      },
+      "ux_polish": {
+        "score": 1,
+        "status": "fail",
+        "rationale": "Conflicting storage numbers make disk management untrustworthy.",
+        "evidence_refs": ["i4-screenshot-storage-detail-zero-kb"],
+        "issue_refs": ["#717"]
+      },
+      "performance": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Node-count metrics are attached; no Instruments trace is attached.",
+        "evidence_refs": ["i4-ui-tree"]
+      },
+      "privacy_security": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Export and clear-data copy make credential/private-key boundaries explicit; destructive teardown was not run.",
+        "evidence_refs": ["i4-screenshot-data-storage-main", "i4-screenshot-export-data"]
+      },
+      "defects_issues_filed": {
+        "score": 4,
+        "status": "pass",
+        "rationale": "The real defect is filed as #717 with current evidence references.",
+        "evidence_refs": ["i4-ui-tree"],
+        "issue_refs": ["#717"]
+      },
+      "verdict": {
+        "score": 1,
+        "status": "fail",
+        "rationale": "SET-005 fails until #717 is resolved and revalidated.",
+        "evidence_refs": ["i4-ui-tree"],
+        "issue_refs": ["#717"]
+      }
+    },
+    "group_scores": {
+      "functional_correctness": {
+        "score": 1,
+        "status": "fail",
+        "rationale": "Core storage summary acceptance fails.",
+        "dimension_refs": ["actual_result", "expected_behavior", "error_recovery"]
+      },
+      "evidence_reproducibility": {
+        "score": 4,
+        "status": "pass",
+        "rationale": "Current screenshots, UI tree, metrics, issue link, and log references are attached.",
+        "dimension_refs": ["artifacts", "device_os_matrix", "evidence_confidence", "defects_issues_filed"]
+      },
+      "product_experience": {
+        "score": 2,
+        "status": "pass_with_issues",
+        "rationale": "The UI is coherent, but contradictory storage numbers hurt trust.",
+        "dimension_refs": ["ui_polish", "ux_polish", "information_architecture"]
+      },
+      "engineering_quality": {
+        "score": 1,
+        "status": "fail",
+        "rationale": "Storage accounting is inconsistent between two app surfaces.",
+        "dimension_refs": ["performance", "privacy_security", "observability"]
+      },
+      "follow_through": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "A GitHub issue is filed; revalidation remains open.",
+        "dimension_refs": ["defects_issues_filed", "next_actions", "verdict"]
+      }
+    },
+    "quality_review": {
+      "ui": {
+        "status": "pass_with_issues",
+        "summary": "The settings surfaces are legible and use native controls; the storage detail content is wrong.",
+        "checks": ["layout", "visual hierarchy", "destructive action clarity"],
+        "evidence_refs": ["i4-screenshot-downloads-list", "i4-screenshot-data-storage-main", "i4-screenshot-storage-detail-zero-kb"],
+        "gaps": ["Revalidate after #717."]
+      },
+      "ux": {
+        "status": "fail",
+        "summary": "Users see one saved download, then a Zero KB disk report. This breaks the disk-management task.",
+        "checks": ["task clarity", "data consistency", "recovery trust"],
+        "evidence_refs": ["i4-ui-tree"],
+        "gaps": ["Fix and revalidate #717."]
+      },
+      "performance": {
+        "status": "pass_with_issues",
+        "summary": "Node-count metrics are captured for all I4 screens; no Instruments trace is attached.",
+        "checks": ["screen responsiveness", "snapshot node count"],
+        "evidence_refs": ["i4-ui-tree"],
+        "gaps": ["No Instruments trace."]
+      },
+      "privacy_security": {
+        "status": "pass_with_issues",
+        "summary": "Export and clear-data copy state credential/private-key boundaries. Clear All Data was not executed.",
+        "checks": ["secret exclusion copy", "destructive-action copy", "redaction"],
+        "evidence_refs": ["i4-screenshot-data-storage-main", "i4-screenshot-export-data"],
+        "gaps": ["Destructive teardown branch skipped."]
+      }
+    },
+    "evidence": {
+      "required_kinds": ["source_doc", "screenshot", "ui_tree", "log", "metric_trace", "accessibility_audit"],
+      "missing": [
+        {
+          "kind": "clear-all-data-teardown",
+          "reason": "Destructive Clear All Data branch was intentionally skipped.",
+          "blocks_dimensions": ["offline_resume_behavior", "privacy_security"],
+          "required": true
+        },
+        {
+          "kind": "accessibility_audit",
+          "reason": "VoiceOver, Dynamic Type, and contrast were not audited.",
+          "blocks_dimensions": ["accessibility_dynamic_type", "touch_ergonomics"],
+          "required": true
+        }
+      ],
+      "redaction_summary": "Screenshots and UI-tree excerpts contain seeded public podcast/settings data only. No API keys or private keys are exposed."
+    },
+    "metrics": [
+      {
+        "id": "i4-downloads-list-saved-kb",
+        "name": "Downloads manager saved download size",
+        "value": 240,
+        "unit": "KB",
+        "budget": "Should match or be accounted for by storage detail",
+        "status": "pass",
+        "method": "Downloads UI tree text",
+        "evidence_refs": ["i4-ui-tree", "i4-screenshot-downloads-list"]
+      },
+      {
+        "id": "i4-storage-detail-kb",
+        "name": "Downloads & Disk reported storage",
+        "value": 0,
+        "unit": "KB",
+        "budget": "Should account for saved downloaded episode bytes",
+        "status": "fail",
+        "method": "Storage detail UI tree text",
+        "evidence_refs": ["i4-ui-tree", "i4-screenshot-storage-detail-zero-kb"]
+      },
+      {
+        "id": "i4-export-record-count",
+        "name": "Export Data visible record count",
+        "value": 4,
+        "unit": "records",
+        "budget": "Visible count should match category breakdown",
+        "status": "pass",
+        "method": "Export Data UI tree text",
+        "evidence_refs": ["i4-ui-tree", "i4-screenshot-export-data"]
+      }
+    ],
+    "instrumentation_gaps": [
+      {
+        "id": "i4-storage-accounting-defect",
+        "severity": "major",
+        "summary": "Downloads & Disk reports Zero KB while Downloads reports one saved 240 KB episode.",
+        "affected_dimensions": ["actual_result", "ux_polish", "verdict"],
+        "owner": "app-team",
+        "status": "open"
+      },
+      {
+        "id": "i4-clear-all-data-skipped",
+        "severity": "minor",
+        "summary": "Destructive Clear All Data teardown branch was skipped.",
+        "affected_dimensions": ["privacy_security", "offline_resume_behavior"],
+        "owner": "validation-agent",
+        "status": "open"
+      }
+    ],
+    "risks": [
+      {
+        "id": "risk-i4-storage-trust",
+        "severity": "major",
+        "priority": "p0",
+        "status": "open",
+        "title": "Users cannot trust disk usage or cleanup if downloads and storage disagree.",
+        "affected_dimensions": ["actual_result", "ux_polish", "verdict"],
+        "mitigation": "Fix #717 and re-run I4 with the same seeded downloaded episode."
+      }
+    ],
+    "issues": [
+      {
+        "id": "#717",
+        "url": "https://github.com/pablof7z/podcast-player/issues/717",
+        "severity": "major",
+        "title": "I4/SET-005: Downloads & Disk reports Zero KB while Downloads shows a saved 240 KB episode",
+        "affected_dimensions": ["actual_result", "ux_polish", "performance", "verdict"],
+        "status": "open",
+        "owner": "unowned"
+      }
+    ],
+    "next_actions": [
+      {
+        "id": "fix-storage-accounting",
+        "title": "Fix Downloads & Disk accounting so it matches saved downloads or explains exclusions.",
+        "status": "open",
+        "owner": "app-team",
+        "url": "https://github.com/pablof7z/podcast-player/issues/717"
+      },
+      {
+        "id": "rerun-i4-after-fix",
+        "title": "Re-run SET-005 and capture Downloads, Downloads & Disk, and Export Data after the fix.",
+        "status": "blocked",
+        "owner": "validation-agent",
+        "url": "https://github.com/pablof7z/podcast-player/issues/717"
+      }
+    ]
+  }
+}

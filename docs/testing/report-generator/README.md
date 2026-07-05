@@ -10,6 +10,12 @@ python3 docs/testing/report-generator/generate_scenario_report.py \
   --out build/pod0-scenario-report
 ```
 
+Evidence-backed scenario records live under `docs/testing/evidence/`. The
+generator reads `docs/testing/evidence/scenario-records/*.json` as overlays on
+top of catalog-derived scaffold records, copies
+`docs/testing/evidence/assets/` into the generated `assets/` directory, and
+keeps untouched catalog rows scaffolded as `incomplete`.
+
 The generator is intentionally strict:
 
 - The catalog `INDEX.md` total must match the parsed row count.

@@ -1,0 +1,43 @@
+{
+  "captured_at": "2026-07-05T19:32:05Z",
+  "executor": "Codex via XcodeBuildMCP",
+  "worktree": "/Users/customer/Work/podcast-player-pod0-evidence-pack",
+  "branch": "codex/pod0-evidence-validation-pack",
+  "base_source_commit": "dd5a3d48a14f",
+  "device": {
+    "name": "iPhone 17",
+    "os_version": "iOS 26.2",
+    "udid": "B4E1F31A-044B-4860-860B-C325BE5CC36E",
+    "form_factor": "iphone"
+  },
+  "build": {
+    "command": "mcp__xcode.build_run_sim",
+    "extra_args": ["-skipPackagePluginValidation"],
+    "launch_args": ["--UITestSeed"],
+    "duration_ms": 105402,
+    "app_path": "/Users/customer/Work/podcast-player-pod0-evidence-pack/build/xcode-derived-data/Build/Products/Debug-iphonesimulator/Podcastr.app",
+    "bundle_id": "io.f7z.podcast",
+    "build_log_path": "/Users/customer/Library/Developer/XcodeBuildMCP/workspaces/podcast-player-6e7e97d65fe1/logs/build_run_sim_2026-07-05T19-32-05-750Z_pid79199_fc9cb075.log",
+    "runtime_log_path": "/Users/customer/Library/Developer/XcodeBuildMCP/workspaces/podcast-player-6e7e97d65fe1/logs/io.f7z.podcast_2026-07-05T19-33-41-341Z_helperpid43048_ownerpid79199_4b0fda4a.log",
+    "os_log_path": "/Users/customer/Library/Developer/XcodeBuildMCP/workspaces/podcast-player-6e7e97d65fe1/logs/io.f7z.podcast_oslog_2026-07-05T19-33-51-112Z_helperpid43176_ownerpid79199_57fb0ada.log"
+  },
+  "relaunch": {
+    "command": "mcp__xcode.launch_app_sim",
+    "launch_args": ["--UITestSeed"],
+    "runtime_log_path": "/Users/customer/Library/Developer/XcodeBuildMCP/workspaces/podcast-player-6e7e97d65fe1/logs/io.f7z.podcast_2026-07-05T19-38-07-475Z_helperpid64840_ownerpid79199_4277ddbb.log",
+    "os_log_path": "/Users/customer/Library/Developer/XcodeBuildMCP/workspaces/podcast-player-6e7e97d65fe1/logs/io.f7z.podcast_oslog_2026-07-05T19-38-08-856Z_helperpid64882_ownerpid79199_517db8a1.log"
+  },
+  "build_diagnostics": {
+    "status": "succeeded",
+    "warnings": [
+      "search path target/aarch64-apple-ios-sim/release not found",
+      "search path ~/.cargo/target-shared/aarch64-apple-ios-sim/debug not found",
+      "search path ~/.cargo/target-shared/aarch64-apple-ios-sim/release not found",
+      "Swift warnings were non-blocking; see build log path for full details"
+    ]
+  },
+  "redaction": {
+    "status": "not_needed",
+    "notes": "This file stores local log references and command metadata only, not raw app logs or secrets."
+  }
+}

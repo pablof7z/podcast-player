@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from catalog import parse_catalog, slugify  # noqa: E402
 from contract import GENERATOR_VERSION, SCHEMA_VERSION, SITE_BASE, SKILL_GROUNDING  # noqa: E402
+from evidence import apply_evidence_overlays, copy_evidence_assets, load_evidence_overlays  # noqa: E402
 from records import build_report, has_observed_data, rollups_for, summary_for, tags_for_records, validate_output, validate_schema_contract  # noqa: E402
 from render import render_home, render_scenario_index, render_scenario_page, stylesheet, write_rollup_pages, write_tag_pages  # noqa: E402
 
@@ -37,12 +38,16 @@ PRESERVED_RECORD_FIELDS = [
 PRESERVED_OUTPUT_NAMES = {".git", ".gitignore", ".nojekyll", "CNAME", "assets"}
 
 
-def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Path | None = None) -> None:
-    issues = read_json(out / "data" / "issues.json", {"issues": [], "counts": {"open": 0, "fixed": 0}})
+def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Path | None = None, evidence: Path | None = None) -> None:
     previous_records = read_previous_records(out)
     records = [merge_previous_record(record, previous_records.get(record["scenario"]["slug"])) for record in records]
+    issues = issues_for_records(records)
+    if not issues["issues"]:
+        issues = read_json(out / "data" / "issues.json", {"issues": [], "counts": {"open": 0, "fixed": 0}})
     clean_output(out)
     copy_sources(catalog, out)
+    if evidence is not None:
+        copy_evidence_assets(evidence, out)
     if repo is not None:
         copy_repo_assets(repo, out)
     write_text(out / "styles.css", stylesheet())
@@ -115,6 +120,17 @@ def write_data_files(records: list[dict[str, Any]], out: Path, issues: dict[str,
     write_json(out / "data" / "schema-version.json", {"schema_version": SCHEMA_VERSION, "generator_version": GENERATOR_VERSION})
 
 
+def issues_for_records(records: list[dict[str, Any]]) -> dict[str, Any]:
+    issues: list[dict[str, Any]] = []
+    counts: dict[str, int] = {}
+    for record in records:
+        for issue in record["issues"]:
+            item = {**issue, "scenario_id": record["scenario"]["id"], "scenario_slug": record["scenario"]["slug"]}
+            issues.append(item)
+            counts[item["status"]] = counts.get(item["status"], 0) + 1
+    return {"issues": issues, "counts": dict(sorted(counts.items()))}
+
+
 def read_previous_records(out: Path) -> dict[str, dict[str, Any]]:
     previous: dict[str, dict[str, Any]] = {}
     for path in (out / "scenarios").glob("*/data.json"):
@@ -182,13 +198,15 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--catalog", default="docs/testing/scenarios/catalog", type=Path)
     parser.add_argument("--out", default="build/pod0-scenario-report", type=Path)
     parser.add_argument("--schema", default="docs/testing/scenario-report.schema.json", type=Path)
+    parser.add_argument("--evidence", default="docs/testing/evidence", type=Path)
     parser.add_argument("--site-base", default=SITE_BASE)
     args = parser.parse_args(argv)
     generated_at = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     scenarios = parse_catalog(args.catalog)
     records = [build_report(scenario, scenarios, Path.cwd(), generated_at, args.site_base) for scenario in scenarios]
+    apply_evidence_overlays(records, load_evidence_overlays(args.evidence))
     validate_schema_contract(records, args.schema)
-    write_site(records, args.out, args.catalog, Path.cwd())
+    write_site(records, args.out, args.catalog, Path.cwd(), args.evidence)
     digest = hashlib.sha256(json.dumps([summary_for(record) for record in records], sort_keys=True).encode()).hexdigest()[:12]
     print(f"Generated {len(records)} scenario pages at {args.out} ({digest})")
     return 0
