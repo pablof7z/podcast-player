@@ -264,8 +264,8 @@ def rollups_for(records: list[dict[str, Any]]) -> dict[str, Any]:
         "performance_required": sum(1 for r in records if "performance-required" in r["scenario"]["tags"]),
         "missing_evidence": missing_evidence_rollup(records),
         "instrumentation_gaps": count_gap_ids(records),
-        "average_dimension_scores": {dimension: 0 for dimension in SECTION_TO_DIMENSION.values()},
-        "average_group_scores": {group: 0 for group in GROUPS},
+        "average_dimension_scores": average_dimension_scores(records),
+        "average_group_scores": average_group_scores(records),
         "sources": [f"scenarios/{r['scenario']['slug']}/data.json" for r in records],
     }
 
@@ -319,6 +319,27 @@ def count_gap_ids(records: list[dict[str, Any]]) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
+def average_dimension_scores(records: list[dict[str, Any]]) -> dict[str, float]:
+    return {
+        dimension: average_score(record["dimension_scores"][dimension]["score"] for record in records)
+        for dimension in SECTION_TO_DIMENSION.values()
+    }
+
+
+def average_group_scores(records: list[dict[str, Any]]) -> dict[str, float]:
+    return {
+        group: average_score(record["group_scores"][group]["score"] for record in records)
+        for group in GROUPS
+    }
+
+
+def average_score(values: Any) -> float:
+    numeric = [value for value in values if isinstance(value, (int, float))]
+    if not numeric:
+        return 0.0
+    return round(sum(numeric) / len(numeric), 2)
+
+
 def validate_output(records: list[dict[str, Any]], out: Path) -> None:
     section_keys = set(SECTION_TO_DIMENSION.keys())
     dimension_keys = set(SECTION_TO_DIMENSION.values())
@@ -330,11 +351,12 @@ def validate_output(records: list[dict[str, Any]], out: Path) -> None:
             raise ValueError(f"{record['scenario']['id']} section key mismatch")
         if set(record["dimension_scores"]) != dimension_keys:
             raise ValueError(f"{record['scenario']['id']} dimension key mismatch")
-        if record["verdict"]["overall"] != "incomplete":
+        scaffold_only = record["execution"]["status"] == "not_run"
+        if scaffold_only and record["verdict"]["overall"] != "incomplete":
             raise ValueError(f"{record['scenario']['id']} scaffold must be incomplete")
         if not record["flow_steps"] or not record["execution"]["attempts"]:
             raise ValueError(f"{record['scenario']['id']} missing structured flow or attempt records")
-        if record["coherence"]["group_judgment"]["status"] != "incomplete":
+        if scaffold_only and record["coherence"]["group_judgment"]["status"] != "incomplete":
             raise ValueError(f"{record['scenario']['id']} scaffold group coherence must be incomplete")
         if set(record["quality_review"]) != {"ui", "ux", "performance", "accessibility", "reliability", "privacy_security", "content_localization", "controls_gestures", "offline_resume", "observability"}:
             raise ValueError(f"{record['scenario']['id']} quality review key mismatch")

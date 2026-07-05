@@ -14,13 +14,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from catalog import parse_catalog, slugify  # noqa: E402
 from contract import GENERATOR_VERSION, SCHEMA_VERSION, SITE_BASE, SKILL_GROUNDING  # noqa: E402
+from evidence import apply_evidence_overlays, copy_evidence_assets, load_evidence_overlays  # noqa: E402
 from records import build_report, rollups_for, summary_for, tags_for_records, validate_output, validate_schema_contract  # noqa: E402
 from render import render_home, render_scenario_index, render_scenario_page, stylesheet, write_rollup_pages, write_tag_pages  # noqa: E402
 
 
-def write_site(records: list[dict[str, Any]], out: Path, catalog: Path) -> None:
+def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, evidence: Path) -> None:
     clean_output(out)
     copy_sources(catalog, out)
+    copy_evidence_assets(evidence, out)
     write_text(out / "styles.css", stylesheet())
     write_json(out / "data" / "skill-grounding.json", {"generated_by": GENERATOR_VERSION, "skills": SKILL_GROUNDING})
     write_data_files(records, out)
@@ -57,8 +59,19 @@ def write_data_files(records: list[dict[str, Any]], out: Path) -> None:
     write_json(out / "data" / "scenarios.json", [summary_for(record) for record in records])
     write_json(out / "data" / "rollups.json", rollups_for(records))
     write_json(out / "data" / "tags.json", tags_for_records(records))
-    write_json(out / "data" / "issues.json", {"issues": [], "counts": {"open": 0, "fixed": 0}})
+    write_json(out / "data" / "issues.json", issues_for_records(records))
     write_json(out / "data" / "schema-version.json", {"schema_version": SCHEMA_VERSION, "generator_version": GENERATOR_VERSION})
+
+
+def issues_for_records(records: list[dict[str, Any]]) -> dict[str, Any]:
+    issues: list[dict[str, Any]] = []
+    counts: dict[str, int] = {}
+    for record in records:
+        for issue in record["issues"]:
+            item = {**issue, "scenario_id": record["scenario"]["id"], "scenario_slug": record["scenario"]["slug"]}
+            issues.append(item)
+            counts[item["status"]] = counts.get(item["status"], 0) + 1
+    return {"issues": issues, "counts": dict(sorted(counts.items()))}
 
 
 def group_by_category(records: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
@@ -82,13 +95,15 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--catalog", default="docs/testing/scenarios/catalog", type=Path)
     parser.add_argument("--out", default="build/pod0-scenario-report", type=Path)
     parser.add_argument("--schema", default="docs/testing/scenario-report.schema.json", type=Path)
+    parser.add_argument("--evidence", default="docs/testing/evidence", type=Path)
     parser.add_argument("--site-base", default=SITE_BASE)
     args = parser.parse_args(argv)
     generated_at = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     scenarios = parse_catalog(args.catalog)
     records = [build_report(scenario, scenarios, Path.cwd(), generated_at, args.site_base) for scenario in scenarios]
+    apply_evidence_overlays(records, load_evidence_overlays(args.evidence))
     validate_schema_contract(records, args.schema)
-    write_site(records, args.out, args.catalog)
+    write_site(records, args.out, args.catalog, args.evidence)
     digest = hashlib.sha256(json.dumps([summary_for(record) for record in records], sort_keys=True).encode()).hexdigest()[:12]
     print(f"Generated {len(records)} scenario pages at {args.out} ({digest})")
     return 0

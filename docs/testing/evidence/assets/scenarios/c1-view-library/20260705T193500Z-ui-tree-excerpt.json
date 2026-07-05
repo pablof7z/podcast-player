@@ -1,0 +1,52 @@
+{
+  "captured_at": "2026-07-05T19:35:00Z",
+  "tool": "mcp__xcode.snapshot_ui",
+  "simulator_id": "B4E1F31A-044B-4860-860B-C325BE5CC36E",
+  "device": "iPhone 17",
+  "os_version": "iOS 26.2",
+  "screens": [
+    {
+      "step_id": "step-01-all-podcasts",
+      "screen_hash": "1h83190",
+      "sequence": 2,
+      "node_count": 69,
+      "targets": [
+        "button: This American Life, 3 episodes - This American Life, Following",
+        "text-field: Search podcasts",
+        "button: Add show",
+        "text: This American Life",
+        "text: Following",
+        "image: chevron.forward"
+      ],
+      "texts": [
+        "This American Life",
+        "Following",
+        "3 episodes - This American Life"
+      ]
+    },
+    {
+      "step_id": "step-02-show-detail",
+      "screen_hash": "197oq8u",
+      "sequence": 5,
+      "node_count": 128,
+      "targets": [
+        "button: 137: The Book That Changed Your Life, 5m, unplayed, downloaded",
+        "button: 136: Once More with Feeling, 4m, unplayed",
+        "button: 135: Deep Space, 3m, unplayed",
+        "button: Show options",
+        "text-field: Search episodes"
+      ],
+      "texts": [
+        "This American Life",
+        "Weekly public radio.",
+        "3 episodes",
+        "Episodes",
+        "137: The Book That Changed Your Life",
+        "Books that shaped peoples lives."
+      ]
+    }
+  ],
+  "redaction": {
+    "status": "not_needed"
+  }
+}

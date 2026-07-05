@@ -1,0 +1,82 @@
+{
+  "captured_at": "2026-07-05T19:41:30Z",
+  "tool": "mcp__xcode.snapshot_ui",
+  "simulator_id": "B4E1F31A-044B-4860-860B-C325BE5CC36E",
+  "device": "iPhone 17",
+  "os_version": "iOS 26.2",
+  "screens": [
+    {
+      "step_id": "step-01-downloads-list",
+      "screen_hash": "1wqjba7",
+      "sequence": 24,
+      "node_count": 183,
+      "targets": [
+        "downloads-list",
+        "button: 137: The Book That Changed Your Life, This American Life, Downloaded, 240 KB",
+        "button: Delete Downloaded Episodes",
+        "button: Download actions"
+      ],
+      "texts": [
+        "0 Active",
+        "0 Failed",
+        "1 Saved",
+        "Downloaded",
+        "240 KB"
+      ]
+    },
+    {
+      "step_id": "step-02-data-storage-main",
+      "screen_hash": "0p3ow79",
+      "sequence": 27,
+      "node_count": 171,
+      "targets": [
+        "button: Export Data, 4 records",
+        "button: Downloads & Disk",
+        "button: Clear All Data"
+      ],
+      "texts": [
+        "Export Data",
+        "4 records",
+        "Permanently deletes every subscription, episode, note, friend, memory, and agent activity entry. API credentials and your Nostr identity are preserved."
+      ]
+    },
+    {
+      "step_id": "step-03-storage-detail",
+      "screen_hash": "0igehkz",
+      "sequence": 28,
+      "node_count": 174,
+      "targets": [
+        "switch: Delete after played, value 0"
+      ],
+      "texts": [
+        "Zero KB",
+        "Nothing on disk",
+        "No episodes downloaded. Tap a download icon on any episode row to fetch it for offline playback.",
+        "Delete All Downloads"
+      ]
+    },
+    {
+      "step_id": "step-04-export-data",
+      "screen_hash": "0tb97hz",
+      "sequence": 30,
+      "node_count": 213,
+      "targets": [
+        "button: Export & Share, Generates a JSON file and opens the share sheet"
+      ],
+      "texts": [
+        "Subscriptions 1",
+        "Episodes 3",
+        "Notes 0",
+        "Friends 0",
+        "Memories 0",
+        "Agent activity 0",
+        "4 records - API keys and the Nostr private key are never included.",
+        "Format JSON",
+        "Schema v1"
+      ]
+    }
+  ],
+  "redaction": {
+    "status": "not_needed"
+  }
+}

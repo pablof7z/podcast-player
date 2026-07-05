@@ -1,0 +1,63 @@
+{
+  "captured_at": "2026-07-05T19:40:00Z",
+  "tool": "mcp__xcode.snapshot_ui",
+  "simulator_id": "B4E1F31A-044B-4860-860B-C325BE5CC36E",
+  "device": "iPhone 17",
+  "os_version": "iOS 26.2",
+  "screens": [
+    {
+      "step_id": "step-01-player-settings-baseline",
+      "screen_hash": "1fu2d5b",
+      "sequence": 19,
+      "node_count": 220,
+      "targets": [
+        "button: Default Speed, 1x",
+        "button: Skip Back, 15 sec",
+        "button: Skip Forward, 30 sec",
+        "button: Double-Tap, Skip Forward (30s)",
+        "button: Triple-Tap, Clip Current Position",
+        "switch: Auto-mark played at end, value 1",
+        "switch: Auto-play next from queue, value 1"
+      ],
+      "texts": [
+        "Applied to new episodes. Use the player's speed control to override per session.",
+        "Applied to in-app transport buttons and the lock-screen / Control Center skip controls.",
+        "Double-tap and triple-tap on AirPods trigger these actions."
+      ]
+    },
+    {
+      "step_id": "step-02-auto-mark-off",
+      "screen_hash": "02dvldd",
+      "sequence": 20,
+      "node_count": 220,
+      "targets": [
+        "switch: Auto-mark played at end, value 0",
+        "switch: Auto-play next from queue, value 1"
+      ],
+      "texts": [
+        "Auto-mark played at end",
+        "When on, an episode is automatically marked played the first time playback reaches its end."
+      ]
+    },
+    {
+      "step_id": "step-03-persisted-after-navigation",
+      "screen_hash": "0g6f0jr",
+      "sequence": 22,
+      "node_count": 220,
+      "targets": [
+        "switch: Auto-mark played at end, value 0",
+        "button: Default Speed, 1x",
+        "button: Skip Back, 15 sec",
+        "button: Skip Forward, 30 sec"
+      ],
+      "texts": [
+        "Default Speed",
+        "1x",
+        "Auto-mark played at end"
+      ]
+    }
+  ],
+  "redaction": {
+    "status": "not_needed"
+  }
+}
