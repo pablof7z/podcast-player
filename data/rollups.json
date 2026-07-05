@@ -6,25 +6,35 @@
     "artifacts": 0,
     "attempted_test": 0,
     "content_hierarchy": 0,
+    "controls_gestures_audio": 0,
     "cross_screen_continuity": 0,
     "defects_issues_filed": 0,
     "device_os_matrix": 0,
     "error_recovery": 0,
     "evidence_confidence": 0,
+    "execution_attempts": 0,
     "expected_behavior": 0,
     "flow": 0,
     "information_architecture": 0,
+    "instrumentation_gaps": 0,
     "liquid_glass_ios_primitives": 0,
+    "localization_content_quality": 0,
     "motion_haptics": 0,
     "next_actions": 0,
     "nmp_architecture": 0,
     "observability": 0,
+    "offline_resume_behavior": 0,
     "performance": 0,
+    "persona_acceptance": 0,
     "privacy_security": 0,
+    "product_cluster_coherence": 0,
     "product_coherence": 0,
+    "readiness_gates": 0,
     "regression_risk": 0,
+    "reliability_flakiness": 0,
     "replayability_cassette_provenance": 0,
     "review_skill_grounding": 0,
+    "risks_follow_up": 0,
     "scenario_setup": 0,
     "sister_app_nmp_chirp_comparison": 0,
     "states_resilience": 0,
@@ -58,6 +68,9 @@
     "Voice And Generated Audio": 18,
     "Wiki, RAG, Knowledge, And Briefings": 18
   },
+  "by_group_coherence": {
+    "incomplete": 264
+  },
   "by_nmp_boundary": {
     "d1": 4,
     "d10": 38,
@@ -70,9 +83,30 @@
     "d9": 18,
     "native-render": 7
   },
+  "by_product_cluster": {
+    "agent-chat-and-tools": 18,
+    "clips-highlights-and-sharing": 16,
+    "discovery-and-search": 16,
+    "foundation-and-first-run": 16,
+    "identity-and-accounts": 16,
+    "library-and-episode-management": 16,
+    "llm-provider-and-replay": 18,
+    "nostr-publishing-and-protocol": 16,
+    "platform-parity-performance-regression": 16,
+    "playback": 16,
+    "queue-and-downloads": 16,
+    "settings-and-storage": 16,
+    "social-friends-feedback": 16,
+    "transcripts": 16,
+    "voice-and-generated-audio": 18,
+    "wiki-rag-knowledge-and-briefings": 18
+  },
   "by_provider_mode": {
     "blocked": 74,
     "none": 190
+  },
+  "by_readiness": {
+    "incomplete": 264
   },
   "by_tag": {
     "ag": 18,
@@ -129,12 +163,22 @@
   "by_verdict": {
     "incomplete": 264
   },
-  "missing_evidence": {
+  "instrumentation_gaps": {
     "accessibility": 264,
-    "cassettes": 70,
-    "metrics": 159,
+    "cassettes": 74,
+    "logs": 264,
+    "performance-metrics": 159,
     "screenshots": 264,
-    "skill_grounding_review": 264
+    "ui-tree": 264
+  },
+  "missing_evidence": {
+    "accessibility_audit": 264,
+    "cassette": 74,
+    "command_output": 264,
+    "log": 264,
+    "metric_trace": 159,
+    "screenshot": 264,
+    "ui_tree": 264
   },
   "performance_required": 159,
   "scenario_count": 264,

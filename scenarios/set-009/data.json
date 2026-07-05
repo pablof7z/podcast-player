@@ -1,4 +1,61 @@
 {
+  "coherence": {
+    "cluster": {
+      "id": "settings-and-storage",
+      "scenario_ids": [
+        "SET-001",
+        "SET-002",
+        "SET-003",
+        "SET-004",
+        "SET-005",
+        "SET-006",
+        "SET-007",
+        "SET-008"
+      ],
+      "title": "Settings And Storage"
+    },
+    "cross_scenario_risks": [
+      "Changes to SET-009 may affect SET-001, SET-002, SET-003, SET-004 and must be revalidated as a cluster."
+    ],
+    "group_judgment": {
+      "checks": [
+        "related scenario consistency",
+        "shared defect themes",
+        "cluster readiness",
+        "cross-flow state continuity"
+      ],
+      "evidence_refs": [
+        "catalog:set-009",
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Review adjacent scenario pages as a cluster before promoting group coherence."
+      ],
+      "status": "incomplete",
+      "summary": "Group-level coherence for Settings And Storage is unproven until adjacent scenarios are reviewed together."
+    },
+    "individual_judgment": {
+      "checks": [
+        "scenario-level UI polish",
+        "scenario-level UX polish",
+        "scenario-level performance/accessibility evidence",
+        "scenario-level product fit"
+      ],
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "gaps": [
+        "Attach observed behavior before making an individual product-coherence judgment."
+      ],
+      "status": "incomplete",
+      "summary": "SET-009 has not been judged in isolation because observed product behavior is missing."
+    },
+    "themes": [
+      "Does the flow preserve the same product mental model as adjacent scenarios?",
+      "Do UI, UX, accessibility, performance, and NMP architecture scores tell the same story?",
+      "Do related pages expose shared defects or readiness blockers instead of isolated one-off notes?"
+    ]
+  },
   "dimension_scores": {
     "accessibility_dynamic_type": {
       "evidence_refs": [
@@ -49,6 +106,14 @@
       "score": 0,
       "status": "incomplete"
     },
+    "controls_gestures_audio": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Controls, Gestures, Audio, And Haptics has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "cross_screen_continuity": {
       "evidence_refs": [
         "catalog:set-009"
@@ -89,6 +154,14 @@
       "score": 0,
       "status": "incomplete"
     },
+    "execution_attempts": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "rationale": "Execution Attempts, Retries, And Branches has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "expected_behavior": {
       "evidence_refs": [
         "catalog:set-009"
@@ -113,11 +186,28 @@
       "score": 0,
       "status": "incomplete"
     },
+    "instrumentation_gaps": {
+      "evidence_refs": [
+        "catalog:set-009",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Instrumentation Gaps And Missing Evidence has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "liquid_glass_ios_primitives": {
       "evidence_refs": [
         "rubric:review-skill-grounding"
       ],
       "rationale": "Liquid Glass And iOS Primitives has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "localization_content_quality": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Localization And Content Quality has not been validated with current run evidence.",
       "score": 0,
       "status": "incomplete"
     },
@@ -154,11 +244,27 @@
       "score": 0,
       "status": "incomplete"
     },
+    "offline_resume_behavior": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "rationale": "Offline, Interruption, And Resume Behavior has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "performance": {
       "evidence_refs": [
         "catalog:set-009"
       ],
       "rationale": "Performance Metrics has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "persona_acceptance": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "rationale": "Persona, Job, And Acceptance Criteria has not been validated with current run evidence.",
       "score": 0,
       "status": "incomplete"
     },
@@ -170,6 +276,15 @@
       "score": 0,
       "status": "incomplete"
     },
+    "product_cluster_coherence": {
+      "evidence_refs": [
+        "catalog:set-009",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Product Cluster Coherence has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "product_coherence": {
       "evidence_refs": [
         "catalog:set-009"
@@ -178,11 +293,28 @@
       "score": 0,
       "status": "incomplete"
     },
+    "readiness_gates": {
+      "evidence_refs": [
+        "catalog:set-009",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Readiness Gates has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "regression_risk": {
       "evidence_refs": [
         "catalog:set-009"
       ],
       "rationale": "Regression Risk has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "reliability_flakiness": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "rationale": "Reliability And Flakiness has not been validated with current run evidence.",
       "score": 0,
       "status": "incomplete"
     },
@@ -199,6 +331,14 @@
         "rubric:review-skill-grounding"
       ],
       "rationale": "Review Skill Grounding has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "risks_follow_up": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "rationale": "Risks, Follow-Up, And Back-Links has not been validated with current run evidence.",
       "score": 0,
       "status": "incomplete"
     },
@@ -282,8 +422,165 @@
         "required": true,
         "type": "source_doc"
       }
+    ],
+    "missing": [
+      {
+        "blocks_dimensions": [
+          "accessibility_dynamic_type",
+          "touch_ergonomics"
+        ],
+        "kind": "accessibility_audit",
+        "reason": "Apple HIG evidence is required before accessibility can pass.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "attempted_test",
+          "execution_attempts"
+        ],
+        "kind": "command_output",
+        "reason": "Attempt commands or manual/tool notes are required for reproducibility.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "observability",
+          "reliability_flakiness"
+        ],
+        "kind": "log",
+        "reason": "Failures and state transitions need diagnostic context.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "actual_result",
+          "ui_polish",
+          "content_hierarchy"
+        ],
+        "kind": "screenshot",
+        "reason": "Every meaningful user-visible step needs a screenshot.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "accessibility_dynamic_type",
+          "information_architecture"
+        ],
+        "kind": "ui_tree",
+        "reason": "Accessibility labels, hierarchy, and Dynamic Type behavior need UI-tree evidence.",
+        "required": true
+      }
+    ],
+    "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
+    "required_kinds": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "source_doc",
+      "ui_tree"
     ]
   },
+  "execution": {
+    "attempts": [
+      {
+        "branches": [
+          {
+            "expected": "missing credential state appears and no stale key is used",
+            "id": "happy-path",
+            "status": "not_run",
+            "trigger": "agent run starts"
+          }
+        ],
+        "commands": [],
+        "completed_at": "2026-07-05T19:02:36Z",
+        "evidence_refs": [
+          "catalog:set-009"
+        ],
+        "executor": "validation-agent",
+        "id": "attempt-001",
+        "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
+        "started_at": "2026-07-05T19:02:36Z",
+        "status": "not_run",
+        "tools": [
+          "not-run"
+        ]
+      }
+    ],
+    "branch_coverage": [
+      {
+        "expected": "missing credential state appears and no stale key is used",
+        "id": "happy-path",
+        "status": "not_run",
+        "trigger": "agent run starts"
+      }
+    ],
+    "retry_policy": "Record every retry as a separate attempt with cause, changed fixture/state, and whether the retry invalidates earlier evidence.",
+    "status": "not_run"
+  },
+  "flow_steps": [
+    {
+      "action": "Prepare provider settings are cleared",
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "evidence_required": [
+        "source_doc",
+        "command_output"
+      ],
+      "expected": "Fixture, device, provider, account, cassette, and network state match the scenario setup.",
+      "id": "step-01-preconditions",
+      "phase": "Preconditions",
+      "status": "not_run"
+    },
+    {
+      "action": "Execute agent run starts",
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "evidence_required": [
+        "screenshot",
+        "ui_tree",
+        "log"
+      ],
+      "expected": "The user-visible route follows the intended path without hidden state mutation.",
+      "id": "step-02-action",
+      "phase": "Primary Action",
+      "status": "not_run"
+    },
+    {
+      "action": "Observe that missing credential state appears and no stale key is used",
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "evidence_required": [
+        "accessibility_audit",
+        "command_output",
+        "log",
+        "screenshot",
+        "source_doc",
+        "ui_tree"
+      ],
+      "expected": "Observed UI, logs, metrics, and state projections agree with the expected behavior.",
+      "id": "step-03-result",
+      "phase": "Expected Result",
+      "status": "not_run"
+    },
+    {
+      "action": "Leave the flow through the natural product path",
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "evidence_required": [
+        "screenshot",
+        "ui_tree"
+      ],
+      "expected": "Adjacent screens, back stack, mini-player, account, transcript, agent, or library state remain coherent.",
+      "id": "step-04-exit",
+      "phase": "Exit State",
+      "status": "not_run"
+    }
+  ],
   "group_scores": {
     "engineering_quality": {
       "dimension_refs": [
@@ -292,9 +589,10 @@
         "privacy_security",
         "nmp_architecture",
         "observability",
-        "analytics_privacy_boundaries"
+        "analytics_privacy_boundaries",
+        "reliability_flakiness"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence.",
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
       "score": 0,
       "status": "incomplete"
     },
@@ -305,33 +603,38 @@
         "replayability_cassette_provenance",
         "device_os_matrix",
         "evidence_confidence",
+        "instrumentation_gaps",
         "defects_issues_filed"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence.",
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
       "score": 0,
       "status": "incomplete"
     },
     "follow_through": {
       "dimension_refs": [
         "defects_issues_filed",
+        "risks_follow_up",
         "verdict",
         "next_actions"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence.",
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
       "score": 0,
       "status": "incomplete"
     },
     "functional_correctness": {
       "dimension_refs": [
+        "persona_acceptance",
         "flow",
         "attempted_test",
         "scenario_setup",
+        "execution_attempts",
         "expected_behavior",
         "actual_result",
         "error_recovery",
+        "offline_resume_behavior",
         "regression_risk"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence.",
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
       "score": 0,
       "status": "incomplete"
     },
@@ -346,13 +649,64 @@
         "motion_haptics",
         "information_architecture",
         "content_hierarchy",
-        "product_coherence"
+        "product_coherence",
+        "product_cluster_coherence",
+        "localization_content_quality",
+        "controls_gestures_audio",
+        "readiness_gates"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence.",
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
       "score": 0,
       "status": "incomplete"
     }
   },
+  "instrumentation_gaps": [
+    {
+      "affected_dimensions": [
+        "artifacts",
+        "ui_polish",
+        "actual_result"
+      ],
+      "id": "screenshots",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "No step-by-step screenshots are attached."
+    },
+    {
+      "affected_dimensions": [
+        "accessibility_dynamic_type",
+        "actual_result"
+      ],
+      "id": "ui-tree",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "No accessibility/UI tree snapshot is attached."
+    },
+    {
+      "affected_dimensions": [
+        "observability",
+        "reliability_flakiness"
+      ],
+      "id": "logs",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "No structured logs or command outputs are attached."
+    },
+    {
+      "affected_dimensions": [
+        "accessibility_dynamic_type",
+        "touch_ergonomics"
+      ],
+      "id": "accessibility",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or Reduce Transparency evidence is attached."
+    }
+  ],
   "issues": [],
   "metrics": [],
   "next_actions": [
@@ -384,7 +738,7 @@
   "page": {
     "assets_base": "assets/scenarios/set-009/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-009/",
-    "generated_at": "2026-07-05T18:37:12Z",
+    "generated_at": "2026-07-05T19:02:36Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-010/",
@@ -393,11 +747,380 @@
       "scenario_index_url": "../"
     }
   },
+  "product_context": {
+    "acceptance_criteria": [
+      "Given provider settings are cleared",
+      "When agent run starts",
+      "Then missing credential state appears and no stale key is used",
+      "Architecture boundary remains within D4, D7, D10."
+    ],
+    "job_to_be_done": "Complete SET-009 with confidence: missing credential state appears and no stale key is used.",
+    "persona": "A new or returning podcast listener completing a core Pod0 job on iPhone.",
+    "platform_expectations": [
+      "iPhone-first flow uses system navigation/chrome, safe areas, SF typography, semantic color, and reachable primary controls.",
+      "Accessibility evidence covers VoiceOver, Dynamic Type, contrast, motion/transparency settings, and touch target behavior before UI scores can pass.",
+      "Provider, relay, transcript, audio, or LLM dependencies are deterministic through fixtures/cassettes or explicitly marked live-only."
+    ],
+    "scenario_cluster": {
+      "id": "settings-and-storage",
+      "related_scenarios": [
+        "SET-001",
+        "SET-002",
+        "SET-003",
+        "SET-004",
+        "SET-005",
+        "SET-006",
+        "SET-007",
+        "SET-008"
+      ],
+      "title": "Settings And Storage"
+    },
+    "user_value": "The flow should make settings and storage feel reliable, understandable, and native to Pod0 rather than a test-only path."
+  },
+  "quality_review": {
+    "accessibility": {
+      "checks": [
+        "VoiceOver labels",
+        "Dynamic Type",
+        "4.5:1 contrast",
+        "44 pt targets",
+        "Reduce Motion/Transparency"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach accessibility evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "VoiceOver, Dynamic Type, contrast, Reduce Motion, Reduce Transparency, 44 pt targets, captions, and assistive navigation. Current scaffold has no run evidence for SET-009."
+    },
+    "content_localization": {
+      "checks": [
+        "copy clarity",
+        "long text",
+        "dates/numbers/locale",
+        "empty/error copy",
+        "transcript readability"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach content localization evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Podcast metadata, transcript/agent copy, truncation, empty copy, locale/date/number behavior, and translation safety. Current scaffold has no run evidence for SET-009."
+    },
+    "controls_gestures": {
+      "checks": [
+        "touch reach",
+        "gesture alternative",
+        "audio controls",
+        "haptic expectation",
+        "sheet/menu behavior"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach controls gestures evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Buttons, menus, sheets, gestures, audio route controls, haptics, keyboard alternatives, and touch reach. Current scaffold has no run evidence for SET-009."
+    },
+    "observability": {
+      "checks": [
+        "metric IDs",
+        "request IDs",
+        "relay IDs",
+        "redacted traces",
+        "issue reproduction context"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach observability evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Structured logs, metric IDs, provider/request IDs, relay IDs, redacted traces, and issue reproduction context. Current scaffold has no run evidence for SET-009."
+    },
+    "offline_resume": {
+      "checks": [
+        "offline messaging",
+        "resume after relaunch",
+        "background playback",
+        "download availability",
+        "cancel/retry"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach offline resume evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Offline state, app relaunch, background playback, interrupted provider calls, downloads, and resume from stale state. Current scaffold has no run evidence for SET-009."
+    },
+    "performance": {
+      "checks": [
+        "launch latency",
+        "tap latency",
+        "screen settle",
+        "scroll hitches",
+        "provider/audio/network latency"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach performance evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Launch, interaction latency, screen-settle time, scroll hitches, memory, CPU, audio, network, and provider latency. Current scaffold has no run evidence for SET-009."
+    },
+    "privacy_security": {
+      "checks": [
+        "no secrets in screenshots/logs",
+        "permission clarity",
+        "redaction hashes",
+        "private Nostr material safe"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach privacy security evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Secrets, private keys, permissions, logs, analytics, relay visibility, cassette redaction, and export safety. Current scaffold has no run evidence for SET-009."
+    },
+    "reliability": {
+      "checks": [
+        "rerun count",
+        "retry cause",
+        "flake history",
+        "fresh build",
+        "deterministic replay"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach reliability evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Rerun count, flake history, retry behavior, stale evidence, timeout behavior, and deterministic replay. Current scaffold has no run evidence for SET-009."
+    },
+    "ui": {
+      "checks": [
+        "SF/system typography",
+        "semantic color",
+        "visual hierarchy",
+        "no overlapping text",
+        "platform-native controls"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach ui evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Layout, spacing, typography, visual hierarchy, semantic color, SF Symbols, screenshots, and platform-native finish. Current scaffold has no run evidence for SET-009."
+    },
+    "ux": {
+      "checks": [
+        "clear user goal",
+        "low cognitive load",
+        "visible feedback",
+        "recoverable errors",
+        "predictable navigation"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach ux evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Task clarity, user effort, feedback, interruption recovery, cognitive load, and route predictability. Current scaffold has no run evidence for SET-009."
+    }
+  },
+  "readiness": {
+    "blocking_reasons": [
+      "No current execution evidence is attached.",
+      "Product-quality judgments are scaffolded, not observed."
+    ],
+    "gates": [
+      {
+        "evidence_refs": [
+          "catalog:set-009"
+        ],
+        "id": "required_evidence",
+        "owner": "validation-agent",
+        "requirement": "Screenshots/UI trees/logs/cassettes/metrics required by the scenario are attached and redacted.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "rubric:review-skill-grounding"
+        ],
+        "id": "skill_grounding",
+        "owner": "validation-agent",
+        "requirement": "UI, UX, accessibility, performance, and product judgments cite the loaded review skills or local doctrine.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "rubric:review-skill-grounding"
+        ],
+        "id": "score_integrity",
+        "owner": "validation-agent",
+        "requirement": "Every dimension and group score follows the evidence gates and matches the final verdict.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "rubric:review-skill-grounding"
+        ],
+        "id": "product_coherence",
+        "owner": "validation-agent",
+        "requirement": "Individual scenario judgment and related-scenario group judgment are both present.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "rubric:review-skill-grounding"
+        ],
+        "id": "defect_tracking",
+        "owner": "validation-agent",
+        "requirement": "Every actionable defect has severity, owner, GitHub issue link, and fix/revalidation state.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "rubric:review-skill-grounding"
+        ],
+        "id": "release_readiness",
+        "owner": "validation-agent",
+        "requirement": "No blocker or major unresolved risk remains without an explicit owner and acceptance rationale.",
+        "status": "blocked"
+      }
+    ],
+    "ship_gate": "incomplete"
+  },
+  "review_grounding": {
+    "all_considered": [
+      {
+        "coverage": "Apple HIG criteria for 44 pt targets, contrast, Dynamic Type, VoiceOver, safe areas, iPhone navigation ergonomics, semantic color, and platform-native control choices.",
+        "name": "alirezarezvani/claude-skills@apple-hig-expert",
+        "search_terms": "Apple Human Interface Guidelines iOS accessibility mobile design",
+        "selected": true
+      },
+      {
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer use, Reduce Transparency/Motion behavior, and iOS 26 material restraint.",
+        "name": "vabole/apple-skills@ios-liquid-glass",
+        "search_terms": "Liquid Glass iOS primitives",
+        "selected": true
+      },
+      {
+        "coverage": "Generated report-page accessibility, semantic navigation, focus states, reduced motion, content overflow, table readability, and static-site performance checks.",
+        "name": "web-design-guidelines",
+        "search_terms": "web interface guidelines accessibility performance navigation state touch interaction",
+        "selected": true
+      },
+      {
+        "coverage": "Search result considered for future Swift/iOS HIG implementation checks; current selected Apple HIG Expert covers the template rubric.",
+        "name": "johnrogers/claude-swift-engineering@ios-hig",
+        "search_terms": "iOS HIG",
+        "selected": false
+      },
+      {
+        "coverage": "Search result considered for future visual/UI implementation review; current selected skills cover the report criteria.",
+        "name": "charleswiltgen/axiom@axiom-ios-ui",
+        "search_terms": "iOS UI",
+        "selected": false
+      },
+      {
+        "coverage": "Search result considered for future design critique expansion; current selected skills cover Liquid Glass and Apple HIG requirements.",
+        "name": "vabole/apple-skills@ios-design-consultant",
+        "search_terms": "iOS design consultant",
+        "selected": false
+      },
+      {
+        "coverage": "Search result considered for future mobile UX expansion; current template covers task clarity, cognitive load, thumb ergonomics, interruption recovery, and mobile flow cohesion directly.",
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
+        "search_terms": "mobile UX design",
+        "selected": false
+      },
+      {
+        "coverage": "Existing local doctrine represented in NMP architecture dimensions: Rust-owned state and policy, bounded FFI/projections, privacy fail-closed behavior, and replayable clocks.",
+        "name": "nmp-app-architecture",
+        "search_terms": "NMP architecture Rust core thin shell",
+        "selected": false
+      }
+    ],
+    "search_command": "npx skills search \"iOS UI polish Apple Human Interface Guidelines accessibility UX performance mobile design review Liquid Glass\"",
+    "selected_skills": [
+      {
+        "coverage": "Apple HIG criteria for 44 pt targets, contrast, Dynamic Type, VoiceOver, safe areas, iPhone navigation ergonomics, semantic color, and platform-native control choices.",
+        "name": "alirezarezvani/claude-skills@apple-hig-expert",
+        "search_terms": "Apple Human Interface Guidelines iOS accessibility mobile design",
+        "selected": true
+      },
+      {
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer use, Reduce Transparency/Motion behavior, and iOS 26 material restraint.",
+        "name": "vabole/apple-skills@ios-liquid-glass",
+        "search_terms": "Liquid Glass iOS primitives",
+        "selected": true
+      },
+      {
+        "coverage": "Generated report-page accessibility, semantic navigation, focus states, reduced motion, content overflow, table readability, and static-site performance checks.",
+        "name": "web-design-guidelines",
+        "search_terms": "web interface guidelines accessibility performance navigation state touch interaction",
+        "selected": true
+      }
+    ],
+    "template_impact": [
+      "Apple HIG Expert drives mandatory accessibility, Dynamic Type, semantic color, safe-area, touch target, and iPhone navigation evidence.",
+      "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, and Reduce Motion/Transparency requirements.",
+      "Web Interface Guidelines drive semantic static pages with skip links, labeled navigation, focus states, reduced motion handling, readable tables, and overflow-safe content."
+    ]
+  },
+  "risks": [
+    {
+      "affected_dimensions": [
+        "artifacts",
+        "evidence_confidence",
+        "verdict"
+      ],
+      "id": "risk-missing-evidence",
+      "mitigation": "Keep verdict incomplete until run artifacts, scores, and issue links are attached.",
+      "priority": "p0",
+      "severity": "major",
+      "status": "open",
+      "title": "Scenario could be misread as validated without current evidence."
+    },
+    {
+      "affected_dimensions": [
+        "product_cluster_coherence",
+        "regression_risk"
+      ],
+      "id": "risk-cluster-regression",
+      "mitigation": "Revalidate the scenario cluster before promoting group coherence.",
+      "priority": "p1",
+      "severity": "major",
+      "status": "open",
+      "title": "Fixes for this flow may regress related scenarios: SET-001, SET-002, SET-003, SET-004."
+    }
+  ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "codex/scenario-pages-generator",
+    "branch": "codex/scenario-report-template-hardening",
     "cassettes": [],
-    "completed_at": "2026-07-05T18:37:12Z",
+    "completed_at": "2026-07-05T19:02:36Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -415,12 +1138,12 @@
     "fixtures": [
       "credential store fixture"
     ],
-    "generator_version": "scenario-report-generator/0.1.0",
+    "generator_version": "scenario-report-generator/0.2.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260705T183712Z-set-009",
+    "run_id": "catalog-scaffold-20260705T190236Z-set-009",
     "source_commit": "2b07993e77f8cc20b1743ebf7b4ce42c7bb0925a",
-    "started_at": "2026-07-05T18:37:12Z"
+    "started_at": "2026-07-05T19:02:36Z"
   },
   "scenario": {
     "bdd": {
@@ -505,6 +1228,13 @@
       "notes": [],
       "summary": "Not assessed. Verify podcast/show/episode/transcript/agent content outranks chrome and does not truncate critical meaning."
     },
+    "controls_gestures_audio": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Review must check buttons, menus, sheets, gestures, audio route controls, haptics, keyboard alternatives, and one-handed reach."
+    },
     "cross_screen_continuity": {
       "evidence_refs": [
         "catalog:set-009"
@@ -540,6 +1270,13 @@
       "notes": [],
       "summary": "Evidence confidence is zero until a current build, device/OS, rerun count, freshness, and flake notes are attached."
     },
+    "execution_attempts": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "notes": [],
+      "summary": "No attempts, retries, or branch executions have run. The page reserves structured attempt records for manual, simulator, CI, and replay executions."
+    },
     "expected_behavior": {
       "evidence_refs": [
         "catalog:set-009"
@@ -561,12 +1298,27 @@
       "notes": [],
       "summary": "Not assessed. Confirm the user knows location, current mode, and next action from titles, tabs, bars, breadcrumbs, and hierarchy."
     },
+    "instrumentation_gaps": {
+      "evidence_refs": [
+        "catalog:set-009",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Screenshots, UI trees, logs, metrics, cassettes, and accessibility audits are listed as explicit missing evidence so gaps cannot be hidden in prose."
+    },
     "liquid_glass_ios_primitives": {
       "evidence_refs": [
         "rubric:review-skill-grounding"
       ],
       "notes": [],
       "summary": "Not assessed. Requires evidence that iOS primitives and glass-like materials are used as functional chrome, with accessibility fallbacks."
+    },
+    "localization_content_quality": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Review must check locale-sensitive strings, podcast metadata, transcript/agent content, truncation, empty/error copy, and translation safety."
     },
     "motion_haptics": {
       "evidence_refs": [
@@ -597,12 +1349,26 @@
       "notes": [],
       "summary": "Not assessed. Attach structured logs, metric IDs, provider/request IDs, relay IDs, and redacted traces needed to diagnose failures."
     },
+    "offline_resume_behavior": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Offline, interruption, relaunch, background playback, cancellation, retry, and resume behavior must be captured where applicable."
+    },
     "performance_metrics": {
       "evidence_refs": [
         "catalog:set-009"
       ],
       "notes": [],
       "summary": "Not measured. Required performance evidence: none."
+    },
+    "persona_job_acceptance": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "notes": [],
+      "summary": "Persona: A new or returning podcast listener completing a core Pod0 job on iPhone. Acceptance criteria are the scenario Given/When/Then plus the declared architecture boundary D4,D7,D10."
     },
     "privacy_security": {
       "evidence_refs": [
@@ -611,6 +1377,14 @@
       "notes": [],
       "summary": "Not assessed. Validation must scan screenshots, logs, cassettes, relays, and exports for leaked keys, tokens, private audio, or private Nostr material."
     },
+    "product_cluster_coherence": {
+      "evidence_refs": [
+        "catalog:set-009",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Related scenarios must be judged as a group so UI/UX/product coherence does not pass in isolation while the cluster remains inconsistent."
+    },
     "product_coherence_in_context": {
       "evidence_refs": [
         "catalog:set-009"
@@ -618,12 +1392,27 @@
       "notes": [],
       "summary": "Not assessed. The page must explain how this flow fits nearby Pod0 surfaces such as library, player, transcript, agent, settings, and Nostr/social state."
     },
+    "readiness_gates": {
+      "evidence_refs": [
+        "catalog:set-009",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "All readiness gates are blocked until evidence, skill-grounded scoring, product-cluster coherence, defect tracking, and release readiness are populated."
+    },
     "regression_risk": {
       "evidence_refs": [
         "catalog:set-009"
       ],
       "notes": [],
       "summary": "Not assessed. Validation must list adjacent scenarios and modules to rerun after any fix."
+    },
+    "reliability_flakiness": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Validation must record rerun count, retry causes, flake history, stale-build risk, timeout behavior, and deterministic replay coverage."
     },
     "replayability_cassette_provenance": {
       "evidence_refs": [
@@ -637,9 +1426,16 @@
         "rubric:review-skill-grounding"
       ],
       "notes": [
-        "Search terms to run with npx skills search: liquid glass iOS primitives, Apple HIG iOS, mobile UX design, NMP architecture Rust core thin shell."
+        "Selected skills: alirezarezvani/claude-skills@apple-hig-expert, vabole/apple-skills@ios-liquid-glass, web-design-guidelines."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Required grounding covers Liquid Glass/iOS primitives, Apple HIG, mobile UX design, and NMP architecture."
+      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Apple HIG, Liquid Glass/iOS primitives, report-page accessibility/performance, and NMP architecture criteria."
+    },
+    "risks_follow_up": {
+      "evidence_refs": [
+        "catalog:set-009"
+      ],
+      "notes": [],
+      "summary": "Current risks are scaffolded from missing evidence and cluster regression exposure. Actionable defects must gain issue/PR links and revalidation run IDs."
     },
     "scenario_setup": {
       "evidence_refs": [

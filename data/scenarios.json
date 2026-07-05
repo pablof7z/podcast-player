@@ -2,15 +2,19 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-001/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-001",
     "tags": [
       "catalog-scaffold",
@@ -28,15 +32,19 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-002/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-002",
     "tags": [
       "catalog-scaffold",
@@ -53,14 +61,18 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-003/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-003",
     "tags": [
       "catalog-scaffold",
@@ -76,14 +88,18 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-004/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-004",
     "tags": [
       "catalog-scaffold",
@@ -100,16 +116,20 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-005/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "fnd-005",
     "tags": [
       "cassette-required",
@@ -129,15 +149,19 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-006/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "fnd-006",
     "tags": [
       "cassette-required",
@@ -155,15 +179,19 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-007/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-007",
     "tags": [
       "catalog-scaffold",
@@ -180,14 +208,18 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-008/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-008",
     "tags": [
       "catalog-scaffold",
@@ -204,15 +236,19 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-009/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-009",
     "tags": [
       "catalog-scaffold",
@@ -230,14 +266,18 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-010/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-010",
     "tags": [
       "catalog-scaffold",
@@ -253,15 +293,19 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-011/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-011",
     "tags": [
       "catalog-scaffold",
@@ -279,14 +323,18 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-012/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-012",
     "tags": [
       "catalog-scaffold",
@@ -302,15 +350,19 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-013/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-013",
     "tags": [
       "catalog-scaffold",
@@ -328,15 +380,19 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-014/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-014",
     "tags": [
       "catalog-scaffold",
@@ -354,14 +410,18 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-015/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-015",
     "tags": [
       "catalog-scaffold",
@@ -377,14 +437,18 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-016/data.json",
+    "group_coherence": "incomplete",
     "id": "FND-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "fnd-016",
     "tags": [
       "catalog-scaffold",
@@ -400,14 +464,18 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-001/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-001",
     "tags": [
       "catalog-scaffold",
@@ -425,14 +493,18 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-002/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-002",
     "tags": [
       "catalog-scaffold",
@@ -450,14 +522,18 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-003/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-003",
     "tags": [
       "catalog-scaffold",
@@ -473,14 +549,18 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-004/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-004",
     "tags": [
       "catalog-scaffold",
@@ -497,15 +577,19 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-005/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "id-005",
     "tags": [
       "cassette-required",
@@ -523,14 +607,18 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-006/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-006",
     "tags": [
       "catalog-scaffold",
@@ -546,16 +634,20 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-007/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "id-007",
     "tags": [
       "cassette-required",
@@ -576,16 +668,20 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-008/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "id-008",
     "tags": [
       "cassette-required",
@@ -604,14 +700,18 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-009/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-009",
     "tags": [
       "catalog-scaffold",
@@ -628,15 +728,19 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-010/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-010",
     "tags": [
       "catalog-scaffold",
@@ -654,14 +758,18 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-011/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-011",
     "tags": [
       "catalog-scaffold",
@@ -678,14 +786,18 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-012/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-012",
     "tags": [
       "catalog-scaffold",
@@ -703,15 +815,19 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-013/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-013",
     "tags": [
       "catalog-scaffold",
@@ -731,15 +847,19 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-014/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "id-014",
     "tags": [
       "cassette-required",
@@ -757,14 +877,18 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-015/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-015",
     "tags": [
       "catalog-scaffold",
@@ -780,15 +904,19 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-016/data.json",
+    "group_coherence": "incomplete",
     "id": "ID-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "id-016",
     "tags": [
       "catalog-scaffold",
@@ -806,16 +934,20 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-001/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "disc-001",
     "tags": [
       "cassette-required",
@@ -833,16 +965,20 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-002/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "disc-002",
     "tags": [
       "cassette-required",
@@ -860,15 +996,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-003/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "disc-003",
     "tags": [
       "catalog-scaffold",
@@ -886,15 +1026,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-004/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "disc-004",
     "tags": [
       "cassette-required",
@@ -911,15 +1055,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-005/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "disc-005",
     "tags": [
       "cassette-required",
@@ -936,15 +1084,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-006/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "disc-006",
     "tags": [
       "catalog-scaffold",
@@ -962,15 +1114,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-007/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "disc-007",
     "tags": [
       "catalog-scaffold",
@@ -988,15 +1144,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-008/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "disc-008",
     "tags": [
       "catalog-scaffold",
@@ -1016,15 +1176,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-009/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "disc-009",
     "tags": [
       "catalog-scaffold",
@@ -1044,15 +1208,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-010/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "disc-010",
     "tags": [
       "catalog-scaffold",
@@ -1070,16 +1238,20 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-011/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "disc-011",
     "tags": [
       "cassette-required",
@@ -1097,14 +1269,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-012/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "disc-012",
     "tags": [
       "catalog-scaffold",
@@ -1121,15 +1298,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-013/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "disc-013",
     "tags": [
       "catalog-scaffold",
@@ -1147,15 +1328,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-014/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "disc-014",
     "tags": [
       "cassette-required",
@@ -1172,14 +1357,18 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-015/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "disc-015",
     "tags": [
       "catalog-scaffold",
@@ -1195,15 +1384,19 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-016/data.json",
+    "group_coherence": "incomplete",
     "id": "DISC-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "disc-016",
     "tags": [
       "cassette-required",
@@ -1220,15 +1413,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-001/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-001",
     "tags": [
       "catalog-scaffold",
@@ -1245,15 +1442,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-002/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-002",
     "tags": [
       "catalog-scaffold",
@@ -1270,15 +1471,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-003/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-003",
     "tags": [
       "catalog-scaffold",
@@ -1295,15 +1500,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-004/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-004",
     "tags": [
       "catalog-scaffold",
@@ -1321,15 +1530,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-005/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-005",
     "tags": [
       "catalog-scaffold",
@@ -1346,15 +1559,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-006/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-006",
     "tags": [
       "catalog-scaffold",
@@ -1373,14 +1590,18 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-007/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-007",
     "tags": [
       "catalog-scaffold",
@@ -1396,15 +1617,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-008/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-008",
     "tags": [
       "catalog-scaffold",
@@ -1422,16 +1647,20 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-009/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "lib-009",
     "tags": [
       "cassette-required",
@@ -1450,15 +1679,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-010/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "lib-010",
     "tags": [
       "cassette-required",
@@ -1476,15 +1709,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-011/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-011",
     "tags": [
       "catalog-scaffold",
@@ -1502,15 +1739,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-012/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-012",
     "tags": [
       "catalog-scaffold",
@@ -1528,14 +1769,18 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-013/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-013",
     "tags": [
       "catalog-scaffold",
@@ -1551,14 +1796,18 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-014/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-014",
     "tags": [
       "catalog-scaffold",
@@ -1575,16 +1824,20 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-015/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "lib-015",
     "tags": [
       "cassette-required",
@@ -1602,15 +1855,19 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-016/data.json",
+    "group_coherence": "incomplete",
     "id": "LIB-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "lib-016",
     "tags": [
       "catalog-scaffold",
@@ -1629,15 +1886,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-001/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-001",
     "tags": [
       "catalog-scaffold",
@@ -1655,15 +1916,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-002/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-002",
     "tags": [
       "catalog-scaffold",
@@ -1681,15 +1946,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-003/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-003",
     "tags": [
       "catalog-scaffold",
@@ -1706,15 +1975,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-004/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-004",
     "tags": [
       "catalog-scaffold",
@@ -1732,15 +2005,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-005/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-005",
     "tags": [
       "catalog-scaffold",
@@ -1758,15 +2035,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-006/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-006",
     "tags": [
       "catalog-scaffold",
@@ -1784,15 +2065,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-007/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-007",
     "tags": [
       "catalog-scaffold",
@@ -1810,15 +2095,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-008/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-008",
     "tags": [
       "catalog-scaffold",
@@ -1836,14 +2125,18 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-009/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-009",
     "tags": [
       "catalog-scaffold",
@@ -1859,15 +2152,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-010/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-010",
     "tags": [
       "catalog-scaffold",
@@ -1885,15 +2182,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-011/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-011",
     "tags": [
       "catalog-scaffold",
@@ -1911,15 +2212,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-012/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-012",
     "tags": [
       "catalog-scaffold",
@@ -1937,15 +2242,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-013/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-013",
     "tags": [
       "catalog-scaffold",
@@ -1963,15 +2272,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-014/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-014",
     "tags": [
       "catalog-scaffold",
@@ -1989,14 +2302,18 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-015/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-015",
     "tags": [
       "catalog-scaffold",
@@ -2012,15 +2329,19 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-016/data.json",
+    "group_coherence": "incomplete",
     "id": "PLAY-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "playback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "play-016",
     "tags": [
       "catalog-scaffold",
@@ -2037,15 +2358,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-001/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-001",
     "tags": [
       "catalog-scaffold",
@@ -2063,15 +2388,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-002/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-002",
     "tags": [
       "catalog-scaffold",
@@ -2088,14 +2417,18 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-003/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-003",
     "tags": [
       "catalog-scaffold",
@@ -2111,15 +2444,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-004/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-004",
     "tags": [
       "catalog-scaffold",
@@ -2137,14 +2474,18 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-005/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-005",
     "tags": [
       "catalog-scaffold",
@@ -2160,15 +2501,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-006/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-006",
     "tags": [
       "catalog-scaffold",
@@ -2187,16 +2532,20 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-007/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "qd-007",
     "tags": [
       "cassette-required",
@@ -2216,14 +2565,18 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-008/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-008",
     "tags": [
       "catalog-scaffold",
@@ -2239,15 +2592,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-009/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-009",
     "tags": [
       "catalog-scaffold",
@@ -2265,15 +2622,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-010/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-010",
     "tags": [
       "catalog-scaffold",
@@ -2292,14 +2653,18 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-011/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-011",
     "tags": [
       "catalog-scaffold",
@@ -2315,15 +2680,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-012/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-012",
     "tags": [
       "catalog-scaffold",
@@ -2341,15 +2710,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-013/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-013",
     "tags": [
       "catalog-scaffold",
@@ -2367,15 +2740,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-014/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-014",
     "tags": [
       "catalog-scaffold",
@@ -2394,14 +2771,18 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-015/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "qd-015",
     "tags": [
       "catalog-scaffold",
@@ -2418,15 +2799,19 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-016/data.json",
+    "group_coherence": "incomplete",
     "id": "QD-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "queue-and-downloads",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "qd-016",
     "tags": [
       "cassette-required",
@@ -2444,16 +2829,20 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-001/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "tr-001",
     "tags": [
       "cassette-required",
@@ -2472,16 +2861,20 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-002/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "tr-002",
     "tags": [
       "cassette-required",
@@ -2499,16 +2892,20 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-003/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "tr-003",
     "tags": [
       "cassette-required",
@@ -2526,15 +2923,19 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-004/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "tr-004",
     "tags": [
       "cassette-required",
@@ -2552,16 +2953,20 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-005/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "tr-005",
     "tags": [
       "cassette-required",
@@ -2579,14 +2984,18 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-006/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "tr-006",
     "tags": [
       "catalog-scaffold",
@@ -2603,16 +3012,20 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-007/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "tr-007",
     "tags": [
       "cassette-required",
@@ -2630,16 +3043,20 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-008/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "tr-008",
     "tags": [
       "cassette-required",
@@ -2658,14 +3075,18 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-009/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "tr-009",
     "tags": [
       "catalog-scaffold",
@@ -2682,15 +3103,20 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-010/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "tr-010",
     "tags": [
       "catalog-scaffold",
@@ -2708,15 +3134,19 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-011/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "tr-011",
     "tags": [
       "catalog-scaffold",
@@ -2734,15 +3164,19 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-012/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "tr-012",
     "tags": [
       "catalog-scaffold",
@@ -2760,14 +3194,18 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-013/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "tr-013",
     "tags": [
       "catalog-scaffold",
@@ -2784,15 +3222,19 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-014/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "tr-014",
     "tags": [
       "catalog-scaffold",
@@ -2810,15 +3252,19 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-015/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "tr-015",
     "tags": [
       "catalog-scaffold",
@@ -2835,15 +3281,19 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-016/data.json",
+    "group_coherence": "incomplete",
     "id": "TR-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "transcripts",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "tr-016",
     "tags": [
       "catalog-scaffold",
@@ -2861,15 +3311,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-001/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-001",
     "tags": [
       "catalog-scaffold",
@@ -2886,14 +3340,18 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-002/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-002",
     "tags": [
       "catalog-scaffold",
@@ -2909,14 +3367,18 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-003/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-003",
     "tags": [
       "catalog-scaffold",
@@ -2933,15 +3395,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-004/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-004",
     "tags": [
       "catalog-scaffold",
@@ -2959,15 +3425,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-005/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-005",
     "tags": [
       "catalog-scaffold",
@@ -2985,15 +3455,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-006/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "clip-006",
     "tags": [
       "cassette-required",
@@ -3011,15 +3485,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-007/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-007",
     "tags": [
       "catalog-scaffold",
@@ -3036,15 +3514,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-008/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-008",
     "tags": [
       "catalog-scaffold",
@@ -3061,15 +3543,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-009/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-009",
     "tags": [
       "catalog-scaffold",
@@ -3086,15 +3572,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-010/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-010",
     "tags": [
       "catalog-scaffold",
@@ -3114,15 +3604,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-011/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "clip-011",
     "tags": [
       "cassette-required",
@@ -3141,15 +3635,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-012/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-012",
     "tags": [
       "catalog-scaffold",
@@ -3166,14 +3664,18 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-013/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-013",
     "tags": [
       "catalog-scaffold",
@@ -3190,15 +3692,19 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-014/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-014",
     "tags": [
       "catalog-scaffold",
@@ -3216,14 +3722,18 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-015/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-015",
     "tags": [
       "catalog-scaffold",
@@ -3239,14 +3749,18 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-016/data.json",
+    "group_coherence": "incomplete",
     "id": "CLIP-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "clip-016",
     "tags": [
       "catalog-scaffold",
@@ -3263,15 +3777,19 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-001/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-001",
     "tags": [
       "ag",
@@ -3289,15 +3807,19 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-002/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-002",
     "tags": [
       "ag",
@@ -3315,15 +3837,19 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-003/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-003",
     "tags": [
       "ag",
@@ -3340,14 +3866,18 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-004/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-004",
     "tags": [
       "ag",
@@ -3364,15 +3894,19 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-005/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "ag-005",
     "tags": [
       "ag",
@@ -3390,15 +3924,19 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-006/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-006",
     "tags": [
       "ag",
@@ -3415,15 +3953,19 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-007/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-007",
     "tags": [
       "ag",
@@ -3441,16 +3983,20 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-008/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "ag-008",
     "tags": [
       "ag",
@@ -3469,14 +4015,18 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-009/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-009",
     "tags": [
       "ag",
@@ -3492,16 +4042,20 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-010/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "ag-010",
     "tags": [
       "ag",
@@ -3521,16 +4075,20 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-011/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "ag-011",
     "tags": [
       "ag",
@@ -3550,14 +4108,18 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-012/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-012",
     "tags": [
       "ag",
@@ -3574,15 +4136,19 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-013/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-013",
     "tags": [
       "ag",
@@ -3599,16 +4165,20 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-014/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "ag-014",
     "tags": [
       "ag",
@@ -3626,14 +4196,18 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-015/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-015",
     "tags": [
       "ag",
@@ -3650,15 +4224,19 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-016/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-016",
     "tags": [
       "ag",
@@ -3676,14 +4254,18 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-017/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-017",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "ag-017",
     "tags": [
       "ag",
@@ -3700,16 +4282,20 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-018/data.json",
+    "group_coherence": "incomplete",
     "id": "AG-018",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "ag-018",
     "tags": [
       "ag",
@@ -3728,16 +4314,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-001/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-001",
     "tags": [
       "cassette-required",
@@ -3755,14 +4345,18 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-002/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "llm-002",
     "tags": [
       "catalog-scaffold",
@@ -3779,16 +4373,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-003/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-003",
     "tags": [
       "cassette-required",
@@ -3807,15 +4405,19 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-004/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-004",
     "tags": [
       "cassette-required",
@@ -3834,16 +4436,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-005/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-005",
     "tags": [
       "cassette-required",
@@ -3861,14 +4467,18 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-006/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "llm-006",
     "tags": [
       "catalog-scaffold",
@@ -3885,16 +4495,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-007/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-007",
     "tags": [
       "cassette-required",
@@ -3912,16 +4526,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-008/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-008",
     "tags": [
       "cassette-required",
@@ -3940,15 +4558,19 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-009/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "llm-009",
     "tags": [
       "catalog-scaffold",
@@ -3966,15 +4588,19 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-010/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-010",
     "tags": [
       "cassette-required",
@@ -3991,16 +4617,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-011/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-011",
     "tags": [
       "cassette-required",
@@ -4018,15 +4648,19 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-012/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-012",
     "tags": [
       "cassette-required",
@@ -4043,14 +4677,18 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-013/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "llm-013",
     "tags": [
       "catalog-scaffold",
@@ -4067,16 +4705,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-014/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-014",
     "tags": [
       "cassette-required",
@@ -4095,16 +4737,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-015/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-015",
     "tags": [
       "cassette-required",
@@ -4123,15 +4769,19 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-016/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-016",
     "tags": [
       "cassette-required",
@@ -4150,16 +4800,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-017/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-017",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-017",
     "tags": [
       "cassette-required",
@@ -4178,16 +4832,20 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-018/data.json",
+    "group_coherence": "incomplete",
     "id": "LLM-018",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "llm-018",
     "tags": [
       "cassette-required",
@@ -4206,16 +4864,20 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-001/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "wiki-001",
     "tags": [
       "cassette-required",
@@ -4234,15 +4896,19 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-002/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "wiki-002",
     "tags": [
       "cassette-required",
@@ -4260,16 +4926,20 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-003/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "wiki-003",
     "tags": [
       "cassette-required",
@@ -4288,15 +4958,19 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-004/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "wiki-004",
     "tags": [
       "catalog-scaffold",
@@ -4313,14 +4987,18 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-005/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "wiki-005",
     "tags": [
       "catalog-scaffold",
@@ -4336,16 +5014,20 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-006/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "wiki-006",
     "tags": [
       "cassette-required",
@@ -4364,15 +5046,19 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-007/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "wiki-007",
     "tags": [
       "catalog-scaffold",
@@ -4390,14 +5076,18 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-008/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "wiki-008",
     "tags": [
       "catalog-scaffold",
@@ -4413,16 +5103,20 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-009/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "wiki-009",
     "tags": [
       "cassette-required",
@@ -4441,14 +5135,18 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-010/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "wiki-010",
     "tags": [
       "catalog-scaffold",
@@ -4464,16 +5162,20 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-011/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "wiki-011",
     "tags": [
       "cassette-required",
@@ -4492,16 +5194,20 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-012/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "wiki-012",
     "tags": [
       "cassette-required",
@@ -4520,15 +5226,19 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-013/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "wiki-013",
     "tags": [
       "cassette-required",
@@ -4546,15 +5256,19 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-014/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "wiki-014",
     "tags": [
       "catalog-scaffold",
@@ -4571,15 +5285,19 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-015/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "wiki-015",
     "tags": [
       "catalog-scaffold",
@@ -4597,15 +5315,19 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-016/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "wiki-016",
     "tags": [
       "catalog-scaffold",
@@ -4623,14 +5345,18 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-017/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-017",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "wiki-017",
     "tags": [
       "catalog-scaffold",
@@ -4646,15 +5372,19 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-018/data.json",
+    "group_coherence": "incomplete",
     "id": "WIKI-018",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "wiki-018",
     "tags": [
       "cassette-required",
@@ -4672,15 +5402,19 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-001/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-001",
     "tags": [
       "catalog-scaffold",
@@ -4698,14 +5432,18 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-002/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-002",
     "tags": [
       "catalog-scaffold",
@@ -4721,14 +5459,18 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-003/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-003",
     "tags": [
       "catalog-scaffold",
@@ -4745,15 +5487,19 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-004/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-004",
     "tags": [
       "catalog-scaffold",
@@ -4771,16 +5517,20 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-005/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "voice-005",
     "tags": [
       "cassette-required",
@@ -4798,15 +5548,20 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-006/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "voice-006",
     "tags": [
       "catalog-scaffold",
@@ -4824,15 +5579,19 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-007/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-007",
     "tags": [
       "catalog-scaffold",
@@ -4850,16 +5609,20 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-008/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "voice-008",
     "tags": [
       "cassette-required",
@@ -4877,16 +5640,20 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-009/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "voice-009",
     "tags": [
       "cassette-required",
@@ -4906,14 +5673,18 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-010/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-010",
     "tags": [
       "catalog-scaffold",
@@ -4930,16 +5701,20 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-011/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "voice-011",
     "tags": [
       "cassette-required",
@@ -4958,16 +5733,20 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-012/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "voice-012",
     "tags": [
       "cassette-required",
@@ -4986,15 +5765,20 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-013/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "voice-013",
     "tags": [
       "catalog-scaffold",
@@ -5012,14 +5796,18 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-014/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-014",
     "tags": [
       "catalog-scaffold",
@@ -5035,15 +5823,19 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-015/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-015",
     "tags": [
       "catalog-scaffold",
@@ -5060,15 +5852,19 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-016/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-016",
     "tags": [
       "catalog-scaffold",
@@ -5085,15 +5881,19 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-017/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-017",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "voice-017",
     "tags": [
       "catalog-scaffold",
@@ -5111,16 +5911,20 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-018/data.json",
+    "group_coherence": "incomplete",
     "id": "VOICE-018",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "voice-018",
     "tags": [
       "cassette-required",
@@ -5139,15 +5943,19 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-001/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-001",
     "tags": [
       "catalog-scaffold",
@@ -5167,14 +5975,18 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-002/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-002",
     "tags": [
       "catalog-scaffold",
@@ -5193,15 +6005,19 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-003/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-003",
     "tags": [
       "catalog-scaffold",
@@ -5220,14 +6036,18 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-004/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-004",
     "tags": [
       "catalog-scaffold",
@@ -5245,16 +6065,20 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-005/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "nostr-005",
     "tags": [
       "cassette-required",
@@ -5274,15 +6098,19 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-006/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "nostr-006",
     "tags": [
       "cassette-required",
@@ -5301,15 +6129,19 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-007/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-007",
     "tags": [
       "catalog-scaffold",
@@ -5328,15 +6160,19 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-008/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-008",
     "tags": [
       "catalog-scaffold",
@@ -5354,15 +6190,19 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-009/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-009",
     "tags": [
       "catalog-scaffold",
@@ -5381,14 +6221,18 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-010/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-010",
     "tags": [
       "catalog-scaffold",
@@ -5405,14 +6249,18 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-011/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-011",
     "tags": [
       "catalog-scaffold",
@@ -5430,15 +6278,19 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-012/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-012",
     "tags": [
       "catalog-scaffold",
@@ -5457,14 +6309,18 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-013/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-013",
     "tags": [
       "catalog-scaffold",
@@ -5481,14 +6337,18 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-014/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-014",
     "tags": [
       "catalog-scaffold",
@@ -5504,14 +6364,18 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-015/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-015",
     "tags": [
       "catalog-scaffold",
@@ -5527,14 +6391,18 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-016/data.json",
+    "group_coherence": "incomplete",
     "id": "NOSTR-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "nostr-016",
     "tags": [
       "catalog-scaffold",
@@ -5552,15 +6420,19 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-001/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-001",
     "tags": [
       "catalog-scaffold",
@@ -5580,14 +6452,18 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-002/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-002",
     "tags": [
       "catalog-scaffold",
@@ -5604,15 +6480,19 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-003/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-003",
     "tags": [
       "catalog-scaffold",
@@ -5631,15 +6511,19 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-004/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-004",
     "tags": [
       "catalog-scaffold",
@@ -5659,15 +6543,19 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-005/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-005",
     "tags": [
       "catalog-scaffold",
@@ -5686,14 +6574,18 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-006/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-006",
     "tags": [
       "catalog-scaffold",
@@ -5709,14 +6601,18 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-007/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-007",
     "tags": [
       "catalog-scaffold",
@@ -5732,15 +6628,19 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-008/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-008",
     "tags": [
       "catalog-scaffold",
@@ -5759,15 +6659,19 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-009/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "soc-009",
     "tags": [
       "cassette-required",
@@ -5786,15 +6690,19 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-010/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-010",
     "tags": [
       "catalog-scaffold",
@@ -5812,14 +6720,18 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-011/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-011",
     "tags": [
       "catalog-scaffold",
@@ -5837,14 +6749,18 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-012/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-012",
     "tags": [
       "catalog-scaffold",
@@ -5861,16 +6777,20 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-013/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "soc-013",
     "tags": [
       "cassette-required",
@@ -5890,14 +6810,18 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-014/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-014",
     "tags": [
       "catalog-scaffold",
@@ -5913,15 +6837,19 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-015/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-015",
     "tags": [
       "catalog-scaffold",
@@ -5939,15 +6867,19 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-016/data.json",
+    "group_coherence": "incomplete",
     "id": "SOC-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "soc-016",
     "tags": [
       "catalog-scaffold",
@@ -5964,14 +6896,18 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-001/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-001",
     "tags": [
       "catalog-scaffold",
@@ -5987,16 +6923,20 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-002/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "set-002",
     "tags": [
       "cassette-required",
@@ -6015,14 +6955,18 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-003/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-003",
     "tags": [
       "catalog-scaffold",
@@ -6038,14 +6982,18 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-004/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-004",
     "tags": [
       "catalog-scaffold",
@@ -6062,15 +7010,19 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-005/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-005",
     "tags": [
       "catalog-scaffold",
@@ -6087,15 +7039,19 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-006/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-006",
     "tags": [
       "catalog-scaffold",
@@ -6113,15 +7069,19 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-007/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-007",
     "tags": [
       "catalog-scaffold",
@@ -6138,14 +7098,18 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-008/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-008",
     "tags": [
       "catalog-scaffold",
@@ -6162,14 +7126,18 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-009/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-009",
     "tags": [
       "catalog-scaffold",
@@ -6187,15 +7155,19 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-010/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "set-010",
     "tags": [
       "cassette-required",
@@ -6213,14 +7185,18 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-011/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-011",
     "tags": [
       "catalog-scaffold",
@@ -6238,16 +7214,20 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-012/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "set-012",
     "tags": [
       "cassette-required",
@@ -6266,14 +7246,18 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-013/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-013",
     "tags": [
       "catalog-scaffold",
@@ -6289,15 +7273,19 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-014/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-014",
     "tags": [
       "catalog-scaffold",
@@ -6314,14 +7302,18 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-015/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-015",
     "tags": [
       "catalog-scaffold",
@@ -6337,14 +7329,18 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-016/data.json",
+    "group_coherence": "incomplete",
     "id": "SET-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "settings-and-storage",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "set-016",
     "tags": [
       "catalog-scaffold",
@@ -6360,15 +7356,19 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-001/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-001",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-001",
     "tags": [
       "catalog-scaffold",
@@ -6386,16 +7386,20 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-002/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-002",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics",
-      "cassettes"
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "blocked",
+    "readiness": "incomplete",
     "slug": "xplat-002",
     "tags": [
       "cassette-required",
@@ -6414,15 +7418,19 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-003/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-003",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-003",
     "tags": [
       "catalog-scaffold",
@@ -6439,14 +7447,18 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-004/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-004",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-004",
     "tags": [
       "catalog-scaffold",
@@ -6463,15 +7475,19 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-005/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-005",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-005",
     "tags": [
       "catalog-scaffold",
@@ -6489,14 +7505,18 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-006/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-006",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-006",
     "tags": [
       "catalog-scaffold",
@@ -6513,15 +7533,19 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-007/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-007",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-007",
     "tags": [
       "catalog-scaffold",
@@ -6539,15 +7563,19 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-008/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-008",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-008",
     "tags": [
       "catalog-scaffold",
@@ -6565,15 +7593,19 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-009/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-009",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-009",
     "tags": [
       "catalog-scaffold",
@@ -6591,15 +7623,19 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-010/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-010",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-010",
     "tags": [
       "catalog-scaffold",
@@ -6616,14 +7652,18 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-011/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-011",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-011",
     "tags": [
       "catalog-scaffold",
@@ -6639,14 +7679,18 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-012/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-012",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-012",
     "tags": [
       "catalog-scaffold",
@@ -6663,15 +7707,19 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-013/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-013",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding",
-      "metrics"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-013",
     "tags": [
       "catalog-scaffold",
@@ -6690,14 +7738,18 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-014/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-014",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-014",
     "tags": [
       "catalog-scaffold",
@@ -6713,14 +7765,18 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-015/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-015",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-015",
     "tags": [
       "catalog-scaffold",
@@ -6736,14 +7792,18 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-016/data.json",
+    "group_coherence": "incomplete",
     "id": "XPLAT-016",
     "missing_evidence": [
-      "screenshots",
-      "ui_tree",
-      "accessibility",
-      "reviewed_skill_grounding"
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
     ],
+    "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
+    "readiness": "incomplete",
     "slug": "xplat-016",
     "tags": [
       "all-doctrine",
