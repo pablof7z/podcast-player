@@ -38,7 +38,7 @@ The page shows dimension scores and five grouped scores:
 | Group | Dimensions |
 | --- | --- |
 | Functional correctness | Flow, attempted test, setup, expected behavior, actual result, error/recovery behavior, regression risk. |
-| Evidence and reproducibility | Artifacts, replayability/cassette provenance, device/OS matrix, evidence confidence, defects/issues filed. |
+| Evidence and reproducibility | Artifacts, review skill grounding, replayability/cassette provenance, device/OS matrix, evidence confidence, defects/issues filed. |
 | Product experience | UI polish, UX polish, Liquid Glass/iOS primitive integration, cross-screen continuity, empty/loading/offline states, touch ergonomics, motion/haptics, information architecture, content hierarchy, product coherence. |
 | Engineering quality | Performance metrics, accessibility/dynamic type, privacy/security, NMP architecture/cohesiveness, observability, analytics/privacy boundaries. |
 | Follow-through | Defects/issues filed, verdict, next actions, issue/PR back-links, revalidation status. |
@@ -76,6 +76,7 @@ Every page starts with:
 | Expected behavior | What should a correct Pod0 implementation do? | Given/When/Then text and acceptance criteria. | `3+` requires user-visible and architecture expectations. |
 | Actual result | What happened step by step? | Screenshot/UI tree/log per meaningful step. | Any unobserved critical step caps at `2`. |
 | Artifacts/screenshots/video | What visual and raw evidence supports the result? | Screenshot gallery, videos, UI trees, logs, metric traces, SHA/path/URL. | Missing required screenshot forces `incomplete`. |
+| Review skill grounding | Which external review skills, platform rubrics, or design doctrines grounded the page's observations? | `npx skills search` terms, loaded skill names/versions, rubric notes, and reviewer coverage. | Missing skill grounding forces `incomplete`; UI/UX scores above `2` require relevant product/design/iOS skills. |
 | UI polish report | Does the screen look finished and platform-native? | Annotated screenshots for layout, spacing, typography, color, symbols, control states. | `3+` requires critique, not just a screenshot. |
 | UX polish report | Does the flow feel clear, focused, and recoverable? | Notes on task clarity, user effort, feedback, interruption/resume, cognitive load. | `3+` requires analysis of the user's goal, not component-by-component notes only. |
 | Performance metrics | Did the scenario stay responsive? | Launch/tap latency, screen-settle time, scroll FPS/hitches, memory, CPU, audio/LLM/network latency when relevant. | Missing relevant metrics forces `incomplete`; regressions force `fail` or `pass_with_issues`. |

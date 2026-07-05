@@ -113,6 +113,19 @@ criteria. Use [`scenario-report-schema.md`](scenario-report-schema.md) and
 [`scenario-report.schema.json`](scenario-report.schema.json) for the scalable
 URL scheme, generated asset layout, rollups, and JSON record contract.
 
+Generate the static scaffold from the BDD catalog with:
+
+```sh
+python3 docs/testing/report-generator/generate_scenario_report.py \
+  --out build/pod0-scenario-report
+```
+
+The generated pages remain `incomplete` until validation attaches current run
+evidence, UI/UX critique grounded in the required review skills, metrics,
+cassettes, accessibility evidence, and linked issues for defects. See
+[`report-generator/README.md`](report-generator/README.md) for the generated
+site shape and strictness rules.
+
 ## How to read / write testing Notes
 
 Each scenario file ends with a `## Notes` section that starts **BLANK**. When you
