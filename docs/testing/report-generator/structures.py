@@ -87,9 +87,9 @@ def review_grounding_for() -> dict[str, Any]:
         "selected_skills": selected,
         "all_considered": SKILL_GROUNDING,
         "template_impact": [
-            "Apple HIG Expert drives mandatory accessibility, Dynamic Type, semantic color, safe-area, touch target, and iPhone navigation evidence.",
-            "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, and Reduce Motion/Transparency requirements.",
-            "Web Interface Guidelines drive semantic static pages with skip links, labeled navigation, focus states, reduced motion handling, readable tables, and overflow-safe content.",
+            "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, GlassEffect composition, semantic foreground styles, and Reduce Motion/Transparency requirements.",
+            "Mobile App Interface drives safe-area, SF typography, Dynamic Type, semantic color, native navigation, accessibility, 44 pt touch-target, state-resilience, and performance-as-UX checks.",
+            "The generated page separates scenario facts, evidence, individual dimensions, grouped product judgment, risk, and confidence so isolated passes cannot hide a weak product flow.",
         ],
     }
 

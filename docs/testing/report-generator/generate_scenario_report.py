@@ -34,6 +34,7 @@ PRESERVED_RECORD_FIELDS = [
     "issues",
     "next_actions",
 ]
+PRESERVED_OUTPUT_NAMES = {".git", ".gitignore", ".nojekyll", "CNAME", "assets"}
 
 
 def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Path | None = None) -> None:
@@ -64,20 +65,16 @@ def clean_output(out: Path) -> None:
     resolved = out.resolve()
     if resolved in {Path("/").resolve(), Path.home().resolve(), Path.cwd().resolve()}:
         raise ValueError(f"Refusing to clear dangerous output path: {resolved}")
-    preserve = out.with_name(f".{out.name}-preserve")
-    if preserve.exists():
-        shutil.rmtree(preserve)
     if out.exists():
-        assets = out / "assets"
-        if assets.exists():
-            preserve.mkdir(parents=True)
-            shutil.move(str(assets), preserve / "assets")
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
-    if (preserve / "assets").exists():
-        shutil.move(str(preserve / "assets"), out / "assets")
-    if preserve.exists():
-        shutil.rmtree(preserve)
+        for child in out.iterdir():
+            if child.name in PRESERVED_OUTPUT_NAMES:
+                continue
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
+    else:
+        out.mkdir(parents=True)
 
 
 def copy_sources(catalog: Path, out: Path) -> None:
@@ -136,6 +133,7 @@ def merge_previous_record(current: dict[str, Any], previous: dict[str, Any] | No
     merged = dict(current)
     for field in PRESERVED_RECORD_FIELDS:
         merged[field] = previous[field]
+    merged["sections"]["review_skill_grounding"] = current["sections"]["review_skill_grounding"]
     merged["evidence"] = merge_evidence(current["evidence"], previous["evidence"])
     merged["review_grounding"] = current["review_grounding"]
     merged["sections"] = {

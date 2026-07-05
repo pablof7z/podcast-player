@@ -148,7 +148,7 @@ def section_text(scenario: Scenario) -> dict[str, dict[str, Any]]:
         "expected_behavior": s(f"Expected behavior from BDD: {scenario.bdd['then'][0]}. NMP/RMP boundary declared by the catalog: {boundary}.", [source_ref]),
         "actual_result": s(missing, [source_ref], ["Attach step-by-step observed behavior before changing this verdict."]),
         "artifacts": s(f"Required visual/raw evidence from the catalog: {screenshots}. Only the source catalog and rubric metadata exist right now.", [source_ref, skill_ref]),
-        "review_skill_grounding": s("Review must be grounded in loaded skills, not generic taste. Selected grounding covers Apple HIG, Liquid Glass/iOS primitives, report-page accessibility/performance, and NMP architecture criteria.", [skill_ref], [f"Selected skills: {', '.join(item['name'] for item in SKILL_GROUNDING if item.get('selected'))}."]),
+        "review_skill_grounding": s("Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives plus mobile interface, safe-area, Dynamic Type, touch, navigation, accessibility, and performance-as-UX criteria.", [skill_ref], [f"Selected skills: {', '.join(item['name'] for item in SKILL_GROUNDING if item.get('selected'))}."]),
         "ui_polish_report": s("Not assessed. Requires annotated screenshots for layout, spacing, typography, color, symbols, component state, and platform-native finish.", [skill_ref]),
         "ux_polish_report": s("Not assessed. Requires notes on task clarity, user effort, feedback, interruption/resume, recovery, and cognitive load.", [skill_ref]),
         "performance_metrics": s(f"Not measured. Required performance evidence: {perf}.", [source_ref]),
@@ -264,8 +264,10 @@ def rollups_for(records: list[dict[str, Any]]) -> dict[str, Any]:
         "performance_required": sum(1 for r in records if "performance-required" in r["scenario"]["tags"]),
         "missing_evidence": missing_evidence_rollup(records),
         "instrumentation_gaps": count_gap_ids(records),
-        "average_dimension_scores": {dimension: 0 for dimension in SECTION_TO_DIMENSION.values()},
-        "average_group_scores": {group: 0 for group in GROUPS},
+        "issues_by_severity": count_issues_by_severity(records),
+        "open_issues_by_severity": count_issues_by_severity(records, open_only=True),
+        "average_dimension_scores": average_scores(records, "dimension_scores", SECTION_TO_DIMENSION.values()),
+        "average_group_scores": average_scores(records, "group_scores", GROUPS.keys()),
         "sources": [f"scenarios/{r['scenario']['slug']}/data.json" for r in records],
     }
 
@@ -282,11 +284,34 @@ def count_by(records: list[dict[str, Any]], key_fn: Any) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
+def average_scores(records: list[dict[str, Any]], score_field: str, score_keys: Any) -> dict[str, float | int]:
+    averages: dict[str, float | int] = {}
+    for score_key in score_keys:
+        values: list[float] = []
+        for record in records:
+            score = record.get(score_field, {}).get(score_key, {}).get("score")
+            if isinstance(score, (int, float)) and not isinstance(score, bool):
+                values.append(float(score))
+        averages[score_key] = round(sum(values) / len(values), 2) if values else 0
+    return averages
+
+
 def count_tags(records: list[dict[str, Any]]) -> dict[str, int]:
     counts: dict[str, int] = {}
     for record in records:
         for tag in record["scenario"]["tags"]:
             counts[tag] = counts.get(tag, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def count_issues_by_severity(records: list[dict[str, Any]], open_only: bool = False) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for record in records:
+        for issue in record.get("issues", []):
+            if open_only and issue.get("status") != "open":
+                continue
+            severity = issue.get("severity", "unknown")
+            counts[severity] = counts.get(severity, 0) + 1
     return dict(sorted(counts.items()))
 
 
@@ -337,6 +362,8 @@ def validate_output(records: list[dict[str, Any]], out: Path) -> None:
             raise ValueError(f"{record['scenario']['id']} missing structured flow or attempt records")
         if not observed and record["coherence"]["group_judgment"]["status"] != "incomplete":
             raise ValueError(f"{record['scenario']['id']} scaffold group coherence must be incomplete")
+        if set(record["coherence"]["cluster"]) != {"id", "title", "scenario_ids"}:
+            raise ValueError(f"{record['scenario']['id']} coherence cluster key mismatch")
         if set(record["quality_review"]) != {"ui", "ux", "performance", "accessibility", "reliability", "privacy_security", "content_localization", "controls_gestures", "offline_resume", "observability"}:
             raise ValueError(f"{record['scenario']['id']} quality review key mismatch")
         if not observed and not record["instrumentation_gaps"]:
@@ -344,6 +371,10 @@ def validate_output(records: list[dict[str, Any]], out: Path) -> None:
         for artifact in record["evidence"]["artifacts"]:
             if not (out / artifact["path"]).exists():
                 raise ValueError(f"{record['scenario']['id']} missing artifact path {artifact['path']}")
+            if artifact["type"] == "screenshot":
+                required = {"alt", "caption", "step_id", "captured_at", "device", "os_version", "sha256", "required"}
+                if not required.issubset(artifact):
+                    raise ValueError(f"{record['scenario']['id']} screenshot artifact {artifact['id']} missing metadata")
     if json.loads((out / "data" / "rollups.json").read_text())["scenario_count"] != len(records):
         raise ValueError("Rollup scenario count disagrees with records")
 

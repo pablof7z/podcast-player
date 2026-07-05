@@ -234,15 +234,26 @@ Security:
 - Secret-bearing artifacts are forbidden on `gh-pages`.
 - Redaction metadata must say what was removed without exposing the secret.
 
+Schema enforcement:
+
+- `quality_review` must contain the canonical UI, UX, performance,
+  accessibility, reliability, privacy/security, content/localization,
+  controls/gestures, offline/resume, and observability areas.
+- `coherence.cluster` must carry stable cluster identity and related scenario
+  IDs.
+- Screenshot artifacts must include alt text, caption, step ID, capture time,
+  device, OS version, SHA-256, and required/elective status.
+
 ## Summary Rollups
 
 `/data/rollups.json` should include:
 
 - Counts by verdict, category, tag, device, OS, provider mode, evidence state,
   readiness, product cluster, group-coherence status, and instrumentation gap ID.
-- Average score by dimension and group.
+- Computed average score by dimension and group, ignoring only `N/A` values.
 - Missing evidence counts by evidence type.
-- Open issues by severity and scenario.
+- Issue counts by severity, open issue counts by severity, and scenario sources
+  for each rollup.
 - Revalidation state after fix PR merge.
 - Flake/stale-build warnings.
 - NMP doctrine coverage, including D0-D10 touched and failed counts.

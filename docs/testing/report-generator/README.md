@@ -47,6 +47,7 @@ This pass used:
 npx skills search "iOS UI polish Apple Human Interface Guidelines accessibility UX performance mobile design review Liquid Glass"
 npx skills use alirezarezvani/claude-skills@apple-hig-expert
 npx skills use vabole/apple-skills@ios-liquid-glass
+npx skills use qodex-ai/ai-agent-skills@mobile-app-interface
 ```
 
 The local `web-design-guidelines` skill was also loaded and its current Web
@@ -56,10 +57,11 @@ selected skills and the template impact:
 - Apple HIG Expert: 44 pt targets, contrast, Dynamic Type, VoiceOver, safe
   areas, semantic colors, SF typography, and iPhone navigation ergonomics.
 - iOS Liquid Glass: hierarchy, harmony, consistency, control-layer glass use,
-  and Reduce Motion/Transparency behavior.
-- Web Interface Guidelines: semantic static pages, skip links, focus states,
-  reduced motion, readable tables, overflow-safe content, and report-page
-  accessibility/performance.
+  GlassEffect composition, semantic foreground styles, and Reduce
+  Motion/Transparency behavior.
+- Mobile App Interface: safe areas, SF typography, Dynamic Type, semantic color,
+  44 pt touch targets, native navigation, accessibility roles, state resilience,
+  and performance-as-UX budgets.
 
 UI, UX, accessibility, performance, and product-coherence scores must stay at
 `2` or below until the relevant evidence and grounded critique are attached.

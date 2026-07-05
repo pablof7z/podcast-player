@@ -93,11 +93,19 @@ The selected grounding for this template is:
   `npx skills search`, for Apple HIG accessibility, Dynamic Type, 44 pt targets,
   semantic color, safe areas, and iPhone-native primitives.
 - `vabole/apple-skills@ios-liquid-glass`, loaded after `npx skills search`, for
-  Liquid Glass hierarchy/harmony/consistency, control-layer restraint, and
-  Reduce Motion/Transparency behavior.
-- Local `web-design-guidelines`, with current guidelines fetched, for semantic
-  static report pages, focus states, skip links, readable tables, reduced
-  motion, content overflow, and report-page accessibility/performance.
+  Liquid Glass hierarchy/harmony/consistency, control-layer restraint,
+  GlassEffect composition, semantic foreground styles, and Reduce
+  Motion/Transparency behavior.
+- `qodex-ai/ai-agent-skills@mobile-app-interface`, loaded after `npx skills search`,
+  for safe areas, SF typography, Dynamic Type, semantic color, 44 pt touch
+  targets, native navigation, accessibility roles, state resilience, and
+  performance-as-UX budgets.
+
+The generated HTML must front-load the deep-review areas a reviewer expects:
+what was attempted/test intent, flow, data/control-plane setup, result, evidence,
+UI polish, UX polish, performance/latency, navigation/orientation, motion/haptic
+quality, product-flow cohesiveness, group/coherent-product judgment, risk
+severity, and validation confidence.
 
 ## Required Sections
 
