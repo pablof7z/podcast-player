@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from catalog import parse_catalog, slugify  # noqa: E402
 from contract import GENERATOR_VERSION, SCHEMA_VERSION, SITE_BASE, SKILL_GROUNDING  # noqa: E402
-from records import build_report, rollups_for, summary_for, tags_for_records, validate_output, validate_schema_contract  # noqa: E402
+from records import build_report, has_observed_data, rollups_for, summary_for, tags_for_records, validate_output, validate_schema_contract  # noqa: E402
 from render import render_home, render_scenario_index, render_scenario_page, stylesheet, write_rollup_pages, write_tag_pages  # noqa: E402
 
 PRESERVED_RECORD_FIELDS = [
@@ -137,20 +137,6 @@ def merge_previous_record(current: dict[str, Any], previous: dict[str, Any] | No
         merged[field] = previous[field]
     merged["evidence"] = merge_evidence(current["evidence"], previous["evidence"])
     return merged
-
-
-def has_observed_data(record: dict[str, Any]) -> bool:
-    evidence = record.get("evidence", {})
-    artifacts = evidence.get("artifacts", [])
-    execution = record.get("execution", {})
-    verdict = record.get("verdict", {})
-    return bool(
-        record.get("metrics")
-        or record.get("issues")
-        or len(artifacts) > 2
-        or execution.get("status") not in {None, "not_run"}
-        or verdict.get("overall") not in {None, "incomplete"}
-    )
 
 
 def merge_evidence(current: dict[str, Any], previous: dict[str, Any]) -> dict[str, Any]:

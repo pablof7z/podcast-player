@@ -82,6 +82,18 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             records = build_records(catalog, root)
             old_record = dict(records[0])
             old_record["execution"] = {**old_record["execution"], "status": "pass"}
+            old_record["verdict"] = {
+                **old_record["verdict"],
+                "overall": "pass_with_issues",
+                "summary": "Previous run passed with one issue.",
+            }
+            old_record["coherence"] = {
+                **old_record["coherence"],
+                "group_judgment": {
+                    **old_record["coherence"]["group_judgment"],
+                    "status": "pass_with_issues",
+                },
+            }
             old_record["metrics"] = [
                 {
                     "id": "metric-screen-settle",
@@ -118,6 +130,8 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertEqual(json.loads((out / "data" / "issues.json").read_text()), old_issues)
             merged = json.loads(previous_record_path.read_text())
             self.assertEqual(merged["execution"]["status"], "pass")
+            self.assertEqual(merged["verdict"]["overall"], "pass_with_issues")
+            self.assertEqual(merged["coherence"]["group_judgment"]["status"], "pass_with_issues")
             self.assertEqual(merged["metrics"][0]["id"], "metric-screen-settle")
             self.assertIn("artifact:old-shot", {artifact["id"] for artifact in merged["evidence"]["artifacts"]})
 
