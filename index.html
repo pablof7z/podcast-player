@@ -15,6 +15,7 @@
       <nav class="topbar" aria-label="Report navigation">
         <a href="#status">Status</a>
         <a href="#scenarios">Scenarios</a>
+        <a href="#page-system">Page System</a>
         <a href="#evidence">Evidence</a>
         <a href="#screenshots">Screenshots</a>
         <a href="#issues">Issues</a>
@@ -49,8 +50,8 @@
         <div class="metric-grid">
           <article class="metric">
             <span class="metric-label">Published</span>
-            <strong>2026-07-05 17:20 UTC</strong>
-            <span class="metric-note">First live gh-pages bootstrap.</span>
+            <strong>2026-07-05 18:15 UTC</strong>
+            <span class="metric-note">Report updated with replay and page-template status.</span>
           </article>
           <article class="metric">
             <span class="metric-label">Source commit</span>
@@ -70,7 +71,12 @@
           <article class="metric">
             <span class="metric-label">Cassettes</span>
             <strong>7</strong>
-            <span class="metric-note">PR #711 verifies provider replay fixtures.</span>
+            <span class="metric-note">PR #711 wires Rust runtime replay mode.</span>
+          </article>
+          <article class="metric">
+            <span class="metric-label">Page template</span>
+            <strong>PR #712</strong>
+            <span class="metric-note">Scenario page contract and JSON schema.</span>
           </article>
           <article class="metric">
             <span class="metric-label">Screenshots staged</span>
@@ -144,7 +150,47 @@
         </div>
       </section>
 
-      <section id="evidence" class="band muted">
+      <section id="page-system" class="band muted">
+        <div class="section-head">
+          <p class="eyebrow">Hundreds of pages</p>
+          <h2>Scenario Page System</h2>
+          <p>
+            PR <a href="https://github.com/pablof7z/podcast-player/pull/712">#712</a>
+            defines the contract that this site must grow into: one page per
+            scenario, plus rollups by category, defect, provider, NMP rule, and
+            performance budget. The current single-page hub is a temporary
+            command center, not the final report shape.
+          </p>
+        </div>
+        <div class="evidence-grid">
+          <article>
+            <h3>Per-scenario URL</h3>
+            <p>Each BDD scenario gets its own stable page with flow, setup, expected behavior, actual result, artifacts, verdict, and follow-up links.</p>
+          </article>
+          <article>
+            <h3>Individual scoring</h3>
+            <p>UI polish, UX polish, Liquid Glass integration, accessibility, performance, privacy, replayability, NMP architecture, and product coherence are scored separately.</p>
+          </article>
+          <article>
+            <h3>Grouped verdict</h3>
+            <p>Scenario pages must also produce a cohesive product verdict so isolated green checks cannot hide a fragmented experience.</p>
+          </article>
+          <article>
+            <h3>Evidence gates</h3>
+            <p>Missing screenshots, missing metrics, missing cassette provenance, missing UX critique, or missing issue links block a scenario from being marked complete.</p>
+          </article>
+          <article>
+            <h3>Navigation model</h3>
+            <p>The generated site must include indexes, filters, neighboring scenario links, tag pages, issue/PR backlinks, and summary rollups for hundreds of scenario pages.</p>
+          </article>
+          <article>
+            <h3>Grounded critique</h3>
+            <p>The template is grounded in iOS Liquid Glass, Human Interface Guidelines, mobile UX design, and NMP architecture rules.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="evidence" class="band">
         <div class="section-head">
           <p class="eyebrow">Per scenario</p>
           <h2>Required Evidence Contract</h2>
@@ -168,7 +214,7 @@
           </article>
           <article>
             <h3>Replay cassettes</h3>
-            <p>PR <a href="https://github.com/pablof7z/podcast-player/pull/711">#711</a> adds the first 7 redacted provider cassettes plus a verifier CLI; runtime transport interception remains next.</p>
+            <p>PR <a href="https://github.com/pablof7z/podcast-player/pull/711">#711</a> adds the first 7 redacted provider cassettes, a verifier CLI, and runtime replay hooks for LLM/STT/search transports.</p>
           </article>
           <article>
             <h3>Issue closure</h3>
@@ -245,7 +291,7 @@
           <a href="https://github.com/pablof7z/podcast-player/issues/701">
             <span>#701</span>
             Add cassette record/replay for LLM and STT scenario validation
-            - PR #711 open
+            - PR #711 runtime replay open
           </a>
           <a href="https://github.com/pablof7z/podcast-player/issues/702">
             <span>#702</span>
@@ -259,6 +305,10 @@
             <span>#704</span>
             Audit Pod0 against latest NMP and chirp-shipped fixes
             - PR #710 open
+          </a>
+          <a href="https://github.com/pablof7z/podcast-player/pull/712">
+            <span>#712</span>
+            Per-scenario report page contract and schema
           </a>
           <a href="https://github.com/pablof7z/podcast-player/issues/707">
             <span>#707</span>
