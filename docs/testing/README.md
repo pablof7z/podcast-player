@@ -103,6 +103,16 @@ app data is wiped).
 4. Compare observed behavior against **Acceptance Criteria**.
 5. Record results in the scenario file's **Notes** section (see below).
 
+## Per-scenario report pages
+
+The public Pod0 validation site is expected to move from one giant report page to
+one generated page per BDD scenario. Use
+[`scenario-report-page-template.md`](scenario-report-page-template.md) for the
+required page sections, scoring model, evidence gates, and reviewer acceptance
+criteria. Use [`scenario-report-schema.md`](scenario-report-schema.md) and
+[`scenario-report.schema.json`](scenario-report.schema.json) for the scalable
+URL scheme, generated asset layout, rollups, and JSON record contract.
+
 ## How to read / write testing Notes
 
 Each scenario file ends with a `## Notes` section that starts **BLANK**. When you
