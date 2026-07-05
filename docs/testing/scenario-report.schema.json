@@ -1,0 +1,485 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pablof7z.github.io/podcast-player/schema/scenario-report.schema.json",
+  "title": "Pod0 Scenario Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scenario",
+    "run",
+    "page",
+    "product_context",
+    "flow_steps",
+    "execution",
+    "review_grounding",
+    "verdict",
+    "sections",
+    "dimension_scores",
+    "group_scores",
+    "quality_review",
+    "coherence",
+    "readiness",
+    "evidence",
+    "metrics",
+    "instrumentation_gaps",
+    "risks",
+    "issues",
+    "next_actions"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^1\\.0\\.0$" },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "slug", "title", "category", "source_path", "bdd", "tags"],
+      "properties": {
+        "id": { "$ref": "#/$defs/non_empty_string" },
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "title": { "$ref": "#/$defs/non_empty_string" },
+        "category": { "$ref": "#/$defs/non_empty_string" },
+        "source_path": { "$ref": "#/$defs/non_empty_string" },
+        "bdd": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["given", "when", "then"],
+          "properties": {
+            "given": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/non_empty_string" } },
+            "when": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/non_empty_string" } },
+            "then": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/non_empty_string" } }
+          }
+        },
+        "tags": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" }, "uniqueItems": true },
+        "related_scenarios": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" }, "uniqueItems": true },
+        "dependencies": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "source_commit", "app_build", "started_at", "executor", "device_matrix", "environment"],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/non_empty_string" },
+        "source_commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "branch": { "type": "string" },
+        "app_build": { "$ref": "#/$defs/non_empty_string" },
+        "started_at": { "type": "string", "format": "date-time" },
+        "completed_at": { "type": "string", "format": "date-time" },
+        "executor": { "$ref": "#/$defs/non_empty_string" },
+        "generator_version": { "type": "string" },
+        "provider_mode": { "enum": ["none", "live", "replay", "mixed", "blocked"] },
+        "device_matrix": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/device" } },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["locale", "appearance", "network_condition"],
+          "properties": {
+            "locale": { "$ref": "#/$defs/non_empty_string" },
+            "appearance": { "enum": ["light", "dark", "both", "unspecified"] },
+            "dynamic_type": { "type": "string" },
+            "reduce_motion": { "type": "boolean" },
+            "reduce_transparency": { "type": "boolean" },
+            "network_condition": { "$ref": "#/$defs/non_empty_string" },
+            "launch_arguments": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "fixtures": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } },
+        "cassettes": { "type": "array", "items": { "$ref": "#/$defs/cassette" } },
+        "live_dependency_rationale": { "type": "string" }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical_url", "generated_at", "assets_base", "navigation"],
+      "properties": {
+        "canonical_url": { "type": "string", "format": "uri" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "assets_base": { "$ref": "#/$defs/non_empty_string" },
+        "navigation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scenario_index_url", "category_url"],
+          "properties": {
+            "scenario_index_url": { "type": "string" },
+            "category_url": { "type": "string" },
+            "previous_url": { "type": "string" },
+            "next_url": { "type": "string" },
+            "rollup_url": { "type": "string" }
+          }
+        }
+      }
+    },
+    "product_context": { "$ref": "#/$defs/product_context" },
+    "flow_steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/flow_step" } },
+    "execution": { "$ref": "#/$defs/execution" },
+    "review_grounding": { "$ref": "#/$defs/review_grounding" },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["overall", "summary", "score_gate_explanation"],
+      "properties": {
+        "overall": { "enum": ["pass", "pass_with_issues", "fail", "blocked", "incomplete"] },
+        "summary": { "$ref": "#/$defs/non_empty_string" },
+        "score_gate_explanation": { "$ref": "#/$defs/non_empty_string" },
+        "reviewer": { "type": "string" },
+        "reviewed_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "persona_job_acceptance",
+        "flow",
+        "attempted_test",
+        "scenario_setup",
+        "execution_attempts",
+        "expected_behavior",
+        "actual_result",
+        "artifacts",
+        "review_skill_grounding",
+        "ui_polish_report",
+        "ux_polish_report",
+        "performance_metrics",
+        "accessibility_dynamic_type",
+        "liquid_glass_ios_primitives",
+        "error_recovery_behavior",
+        "privacy_security",
+        "nmp_architecture_cohesiveness",
+        "product_coherence_in_context",
+        "product_cluster_coherence",
+        "reliability_flakiness",
+        "regression_risk",
+        "defects_issues_filed",
+        "risks_follow_up",
+        "instrumentation_gaps",
+        "localization_content_quality",
+        "controls_gestures_audio",
+        "offline_resume_behavior",
+        "readiness_gates",
+        "verdict",
+        "next_actions",
+        "cross_screen_continuity",
+        "states_resilience",
+        "touch_ergonomics",
+        "motion_haptics",
+        "information_architecture",
+        "content_hierarchy",
+        "observability",
+        "analytics_privacy_boundaries",
+        "replayability_cassette_provenance",
+        "evidence_confidence",
+        "device_os_matrix",
+        "sister_app_nmp_chirp_comparison"
+      ],
+      "properties": {
+        "persona_job_acceptance": { "$ref": "#/$defs/section" }, "flow": { "$ref": "#/$defs/section" },
+        "attempted_test": { "$ref": "#/$defs/section" }, "scenario_setup": { "$ref": "#/$defs/section" },
+        "execution_attempts": { "$ref": "#/$defs/section" }, "expected_behavior": { "$ref": "#/$defs/section" },
+        "actual_result": { "$ref": "#/$defs/section" }, "artifacts": { "$ref": "#/$defs/section" },
+        "review_skill_grounding": { "$ref": "#/$defs/section" }, "ui_polish_report": { "$ref": "#/$defs/section" },
+        "ux_polish_report": { "$ref": "#/$defs/section" }, "performance_metrics": { "$ref": "#/$defs/section" },
+        "accessibility_dynamic_type": { "$ref": "#/$defs/section" }, "liquid_glass_ios_primitives": { "$ref": "#/$defs/section" },
+        "error_recovery_behavior": { "$ref": "#/$defs/section" }, "privacy_security": { "$ref": "#/$defs/section" },
+        "nmp_architecture_cohesiveness": { "$ref": "#/$defs/section" }, "product_coherence_in_context": { "$ref": "#/$defs/section" },
+        "product_cluster_coherence": { "$ref": "#/$defs/section" }, "reliability_flakiness": { "$ref": "#/$defs/section" },
+        "regression_risk": { "$ref": "#/$defs/section" }, "defects_issues_filed": { "$ref": "#/$defs/section" },
+        "risks_follow_up": { "$ref": "#/$defs/section" }, "instrumentation_gaps": { "$ref": "#/$defs/section" },
+        "localization_content_quality": { "$ref": "#/$defs/section" }, "controls_gestures_audio": { "$ref": "#/$defs/section" },
+        "offline_resume_behavior": { "$ref": "#/$defs/section" }, "readiness_gates": { "$ref": "#/$defs/section" },
+        "verdict": { "$ref": "#/$defs/section" }, "next_actions": { "$ref": "#/$defs/section" },
+        "cross_screen_continuity": { "$ref": "#/$defs/section" }, "states_resilience": { "$ref": "#/$defs/section" },
+        "touch_ergonomics": { "$ref": "#/$defs/section" }, "motion_haptics": { "$ref": "#/$defs/section" },
+        "information_architecture": { "$ref": "#/$defs/section" }, "content_hierarchy": { "$ref": "#/$defs/section" },
+        "observability": { "$ref": "#/$defs/section" }, "analytics_privacy_boundaries": { "$ref": "#/$defs/section" },
+        "replayability_cassette_provenance": { "$ref": "#/$defs/section" }, "evidence_confidence": { "$ref": "#/$defs/section" },
+        "device_os_matrix": { "$ref": "#/$defs/section" },
+        "sister_app_nmp_chirp_comparison": { "$ref": "#/$defs/section" }
+      }
+    },
+    "dimension_scores": { "$ref": "#/$defs/dimension_scores" },
+    "group_scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["functional_correctness", "evidence_reproducibility", "product_experience", "engineering_quality", "follow_through"],
+      "properties": {
+        "functional_correctness": { "$ref": "#/$defs/group_score" },
+        "evidence_reproducibility": { "$ref": "#/$defs/group_score" },
+        "product_experience": { "$ref": "#/$defs/group_score" },
+        "engineering_quality": { "$ref": "#/$defs/group_score" },
+        "follow_through": { "$ref": "#/$defs/group_score" }
+      }
+    },
+    "quality_review": { "type": "object", "additionalProperties": { "$ref": "#/$defs/review_area" } },
+    "coherence": { "$ref": "#/$defs/coherence" },
+    "readiness": { "$ref": "#/$defs/readiness" },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifacts", "required_kinds", "missing", "redaction_summary"],
+      "properties": {
+        "artifacts": { "type": "array", "items": { "$ref": "#/$defs/artifact" } },
+        "required_kinds": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" }, "uniqueItems": true },
+        "missing": { "type": "array", "items": { "$ref": "#/$defs/missing_evidence" } },
+        "redaction_summary": { "$ref": "#/$defs/non_empty_string" }
+      }
+    },
+    "metrics": { "type": "array", "items": { "$ref": "#/$defs/metric" } },
+    "instrumentation_gaps": { "type": "array", "items": { "$ref": "#/$defs/gap" } },
+    "risks": { "type": "array", "items": { "$ref": "#/$defs/risk" } },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } },
+    "next_actions": { "type": "array", "items": { "$ref": "#/$defs/action" } }
+  },
+  "$defs": {
+    "non_empty_string": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["pass", "pass_with_issues", "fail", "blocked", "incomplete", "not_applicable", "not_run", "open", "done"] },
+    "product_context": { "type": "object", "additionalProperties": false, "required": ["persona", "job_to_be_done", "user_value", "acceptance_criteria", "platform_expectations", "scenario_cluster"], "properties": { "persona": { "$ref": "#/$defs/non_empty_string" }, "job_to_be_done": { "$ref": "#/$defs/non_empty_string" }, "user_value": { "$ref": "#/$defs/non_empty_string" }, "acceptance_criteria": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/non_empty_string" } }, "platform_expectations": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "scenario_cluster": { "$ref": "#/$defs/scenario_cluster" } } },
+    "scenario_cluster": { "type": "object", "additionalProperties": false, "required": ["id", "title", "related_scenarios"], "properties": { "id": { "$ref": "#/$defs/non_empty_string" }, "title": { "$ref": "#/$defs/non_empty_string" }, "related_scenarios": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } } } },
+    "flow_step": { "type": "object", "additionalProperties": false, "required": ["id", "phase", "action", "expected", "status", "evidence_required", "evidence_refs"], "properties": { "id": { "$ref": "#/$defs/non_empty_string" }, "phase": { "$ref": "#/$defs/non_empty_string" }, "action": { "$ref": "#/$defs/non_empty_string" }, "expected": { "$ref": "#/$defs/non_empty_string" }, "status": { "$ref": "#/$defs/status" }, "evidence_required": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } } } },
+    "execution": { "type": "object", "additionalProperties": false, "required": ["status", "attempts", "retry_policy", "branch_coverage"], "properties": { "status": { "$ref": "#/$defs/status" }, "attempts": { "type": "array", "items": { "$ref": "#/$defs/attempt" } }, "retry_policy": { "$ref": "#/$defs/non_empty_string" }, "branch_coverage": { "type": "array", "items": { "$ref": "#/$defs/branch" } } } },
+    "attempt": { "type": "object", "additionalProperties": false, "required": ["id", "status", "started_at", "completed_at", "executor", "tools", "commands", "branches", "notes", "evidence_refs"], "properties": { "id": { "$ref": "#/$defs/non_empty_string" }, "status": { "$ref": "#/$defs/status" }, "started_at": { "type": "string", "format": "date-time" }, "completed_at": { "type": "string", "format": "date-time" }, "executor": { "$ref": "#/$defs/non_empty_string" }, "tools": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "commands": { "type": "array", "items": { "type": "string" } }, "branches": { "type": "array", "items": { "$ref": "#/$defs/branch" } }, "notes": { "type": "string" }, "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } } } },
+    "branch": { "type": "object", "additionalProperties": false, "required": ["id", "status", "trigger", "expected"], "properties": { "id": { "$ref": "#/$defs/non_empty_string" }, "status": { "$ref": "#/$defs/status" }, "trigger": { "$ref": "#/$defs/non_empty_string" }, "expected": { "$ref": "#/$defs/non_empty_string" } } },
+    "review_grounding": { "type": "object", "additionalProperties": false, "required": ["search_command", "selected_skills", "all_considered", "template_impact"], "properties": { "search_command": { "$ref": "#/$defs/non_empty_string" }, "selected_skills": { "type": "array", "items": { "$ref": "#/$defs/review_skill" } }, "all_considered": { "type": "array", "items": { "$ref": "#/$defs/review_skill" } }, "template_impact": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } } } },
+    "review_skill": { "type": "object", "additionalProperties": false, "required": ["selected", "name", "search_terms", "coverage"], "properties": { "selected": { "type": "boolean" }, "name": { "$ref": "#/$defs/non_empty_string" }, "search_terms": { "$ref": "#/$defs/non_empty_string" }, "coverage": { "$ref": "#/$defs/non_empty_string" } } },
+    "review_area": { "type": "object", "additionalProperties": false, "required": ["status", "summary", "checks", "evidence_refs", "gaps"], "properties": { "status": { "$ref": "#/$defs/status" }, "summary": { "$ref": "#/$defs/non_empty_string" }, "checks": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "gaps": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } } } },
+    "coherence": { "type": "object", "additionalProperties": false, "required": ["cluster", "individual_judgment", "group_judgment", "themes", "cross_scenario_risks"], "properties": { "cluster": { "type": "object" }, "individual_judgment": { "$ref": "#/$defs/review_area" }, "group_judgment": { "$ref": "#/$defs/review_area" }, "themes": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "cross_scenario_risks": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } } } },
+    "readiness": { "type": "object", "additionalProperties": false, "required": ["ship_gate", "blocking_reasons", "gates"], "properties": { "ship_gate": { "$ref": "#/$defs/status" }, "blocking_reasons": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "gates": { "type": "array", "items": { "$ref": "#/$defs/readiness_gate" } } } },
+    "readiness_gate": { "type": "object", "additionalProperties": false, "required": ["id", "status", "requirement", "owner", "evidence_refs"], "properties": { "id": { "$ref": "#/$defs/non_empty_string" }, "status": { "$ref": "#/$defs/status" }, "requirement": { "$ref": "#/$defs/non_empty_string" }, "owner": { "$ref": "#/$defs/non_empty_string" }, "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } } } },
+    "missing_evidence": { "type": "object", "additionalProperties": false, "required": ["kind", "reason", "blocks_dimensions", "required"], "properties": { "kind": { "$ref": "#/$defs/non_empty_string" }, "reason": { "$ref": "#/$defs/non_empty_string" }, "blocks_dimensions": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "required": { "type": "boolean" } } },
+    "gap": { "type": "object", "additionalProperties": false, "required": ["id", "severity", "summary", "affected_dimensions", "owner", "status"], "properties": { "id": { "$ref": "#/$defs/non_empty_string" }, "severity": { "enum": ["blocker", "major", "minor", "polish"] }, "summary": { "$ref": "#/$defs/non_empty_string" }, "affected_dimensions": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "owner": { "type": "string" }, "status": { "$ref": "#/$defs/status" } } },
+    "risk": { "type": "object", "additionalProperties": false, "required": ["id", "severity", "priority", "status", "title", "affected_dimensions", "mitigation"], "properties": { "id": { "$ref": "#/$defs/non_empty_string" }, "severity": { "enum": ["blocker", "major", "minor", "polish"] }, "priority": { "$ref": "#/$defs/non_empty_string" }, "status": { "$ref": "#/$defs/status" }, "title": { "$ref": "#/$defs/non_empty_string" }, "affected_dimensions": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" } }, "mitigation": { "$ref": "#/$defs/non_empty_string" } } },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "evidence_refs"],
+      "properties": {
+        "summary": { "$ref": "#/$defs/non_empty_string" },
+        "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" }, "uniqueItems": true },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "score_value": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0, "maximum": 4 },
+        { "type": "string", "const": "N/A" }
+      ]
+    },
+    "dimension_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "status", "rationale", "evidence_refs"],
+      "properties": {
+        "score": { "$ref": "#/$defs/score_value" },
+        "status": { "enum": ["pass", "pass_with_issues", "fail", "blocked", "incomplete", "not_applicable"] },
+        "rationale": { "$ref": "#/$defs/non_empty_string" },
+        "evidence_refs": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" }, "uniqueItems": true },
+        "issue_refs": { "type": "array", "items": { "$ref": "#/$defs/non_empty_string" }, "uniqueItems": true }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "score": { "type": "integer", "minimum": 3 } } },
+          "then": { "properties": { "evidence_refs": { "minItems": 1 } } }
+        }
+      ]
+    },
+    "dimension_scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "persona_acceptance",
+        "flow",
+        "attempted_test",
+        "scenario_setup",
+        "execution_attempts",
+        "expected_behavior",
+        "actual_result",
+        "artifacts",
+        "review_skill_grounding",
+        "ui_polish",
+        "ux_polish",
+        "performance",
+        "accessibility_dynamic_type",
+        "liquid_glass_ios_primitives",
+        "error_recovery",
+        "privacy_security",
+        "nmp_architecture",
+        "product_coherence",
+        "product_cluster_coherence",
+        "reliability_flakiness",
+        "regression_risk",
+        "defects_issues_filed",
+        "risks_follow_up",
+        "instrumentation_gaps",
+        "localization_content_quality",
+        "controls_gestures_audio",
+        "offline_resume_behavior",
+        "readiness_gates",
+        "verdict",
+        "next_actions",
+        "cross_screen_continuity",
+        "states_resilience",
+        "touch_ergonomics",
+        "motion_haptics",
+        "information_architecture",
+        "content_hierarchy",
+        "observability",
+        "analytics_privacy_boundaries",
+        "replayability_cassette_provenance",
+        "evidence_confidence",
+        "device_os_matrix",
+        "sister_app_nmp_chirp_comparison"
+      ],
+      "properties": {
+        "persona_acceptance": { "$ref": "#/$defs/dimension_score" },
+        "flow": { "$ref": "#/$defs/dimension_score" },
+        "attempted_test": { "$ref": "#/$defs/dimension_score" },
+        "scenario_setup": { "$ref": "#/$defs/dimension_score" },
+        "execution_attempts": { "$ref": "#/$defs/dimension_score" },
+        "expected_behavior": { "$ref": "#/$defs/dimension_score" },
+        "actual_result": { "$ref": "#/$defs/dimension_score" },
+        "artifacts": { "$ref": "#/$defs/dimension_score" },
+        "review_skill_grounding": { "$ref": "#/$defs/dimension_score" },
+        "ui_polish": { "$ref": "#/$defs/dimension_score" },
+        "ux_polish": { "$ref": "#/$defs/dimension_score" },
+        "performance": { "$ref": "#/$defs/dimension_score" },
+        "accessibility_dynamic_type": { "$ref": "#/$defs/dimension_score" },
+        "liquid_glass_ios_primitives": { "$ref": "#/$defs/dimension_score" },
+        "error_recovery": { "$ref": "#/$defs/dimension_score" },
+        "privacy_security": { "$ref": "#/$defs/dimension_score" },
+        "nmp_architecture": { "$ref": "#/$defs/dimension_score" },
+        "product_coherence": { "$ref": "#/$defs/dimension_score" },
+        "product_cluster_coherence": { "$ref": "#/$defs/dimension_score" },
+        "reliability_flakiness": { "$ref": "#/$defs/dimension_score" },
+        "regression_risk": { "$ref": "#/$defs/dimension_score" },
+        "defects_issues_filed": { "$ref": "#/$defs/dimension_score" },
+        "risks_follow_up": { "$ref": "#/$defs/dimension_score" },
+        "instrumentation_gaps": { "$ref": "#/$defs/dimension_score" },
+        "localization_content_quality": { "$ref": "#/$defs/dimension_score" },
+        "controls_gestures_audio": { "$ref": "#/$defs/dimension_score" },
+        "offline_resume_behavior": { "$ref": "#/$defs/dimension_score" },
+        "readiness_gates": { "$ref": "#/$defs/dimension_score" },
+        "verdict": { "$ref": "#/$defs/dimension_score" },
+        "next_actions": { "$ref": "#/$defs/dimension_score" },
+        "cross_screen_continuity": { "$ref": "#/$defs/dimension_score" },
+        "states_resilience": { "$ref": "#/$defs/dimension_score" },
+        "touch_ergonomics": { "$ref": "#/$defs/dimension_score" },
+        "motion_haptics": { "$ref": "#/$defs/dimension_score" },
+        "information_architecture": { "$ref": "#/$defs/dimension_score" },
+        "content_hierarchy": { "$ref": "#/$defs/dimension_score" },
+        "observability": { "$ref": "#/$defs/dimension_score" },
+        "analytics_privacy_boundaries": { "$ref": "#/$defs/dimension_score" },
+        "replayability_cassette_provenance": { "$ref": "#/$defs/dimension_score" },
+        "evidence_confidence": { "$ref": "#/$defs/dimension_score" },
+        "device_os_matrix": { "$ref": "#/$defs/dimension_score" },
+        "sister_app_nmp_chirp_comparison": { "$ref": "#/$defs/dimension_score" }
+      }
+    },
+    "group_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "status", "rationale", "dimension_refs"],
+      "properties": {
+        "score": { "$ref": "#/$defs/score_value" },
+        "status": { "enum": ["pass", "pass_with_issues", "fail", "blocked", "incomplete"] },
+        "rationale": { "$ref": "#/$defs/non_empty_string" },
+        "dimension_refs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/non_empty_string" } }
+      }
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "os_version", "form_factor"],
+      "properties": {
+        "name": { "$ref": "#/$defs/non_empty_string" },
+        "udid": { "type": "string" },
+        "os_version": { "$ref": "#/$defs/non_empty_string" },
+        "form_factor": { "enum": ["iphone", "ipad", "mac", "android", "web", "other"] }
+      }
+    },
+    "cassette": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "provider", "mode", "redaction_hash"],
+      "properties": {
+        "id": { "$ref": "#/$defs/non_empty_string" },
+        "provider": { "$ref": "#/$defs/non_empty_string" },
+        "model": { "type": "string" },
+        "mode": { "enum": ["live", "replay", "mixed", "blocked"] },
+        "recorded_at": { "type": "string", "format": "date-time" },
+        "redaction_hash": { "$ref": "#/$defs/non_empty_string" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "path", "description", "redaction"],
+      "properties": {
+        "id": { "$ref": "#/$defs/non_empty_string" },
+        "type": { "enum": ["screenshot", "video", "ui_tree", "metric_trace", "log", "cassette", "relay_json", "issue", "pr", "source_doc", "command_output", "accessibility_audit"] },
+        "path": { "$ref": "#/$defs/non_empty_string" },
+        "description": { "$ref": "#/$defs/non_empty_string" },
+        "step_id": { "type": "string" },
+        "captured_at": { "type": "string", "format": "date-time" },
+        "device": { "type": "string" },
+        "os_version": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "alt": { "type": "string" },
+        "caption": { "type": "string" },
+        "required": { "type": "boolean" },
+        "redaction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "enum": ["not_needed", "redacted", "forbidden"] },
+            "notes": { "type": "string" }
+          }
+        }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "value", "unit", "budget", "status", "method", "evidence_refs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/non_empty_string" },
+        "name": { "$ref": "#/$defs/non_empty_string" },
+        "value": { "type": "number" },
+        "unit": { "$ref": "#/$defs/non_empty_string" },
+        "budget": { "$ref": "#/$defs/non_empty_string" },
+        "status": { "enum": ["pass", "warn", "fail", "blocked", "missing"] },
+        "method": { "$ref": "#/$defs/non_empty_string" },
+        "evidence_refs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/non_empty_string" } }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "url", "severity", "title", "affected_dimensions", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/non_empty_string" },
+        "url": { "type": "string", "format": "uri" },
+        "severity": { "enum": ["blocker", "major", "minor", "polish"] },
+        "title": { "$ref": "#/$defs/non_empty_string" },
+        "affected_dimensions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/non_empty_string" } },
+        "status": { "enum": ["open", "fixed", "wontfix", "duplicate"] },
+        "owner": { "type": "string" },
+        "fix_pr_url": { "type": "string", "format": "uri" },
+        "revalidation_run_id": { "type": "string" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/non_empty_string" },
+        "title": { "$ref": "#/$defs/non_empty_string" },
+        "status": { "enum": ["open", "in_progress", "blocked", "done"] },
+        "owner": { "type": "string" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    }
+  }
+}
