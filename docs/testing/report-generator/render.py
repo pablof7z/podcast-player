@@ -14,6 +14,7 @@ def render_home(records: list[dict[str, Any]], depth: int) -> str:
         hero("Pod0 Scenario Validation Report", f"{len(records)} generated scenario pages. Current verdict: incomplete until run evidence is attached."),
         stat_band(rollups["by_verdict"]),
         section("Scenario Page System", p("Each BDD catalog scenario now has a stable page, JSON record, source link, structured flow steps, attempts, evidence inventory, skill-grounded quality review, product-cluster coherence, readiness gates, and rollup membership.")),
+        section("Evidence-Backed Scenarios", evidence_backed_summary(records, depth)),
         link_list("Indexes", [("All scenarios", rel("scenarios/", depth)), ("Tags", rel("tags/", depth)), ("Issues", rel("issues/", depth)), ("Performance rollup", rel("rollups/performance/", depth)), ("Raw scenario JSON", rel("data/scenarios.json", depth))]),
     ]
     return page("Pod0 Validation Report", depth, "\n".join(body))
@@ -51,6 +52,7 @@ def render_scenario_page(record: dict[str, Any], depth: int) -> str:
         section("Preconditions, Fixtures, Cassettes, And Runtime Metadata", key_values(metadata_for(record)) + device_table(record["run"]["device_matrix"]) + cassette_table(record["run"].get("cassettes", []))),
         section("Execution Attempts, Retries, And Branches", attempts_block(record["execution"])),
         section("Results And Verdict", p(record["verdict"]["summary"]) + key_values({"Overall": record["verdict"]["overall"], "Gate explanation": record["verdict"]["score_gate_explanation"]})),
+        section("Screenshot Evidence", screenshot_gallery(record["evidence"]["artifacts"], depth)),
         section("Evidence Inventory", missing_evidence_table(record["evidence"]) + artifact_table(record["evidence"]["artifacts"], depth)),
         section("Quality Review", quality_table(record["quality_review"])),
         section("UI Polish Report", review_area_block(record, "ui", "ui_polish_report")),
@@ -58,14 +60,14 @@ def render_scenario_page(record: dict[str, Any], depth: int) -> str:
         section("Performance Metrics And Interaction Latency", metrics_block(record)),
         section("Navigation, Orientation, And Information Architecture", navigation_orientation_block(record)),
         section("Animation, Transition, And Haptics Quality", motion_block(record)),
-        section("Product Coherence And Cluster Judgment", coherence_block(record["coherence"])),
+        section("Product Flow Cohesiveness And Group Coherent-Product Judgment", coherence_block(record["coherence"])),
         section("Product-Level Assessment", product_assessment_block(record)),
         section("Readiness Gates", readiness_block(record["readiness"])),
         section("Instrumentation Gaps And Missing Evidence", gap_table(record["instrumentation_gaps"])),
         section("Risk Severity And Validation Confidence", risk_confidence_block(record)),
         section("Risks, Defects, Issue Links, And Follow-Up", risk_table(record["risks"]) + issue_table(record["issues"]) + action_list(record["next_actions"])),
-        section("Grouped Scores", score_table(record["group_scores"])),
-        section("Dimension Scores", score_table(record["dimension_scores"])),
+        section("Grouped Scores And Coherent Product Judgment", score_table(record["group_scores"])),
+        section("Individual Dimension Judgments", score_table(record["dimension_scores"])),
         section("Required Detailed Sections", "\n".join(render_required_section(key, value) for key, value in record["sections"].items())),
     ]
     return page(f"{scenario['id']} - {scenario['title']}", depth, "\n".join(body))
@@ -338,6 +340,27 @@ def stat_band(counts: dict[str, int]) -> str:
     return f"<section class=\"stats\">{stats}</section>"
 
 
+def evidence_backed_summary(records: list[dict[str, Any]], depth: int) -> str:
+    backed = [record for record in records if screenshot_artifacts(record["evidence"]["artifacts"])]
+    if not backed:
+        return p("No scenario screenshots have been published yet.")
+    items = []
+    for record in backed:
+        scenario = record["scenario"]
+        shots = screenshot_artifacts(record["evidence"]["artifacts"])
+        first = shots[0]
+        items.append(
+            "<article class=\"evidence-card\">"
+            f"<a href=\"{rel('scenarios/' + scenario['slug'] + '/', depth)}\">"
+            f"<img src=\"{rel(first['path'], depth)}\" alt=\"{e(first.get('alt', first['description']))}\" loading=\"eager\" decoding=\"async\">"
+            f"<strong>{e(scenario['id'])}</strong>"
+            f"<span>{e(record['verdict']['overall'])} · {len(shots)} screenshot{'s' if len(shots) != 1 else ''}</span>"
+            "</a>"
+            "</article>"
+        )
+    return "<div class=\"evidence-grid\">" + "".join(items) + "</div>"
+
+
 def key_values(values: dict[str, str]) -> str:
     return "<dl>" + "".join(f"<dt>{e(k)}</dt><dd>{e(str(v))}</dd>" for k, v in values.items()) + "</dl>"
 
@@ -350,6 +373,30 @@ def score_table(scores: dict[str, dict[str, Any]]) -> str:
 def artifact_table(artifacts: list[dict[str, Any]], depth: int) -> str:
     rows = "".join(f"<tr><td>{e(a['id'])}</td><td>{e(a['type'])}</td><td><a href=\"{rel(a['path'], depth)}\">{e(a['path'])}</a></td><td>{e(a['description'])}</td></tr>" for a in artifacts)
     return f"<table><caption>Published artifact registry</caption><thead><tr><th>ID</th><th>Type</th><th>Path</th><th>Description</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def screenshot_gallery(artifacts: list[dict[str, Any]], depth: int) -> str:
+    screenshots = screenshot_artifacts(artifacts)
+    if not screenshots:
+        return p("No screenshots are attached to this scenario yet.")
+    figures = []
+    for item in screenshots:
+        caption_bits = [item.get("caption") or item["description"]]
+        if item.get("step_id"):
+            caption_bits.append(f"step: {item['step_id']}")
+        if item.get("device") or item.get("os_version"):
+            caption_bits.append(" · ".join(part for part in [item.get("device", ""), item.get("os_version", "")] if part))
+        figures.append(
+            "<figure>"
+            f"<a href=\"{rel(item['path'], depth)}\"><img src=\"{rel(item['path'], depth)}\" alt=\"{e(item.get('alt', item['description']))}\" loading=\"eager\" decoding=\"async\"></a>"
+            f"<figcaption>{e(' | '.join(caption_bits))}</figcaption>"
+            "</figure>"
+        )
+    return "<div class=\"screenshot-gallery\">" + "".join(figures) + "</div>"
+
+
+def screenshot_artifacts(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [item for item in artifacts if item.get("type") == "screenshot"]
 
 
 def action_list(actions: list[dict[str, str]]) -> str:
@@ -411,6 +458,12 @@ dd { margin: 0; }
 .stats div { border: 1px solid var(--line); padding: 14px; }
 .stats strong { display: block; font-size: 2rem; }
 .stats span, .muted { color: var(--muted); }
+.evidence-grid, .screenshot-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.evidence-card, figure { border: 1px solid var(--line); margin: 0; background: #ffffff; }
+.evidence-card a { display: grid; gap: 8px; padding: 10px; color: inherit; text-decoration: none; }
+.evidence-card img, figure img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: contain; object-position: center; background: #eef2f5; border: 1px solid var(--line); padding: 8px; }
+.evidence-card span, figcaption { color: var(--muted); font-size: 0.9rem; }
+figcaption { padding: 8px 10px 10px; }
 .report-section { border-top: 1px solid var(--line); padding: 16px 0; }
 .badge-incomplete { color: var(--warn); border-color: #d98f32; background: #fff7eb; }
 .badge-pass { color: var(--ok); border-color: #71b894; background: #effaf4; }

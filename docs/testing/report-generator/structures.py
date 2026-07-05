@@ -88,7 +88,7 @@ def review_grounding_for() -> dict[str, Any]:
         "all_considered": SKILL_GROUNDING,
         "template_impact": [
             "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, GlassEffect composition, semantic foreground styles, and Reduce Motion/Transparency requirements.",
-            "Mobile UX Design drives mobile-first task focus, thumb-zone/touch target checks, interruption recovery, native iOS navigation expectations, and performance-as-UX budgets.",
+            "Mobile App Interface drives safe-area, SF typography, Dynamic Type, semantic color, native navigation, accessibility, 44 pt touch-target, state-resilience, and performance-as-UX checks.",
             "The generated page separates scenario facts, evidence, individual dimensions, grouped product judgment, risk, and confidence so isolated passes cannot hide a weak product flow.",
         ],
     }

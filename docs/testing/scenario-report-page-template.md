@@ -93,14 +93,16 @@ The selected grounding for this template is:
   Liquid Glass hierarchy/harmony/consistency, control-layer restraint,
   GlassEffect composition, semantic foreground styles, and Reduce
   Motion/Transparency behavior.
-- `phazurlabs/ux-ui-mastery@Mobile UX Design`, loaded after `npx skills search`,
-  for mobile-first task focus, iOS navigation conventions, touch ergonomics,
-  interruption recovery, state resilience, and performance-as-UX budgets.
+- `qodex-ai/ai-agent-skills@mobile-app-interface`, loaded after `npx skills search`,
+  for safe areas, SF typography, Dynamic Type, semantic color, 44 pt touch
+  targets, native navigation, accessibility roles, state resilience, and
+  performance-as-UX budgets.
 
 The generated HTML must front-load the deep-review areas a reviewer expects:
 what was attempted/test intent, flow, data/control-plane setup, result, evidence,
 UI polish, UX polish, performance/latency, navigation/orientation, motion/haptic
-quality, product-level assessment, risk severity, and validation confidence.
+quality, product-flow cohesiveness, group/coherent-product judgment, risk
+severity, and validation confidence.
 
 ## Required Sections
 
