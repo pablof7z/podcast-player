@@ -1,8 +1,8 @@
 {
   "counts": {
-    "closed_revalidation_pending": 1,
-    "open": 1,
-    "open_fix_pr_pending": 1
+    "closed_revalidation_pending": 2,
+    "open": 0,
+    "open_fix_pr_pending": 0
   },
   "issues": [
     {
@@ -32,11 +32,11 @@
       "id": "#717",
       "linked_pr": "#721",
       "owner": "Codex",
-      "revalidation": "pending_ci",
+      "revalidation": "pending",
       "scenario_id": "SET-005",
       "scenario_slug": "set-005",
       "severity": "major",
-      "status": "open_fix_pr_pending",
+      "status": "closed_revalidation_pending",
       "title": "I4/SET-005: Downloads & Disk reports Zero KB while Downloads shows a saved 240 KB episode",
       "url": "https://github.com/pablof7z/podcast-player/issues/717"
     }
