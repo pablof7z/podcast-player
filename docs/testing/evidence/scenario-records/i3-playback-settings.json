@@ -1,0 +1,397 @@
+{
+  "scenario_id": "SET-001",
+  "artifacts": [
+    {
+      "id": "i3-screenshot-baseline",
+      "type": "screenshot",
+      "path": "assets/scenarios/i3-playback-settings/20260705T193900Z-player-settings-baseline.jpg",
+      "description": "Playback settings baseline with speed, skip, gesture, and toggle controls.",
+      "step_id": "step-02-action",
+      "captured_at": "2026-07-05T19:39:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "19f2f9390d8cc842eb0240bac5e55e174f340d67e3907a702ecd76a39a62918e",
+      "alt": "Playback settings screen with Default Speed, Skip Back, Skip Forward, Double-Tap, Triple-Tap, and toggles.",
+      "caption": "Playback settings route and default values are visible.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "i3-screenshot-auto-mark-off",
+      "type": "screenshot",
+      "path": "assets/scenarios/i3-playback-settings/20260705T193930Z-auto-mark-off.jpg",
+      "description": "Auto-mark played at end toggled off.",
+      "step_id": "step-03-result",
+      "captured_at": "2026-07-05T19:39:30Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "738d3f398782d4d49b96374825e060bb5e4d8f95f31356a2ad2c831fc2cfb204",
+      "alt": "Playback settings with Auto-mark played at end switch off.",
+      "caption": "Toggle state changed from on to off.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "i3-screenshot-persisted-after-navigation",
+      "type": "screenshot",
+      "path": "assets/scenarios/i3-playback-settings/20260705T194000Z-persisted-after-navigation.jpg",
+      "description": "Playback settings after leaving and re-entering, with Auto-mark still off.",
+      "step_id": "step-04-exit",
+      "captured_at": "2026-07-05T19:40:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "ab5112d81cf9e16c9b98d042bf11cd21e689d07bc9076d4efe17b45a8531156b",
+      "alt": "Playback settings re-opened with Auto-mark played at end still off.",
+      "caption": "Navigation-away/back persistence is confirmed for one toggle.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "i3-ui-tree",
+      "type": "ui_tree",
+      "path": "assets/scenarios/i3-playback-settings/20260705T194000Z-ui-tree-excerpt.json",
+      "description": "XcodeBuildMCP semantic UI-tree excerpts for Player settings and toggle persistence.",
+      "captured_at": "2026-07-05T19:40:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "pod0-local-run-log",
+      "type": "log",
+      "path": "assets/scenarios/shared/20260705T193205Z-run-log-references.json",
+      "description": "Shared build, runtime, simulator, and command log references for the local evidence run.",
+      "captured_at": "2026-07-05T19:32:05Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    }
+  ],
+  "merge": {
+    "run": {
+      "run_id": "pod0-local-20260705T193900Z-set-001",
+      "app_build": "Pod0 1.0.0 build 202606011109",
+      "started_at": "2026-07-05T19:39:00Z",
+      "completed_at": "2026-07-05T19:40:00Z",
+      "executor": "Codex via XcodeBuildMCP",
+      "provider_mode": "none",
+      "device_matrix": [
+        {
+          "name": "iPhone 17",
+          "os_version": "iOS 26.2",
+          "form_factor": "iphone",
+          "udid": "B4E1F31A-044B-4860-860B-C325BE5CC36E"
+        }
+      ],
+      "environment": {
+        "locale": "en_US",
+        "appearance": "light",
+        "dynamic_type": "unspecified",
+        "reduce_motion": false,
+        "reduce_transparency": false,
+        "network_condition": "local simulator default",
+        "launch_arguments": ["--UITestSeed"]
+      },
+      "fixtures": ["UITestSeed app settings state"],
+      "cassettes": [],
+      "live_dependency_rationale": "No paid provider or live LLM dependency is used by Playback settings."
+    },
+    "execution": {
+      "status": "incomplete",
+      "attempts": [
+        {
+          "id": "attempt-001",
+          "status": "incomplete",
+          "started_at": "2026-07-05T19:39:00Z",
+          "completed_at": "2026-07-05T19:40:00Z",
+          "executor": "Codex via XcodeBuildMCP",
+          "tools": ["mcp__xcode.tap", "mcp__xcode.snapshot_ui", "mcp__xcode.screenshot"],
+          "commands": ["build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=--UITestSeed"],
+          "branches": [
+            {
+              "id": "open-player-settings",
+              "status": "pass",
+              "trigger": "Settings -> Player",
+              "expected": "Playback controls and footer copy are visible."
+            },
+            {
+              "id": "toggle-persistence-navigation",
+              "status": "pass",
+              "trigger": "Toggle Auto-mark played at end off, leave Player, then re-enter.",
+              "expected": "Switch remains off after navigation."
+            },
+            {
+              "id": "picker-and-relaunch-persistence",
+              "status": "not_run",
+              "trigger": "Change speed/skip/gesture pickers and relaunch.",
+              "expected": "All settings persist across relaunch and propagate to player controls."
+            }
+          ],
+          "notes": "Route and one toggle persistence path are evidenced; picker changes and relaunch persistence are not captured.",
+          "evidence_refs": ["i3-screenshot-baseline", "i3-screenshot-auto-mark-off", "i3-screenshot-persisted-after-navigation", "i3-ui-tree", "pod0-local-run-log"]
+        }
+      ],
+      "retry_policy": "Re-run after adding picker and relaunch coverage; do not promote I3 until every control class has current evidence.",
+      "branch_coverage": [
+        {
+          "id": "open-player-settings",
+          "status": "pass",
+          "trigger": "Open Player settings.",
+          "expected": "Playback settings route renders."
+        },
+        {
+          "id": "toggle-persistence-navigation",
+          "status": "pass",
+          "trigger": "Toggle Auto-mark and navigate away/back.",
+          "expected": "Setting remains changed."
+        },
+        {
+          "id": "picker-and-relaunch-persistence",
+          "status": "not_run",
+          "trigger": "Change pickers and relaunch app.",
+          "expected": "Settings persist and affect controls."
+        }
+      ]
+    },
+    "verdict": {
+      "overall": "incomplete",
+      "summary": "SET-001 has current route/settings evidence, but skip interval change, player propagation, and relaunch persistence remain unvalidated.",
+      "score_gate_explanation": "Only the Settings -> Player route and one toggle persistence path have current evidence; SET-001's skip-change acceptance criteria remain incomplete.",
+      "reviewer": "Codex",
+      "reviewed_at": "2026-07-05T19:40:00Z"
+    },
+    "sections": {
+      "attempted_test": {
+        "summary": "Executed SET-001 locally through Settings -> Player. Captured baseline controls, Auto-mark toggle off, and persistence after navigation away/back.",
+        "evidence_refs": ["i3-screenshot-baseline", "i3-screenshot-auto-mark-off", "i3-screenshot-persisted-after-navigation", "i3-ui-tree", "pod0-local-run-log"]
+      },
+      "actual_result": {
+        "summary": "Player settings exposes Default Speed, Skip Back, Skip Forward, Double-Tap, Triple-Tap, Auto-mark, Auto-play-next, and footer copy. Auto-mark persisted off after leaving and re-entering Player.",
+        "evidence_refs": ["i3-ui-tree", "i3-screenshot-persisted-after-navigation"]
+      },
+      "artifacts": {
+        "summary": "Attached three current screenshots, a semantic UI-tree excerpt, and shared log references.",
+        "evidence_refs": ["i3-screenshot-baseline", "i3-screenshot-auto-mark-off", "i3-screenshot-persisted-after-navigation", "i3-ui-tree", "pod0-local-run-log"]
+      },
+      "ui_polish_report": {
+        "summary": "Settings rows are grouped clearly with explanatory copy and stable switch labels.",
+        "evidence_refs": ["i3-screenshot-baseline"]
+      },
+      "ux_polish_report": {
+        "summary": "The toggle interaction gives immediate feedback and persists across navigation; picker and relaunch workflows remain untested.",
+        "evidence_refs": ["i3-ui-tree"]
+      },
+      "performance_metrics": {
+        "summary": "Player settings snapshots each contain 220 nodes and were captured without visible loading delay.",
+        "evidence_refs": ["i3-ui-tree"]
+      },
+      "verdict": {
+        "summary": "Evidence-backed incomplete: settings route and one persistence path are captured, but SET-001 skip-change and player-propagation acceptance coverage is missing.",
+        "evidence_refs": ["i3-ui-tree"]
+      }
+    },
+    "dimension_scores": {
+      "attempted_test": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "A current simulator run captures the route and one persistence path.",
+        "evidence_refs": ["i3-ui-tree", "pod0-local-run-log"]
+      },
+      "actual_result": {
+        "score": 2,
+        "status": "incomplete",
+        "rationale": "Observed controls and one toggle persistence; picker/relaunch criteria remain missing.",
+        "evidence_refs": ["i3-ui-tree"]
+      },
+      "artifacts": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Screenshots, UI tree, and log references are attached.",
+        "evidence_refs": ["i3-screenshot-baseline", "i3-screenshot-auto-mark-off", "i3-screenshot-persisted-after-navigation", "i3-ui-tree"]
+      },
+      "ui_polish": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "The settings layout is clear and stable in captured states.",
+        "evidence_refs": ["i3-screenshot-baseline"]
+      },
+      "ux_polish": {
+        "score": 2,
+        "status": "incomplete",
+        "rationale": "Toggle UX is validated; picker and relaunch UX are not.",
+        "evidence_refs": ["i3-ui-tree"]
+      },
+      "performance": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Node counts were collected for the settings screen; no Instruments trace is attached.",
+        "evidence_refs": ["i3-ui-tree"]
+      },
+      "evidence_confidence": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Evidence is current and local, but incomplete for all branches.",
+        "evidence_refs": ["pod0-local-run-log"]
+      },
+      "verdict": {
+        "score": 2,
+        "status": "incomplete",
+        "rationale": "The verdict is constrained by missing picker and relaunch coverage.",
+        "evidence_refs": ["i3-ui-tree"]
+      }
+    },
+    "group_scores": {
+      "functional_correctness": {
+        "score": 2,
+        "status": "incomplete",
+        "rationale": "One toggle path passes, but every picker/relaunch criterion is not covered.",
+        "dimension_refs": ["actual_result", "expected_behavior", "regression_risk"]
+      },
+      "evidence_reproducibility": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Screenshots, UI trees, and log references are attached for the captured path.",
+        "dimension_refs": ["artifacts", "device_os_matrix", "evidence_confidence"]
+      },
+      "product_experience": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "The settings UI is coherent for captured controls.",
+        "dimension_refs": ["ui_polish", "ux_polish", "information_architecture"]
+      },
+      "engineering_quality": {
+        "score": 2,
+        "status": "incomplete",
+        "rationale": "No relaunch or player propagation validation is attached.",
+        "dimension_refs": ["performance", "reliability_flakiness", "observability"]
+      },
+      "follow_through": {
+        "score": 2,
+        "status": "incomplete",
+        "rationale": "Follow-up coverage remains open.",
+        "dimension_refs": ["risks_follow_up", "next_actions", "verdict"]
+      }
+    },
+    "quality_review": {
+      "ui": {
+        "status": "pass_with_issues",
+        "summary": "Playback settings are visually organized and use native controls.",
+        "checks": ["settings grouping", "row hierarchy", "toggle state"],
+        "evidence_refs": ["i3-screenshot-baseline", "i3-screenshot-auto-mark-off"],
+        "gaps": ["Picker changed states are not captured."]
+      },
+      "ux": {
+        "status": "incomplete",
+        "summary": "Toggle feedback and navigation persistence are clear; full settings workflow remains incomplete.",
+        "checks": ["feedback", "persistence", "predictable navigation"],
+        "evidence_refs": ["i3-ui-tree"],
+        "gaps": ["Relaunch persistence and player propagation not captured."]
+      },
+      "performance": {
+        "status": "pass_with_issues",
+        "summary": "Local node-count metrics are captured for the settings screen.",
+        "checks": ["screen responsiveness", "snapshot node count"],
+        "evidence_refs": ["i3-ui-tree"],
+        "gaps": ["No Instruments trace."]
+      },
+      "accessibility": {
+        "status": "incomplete",
+        "summary": "Buttons and switches expose labels/values, but no VoiceOver/Dynamic Type/contrast audit was run.",
+        "checks": ["semantic labels", "switch values", "Dynamic Type"],
+        "evidence_refs": ["i3-ui-tree"],
+        "gaps": ["Formal accessibility audit missing."]
+      }
+    },
+    "evidence": {
+      "required_kinds": ["source_doc", "screenshot", "ui_tree", "log", "metric_trace", "accessibility_audit"],
+      "missing": [
+        {
+          "kind": "picker-change-coverage",
+          "reason": "Default speed, skip interval, and gesture picker changes were not captured.",
+          "blocks_dimensions": ["actual_result", "ux_polish"],
+          "required": true
+        },
+        {
+          "kind": "relaunch-persistence",
+          "reason": "Persistence across app relaunch was not captured.",
+          "blocks_dimensions": ["reliability_flakiness", "offline_resume_behavior"],
+          "required": true
+        },
+        {
+          "kind": "accessibility_audit",
+          "reason": "VoiceOver, Dynamic Type, and contrast were not audited.",
+          "blocks_dimensions": ["accessibility_dynamic_type", "touch_ergonomics"],
+          "required": true
+        }
+      ],
+      "redaction_summary": "Screenshots and UI-tree excerpts contain seeded settings labels only. No secrets are exposed."
+    },
+    "metrics": [
+      {
+        "id": "i3-player-settings-node-count",
+        "name": "Player settings UI-tree node count",
+        "value": 220,
+        "unit": "nodes",
+        "budget": "Informational local metric",
+        "status": "pass",
+        "method": "XcodeBuildMCP snapshot_ui",
+        "evidence_refs": ["i3-ui-tree"]
+      },
+      {
+        "id": "i3-auto-mark-navigation-persistence",
+        "name": "Auto-mark toggle navigation persistence checks",
+        "value": 1,
+        "unit": "successful round trips",
+        "budget": "At least one navigation persistence check for this evidence pass",
+        "status": "pass",
+        "method": "Toggle to off, navigate back to Settings, re-enter Player, read switch value 0",
+        "evidence_refs": ["i3-ui-tree"]
+      }
+    ],
+    "instrumentation_gaps": [
+      {
+        "id": "i3-picker-coverage-missing",
+        "severity": "major",
+        "summary": "Picker changes for speed, skip intervals, and gestures are not captured.",
+        "affected_dimensions": ["actual_result", "ux_polish"],
+        "owner": "validation-agent",
+        "status": "open"
+      },
+      {
+        "id": "i3-relaunch-persistence-missing",
+        "severity": "major",
+        "summary": "Settings persistence across app relaunch is not captured.",
+        "affected_dimensions": ["reliability_flakiness", "offline_resume_behavior"],
+        "owner": "validation-agent",
+        "status": "open"
+      }
+    ],
+    "risks": [
+      {
+        "id": "risk-i3-overread",
+        "severity": "major",
+        "priority": "p1",
+        "status": "open",
+        "title": "I3 could be overread as validating all settings from one toggle path.",
+        "affected_dimensions": ["actual_result", "verdict"],
+        "mitigation": "Keep verdict incomplete until picker/relaunch/player propagation branches are captured."
+      }
+    ],
+    "next_actions": [
+      {
+        "id": "capture-picker-changes",
+        "title": "Change speed, skip interval, and gesture controls and capture persistence.",
+        "status": "open",
+        "owner": "validation-agent"
+      },
+      {
+        "id": "capture-relaunch-persistence",
+        "title": "Relaunch the app and verify changed Playback settings persist.",
+        "status": "open",
+        "owner": "validation-agent"
+      }
+    ]
+  }
+}

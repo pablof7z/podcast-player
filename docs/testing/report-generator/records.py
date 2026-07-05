@@ -344,6 +344,27 @@ def count_gap_ids(records: list[dict[str, Any]]) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
+def average_dimension_scores(records: list[dict[str, Any]]) -> dict[str, float]:
+    return {
+        dimension: average_score(record["dimension_scores"][dimension]["score"] for record in records)
+        for dimension in SECTION_TO_DIMENSION.values()
+    }
+
+
+def average_group_scores(records: list[dict[str, Any]]) -> dict[str, float]:
+    return {
+        group: average_score(record["group_scores"][group]["score"] for record in records)
+        for group in GROUPS
+    }
+
+
+def average_score(values: Any) -> float:
+    numeric = [value for value in values if isinstance(value, (int, float))]
+    if not numeric:
+        return 0.0
+    return round(sum(numeric) / len(numeric), 2)
+
+
 def validate_output(records: list[dict[str, Any]], out: Path) -> None:
     section_keys = set(SECTION_TO_DIMENSION.keys())
     dimension_keys = set(SECTION_TO_DIMENSION.values())
