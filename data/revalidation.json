@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-07-05T23:31:25Z",
+  "counts": {
+    "pending_revalidation": 2,
+    "ready_for_promotion": 0
+  },
+  "items": [
+    {
+      "scenario_id": "PLAY-001",
+      "scenario_url": "../scenarios/play-001/",
+      "issue": "#718",
+      "issue_url": "https://github.com/pablof7z/podcast-player/issues/718",
+      "fix_pr": "#720",
+      "fix_pr_url": "https://github.com/pablof7z/podcast-player/pull/720",
+      "fix_merge_commit": "e456e9c3fc82432a8b060bd8adebc2e4afb0c5e6",
+      "status": "pending_revalidation",
+      "required_evidence": [
+        "Fresh PLAY-001 run on a build at or after e456e9c3",
+        "Episode detail, playing mini-player, paused full-player, and resume-after-navigation screenshots",
+        "UI tree and accessibility identifiers for play/pause/resume controls",
+        "Playback duration/progress metrics proving the seeded 5 minute episode no longer ends at 1:00",
+        "Command output/log excerpt for the local or CI scenario run",
+        "Scenario page regenerated with updated verdict and remaining polish notes"
+      ]
+    },
+    {
+      "scenario_id": "SET-005",
+      "scenario_url": "../scenarios/set-005/",
+      "issue": "#717",
+      "issue_url": "https://github.com/pablof7z/podcast-player/issues/717",
+      "fix_pr": "#721",
+      "fix_pr_url": "https://github.com/pablof7z/podcast-player/pull/721",
+      "fix_merge_commit": "886a90532266912527ca27d9546c9a14446809e4",
+      "status": "pending_revalidation",
+      "required_evidence": [
+        "Fresh SET-005 run on a build at or after 886a9053",
+        "Downloads list, Downloads & Disk main screen, storage detail, and export-data screenshots",
+        "UI tree and accessibility identifiers for the Downloads and Disk storage rows",
+        "Storage accounting metrics proving the saved 240 KB episode is reflected outside the Downloads manager",
+        "Command output/log excerpt for the local or CI scenario run",
+        "Scenario page regenerated with updated verdict and remaining polish notes"
+      ]
+    }
+  ]
+}

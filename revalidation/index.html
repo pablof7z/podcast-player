@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pod0 Revalidation Queue</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <main id="content">
+    <nav>
+      <a href="../">Report Home</a>
+      <a href="../scenarios/">All Scenarios</a>
+      <a href="../issues/">Issues</a>
+      <a href="../screenshots/">Screenshots</a>
+    </nav>
+    <header class="hero">
+      <p class="eyebrow">Pod0 Validation</p>
+      <h1>Revalidation Queue</h1>
+      <p>Fixes have landed for two evidence-backed defects. Neither affected scenario is promoted until a fresh run attaches screenshots, metrics, logs, UI tree/accessibility evidence, and updated critique.</p>
+    </header>
+
+    <section class="stats" aria-label="Revalidation totals">
+      <div><strong>2</strong><span>pending revalidation</span></div>
+      <div><strong>0</strong><span>ready for promotion</span></div>
+    </section>
+
+    <section id="queue">
+      <h2>Pending Scenario Runs</h2>
+      <table>
+        <caption>Fixes merged; evidence still required</caption>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Fix</th>
+            <th>Required Evidence Before Promotion</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="../scenarios/play-001/">PLAY-001</a><br><span class="muted">Issue <a href="https://github.com/pablof7z/podcast-player/issues/718">#718</a></span></td>
+            <td><a href="https://github.com/pablof7z/podcast-player/pull/720">#720</a><br><code>e456e9c3</code></td>
+            <td>Fresh playback run; episode detail, mini-player, full-player, and resume screenshots; UI tree/accessibility evidence; duration/progress metrics proving the seeded 5 minute episode no longer ends at 1:00; command/log excerpt; regenerated scenario page.</td>
+          </tr>
+          <tr>
+            <td><a href="../scenarios/set-005/">SET-005</a><br><span class="muted">Issue <a href="https://github.com/pablof7z/podcast-player/issues/717">#717</a></span></td>
+            <td><a href="https://github.com/pablof7z/podcast-player/pull/721">#721</a><br><code>886a9053</code></td>
+            <td>Fresh storage run; Downloads list, Downloads &amp; Disk, storage detail, and export-data screenshots; UI tree/accessibility evidence; storage accounting metrics proving the saved 240 KB episode is reflected outside Downloads; command/log excerpt; regenerated scenario page.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><a href="../data/revalidation.json">Raw revalidation JSON</a></p>
+    </section>
+  </main>
+</body>
+</html>
