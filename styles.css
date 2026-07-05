@@ -268,6 +268,37 @@ h3 {
   font-size: 17px;
 }
 
+.issue-list {
+  display: grid;
+  gap: 10px;
+  width: min(1160px, 100%);
+  margin: 18px auto 0;
+}
+
+.issue-list a {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 50px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-strong);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.issue-list a:focus-visible,
+.issue-list a:hover {
+  outline: 2px solid var(--cobalt);
+  outline-offset: 2px;
+}
+
+.issue-list span {
+  color: var(--rose);
+}
+
 .two-col {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
