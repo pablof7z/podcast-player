@@ -493,14 +493,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-05T21:04:59Z",
+        "completed_at": "2026-07-05T21:17:53Z",
         "evidence_refs": [
           "catalog:id-009"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-05T21:04:59Z",
+        "started_at": "2026-07-05T21:17:53Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -738,7 +738,7 @@
   "page": {
     "assets_base": "assets/scenarios/id-009/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/id-009/",
-    "generated_at": "2026-07-05T21:04:59Z",
+    "generated_at": "2026-07-05T21:17:53Z",
     "navigation": {
       "category_url": "../identity-and-accounts/",
       "next_url": "../id-010/",
@@ -1020,33 +1020,27 @@
         "selected": true
       },
       {
-        "coverage": "Mobile-first product validation, iOS platform conventions, touch ergonomics, interruption recovery, navigation clarity, performance-as-UX budgets, and state/resilience checks.",
-        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
+        "coverage": "Native iOS interface validation, safe areas, SF typography and Dynamic Type, semantic colors, 44 pt touch targets, navigation conventions, accessibility roles, performance-as-UX budgets, and Liquid Glass overlay restraint.",
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
         "search_terms": "mobile frontend design UI polish UX",
         "selected": true
-      },
-      {
-        "coverage": "Search result considered for future glass-specific visual review; current selected Liquid Glass skill covers the material rules used by this template.",
-        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
-        "search_terms": "liquid glass iOS UI polish",
-        "selected": false
-      },
-      {
-        "coverage": "Search result considered for future iOS implementation review; current selected skills cover mobile flow, platform fit, and material critique.",
-        "name": "charleswiltgen/axiom@axiom-ios-ui",
-        "search_terms": "iOS primitives mobile UI",
-        "selected": false
-      },
-      {
-        "coverage": "Search result considered for future web/front-end implementation review; current work focuses on the iOS scenario report rubric.",
-        "name": "code-yeongyu/oh-my-opencode@frontend",
-        "search_terms": "frontend UI polish",
-        "selected": false
       },
       {
         "coverage": "Search result considered for alternate Liquid Glass critique; current selected Liquid Glass skill is the primary material source.",
         "name": "xu-xiang/everything-claude-code-zh@liquid-glass-design",
         "search_terms": "liquid glass design",
+        "selected": false
+      },
+      {
+        "coverage": "Search result considered for additional glass-specific implementation review; selected skills already cover iOS material restraint and mobile interface gates.",
+        "name": "ravnhq/ai-toolkit@liquid-glass-ios",
+        "search_terms": "liquid glass iOS",
+        "selected": false
+      },
+      {
+        "coverage": "Search result considered for future native implementation review; selected skills already cover the iOS interface and Liquid Glass dimensions for this template.",
+        "name": "simota/agent-skills@native",
+        "search_terms": "native mobile interface",
         "selected": false
       },
       {
@@ -1065,15 +1059,15 @@
         "selected": true
       },
       {
-        "coverage": "Mobile-first product validation, iOS platform conventions, touch ergonomics, interruption recovery, navigation clarity, performance-as-UX budgets, and state/resilience checks.",
-        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
+        "coverage": "Native iOS interface validation, safe areas, SF typography and Dynamic Type, semantic colors, 44 pt touch targets, navigation conventions, accessibility roles, performance-as-UX budgets, and Liquid Glass overlay restraint.",
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
         "search_terms": "mobile frontend design UI polish UX",
         "selected": true
       }
     ],
     "template_impact": [
       "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, GlassEffect composition, semantic foreground styles, and Reduce Motion/Transparency requirements.",
-      "Mobile UX Design drives mobile-first task focus, thumb-zone/touch target checks, interruption recovery, native iOS navigation expectations, and performance-as-UX budgets.",
+      "Mobile App Interface drives safe-area, SF typography, Dynamic Type, semantic color, native navigation, accessibility, 44 pt touch-target, state-resilience, and performance-as-UX checks.",
       "The generated page separates scenario facts, evidence, individual dimensions, grouped product judgment, risk, and confidence so isolated passes cannot hide a weak product flow."
     ]
   },
@@ -1108,7 +1102,7 @@
     "app_build": "not-built-catalog-scaffold",
     "branch": "codex/scenario-page-template-deep-dive",
     "cassettes": [],
-    "completed_at": "2026-07-05T21:04:59Z",
+    "completed_at": "2026-07-05T21:17:53Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1126,12 +1120,12 @@
     "fixtures": [
       "callback fixture"
     ],
-    "generator_version": "scenario-report-generator/0.3.0",
+    "generator_version": "scenario-report-generator/0.3.1",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260705T210459Z-id-009",
-    "source_commit": "a21bc96638603da1cc9276c05a36e26c90181110",
-    "started_at": "2026-07-05T21:04:59Z"
+    "run_id": "catalog-scaffold-20260705T211753Z-id-009",
+    "source_commit": "65c8dafff7f2562aa57ddd14f107211045f2c83c",
+    "started_at": "2026-07-05T21:17:53Z"
   },
   "scenario": {
     "bdd": {
@@ -1413,9 +1407,9 @@
         "rubric:review-skill-grounding"
       ],
       "notes": [
-        "Selected skills: vabole/apple-skills@ios-liquid-glass, phazurlabs/ux-ui-mastery@Mobile UX Design."
+        "Selected skills: vabole/apple-skills@ios-liquid-glass, qodex-ai/ai-agent-skills@mobile-app-interface."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives plus mobile UX, touch, navigation, interruption, and performance-as-UX criteria."
+      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives plus mobile interface, safe-area, Dynamic Type, touch, navigation, accessibility, and performance-as-UX criteria."
     },
     "risks_follow_up": {
       "evidence_refs": [
