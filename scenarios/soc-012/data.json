@@ -526,14 +526,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-05T22:11:33Z",
+        "completed_at": "2026-07-05T22:24:39Z",
         "evidence_refs": [
           "catalog:soc-012"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-05T22:11:33Z",
+        "started_at": "2026-07-05T22:24:39Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -787,7 +787,7 @@
   "page": {
     "assets_base": "assets/scenarios/soc-012/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/soc-012/",
-    "generated_at": "2026-07-05T22:11:33Z",
+    "generated_at": "2026-07-05T22:24:39Z",
     "navigation": {
       "category_url": "../social-friends-feedback/",
       "next_url": "../soc-013/",
@@ -1170,7 +1170,7 @@
     "app_build": "not-built-catalog-scaffold",
     "branch": "codex/scenario-page-template-deep-dive",
     "cassettes": [],
-    "completed_at": "2026-07-05T22:11:33Z",
+    "completed_at": "2026-07-05T22:24:39Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1191,9 +1191,9 @@
     "generator_version": "scenario-report-generator/0.3.2",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260705T221133Z-soc-012",
-    "source_commit": "6649c3628ac0089c9c5cbeededb480cee43c3740",
-    "started_at": "2026-07-05T22:11:33Z"
+    "run_id": "catalog-scaffold-20260705T222439Z-soc-012",
+    "source_commit": "f8b640754d7d89a954c6430eb5fc9003e62ad44d",
+    "started_at": "2026-07-05T22:24:39Z"
   },
   "scenario": {
     "bdd": {

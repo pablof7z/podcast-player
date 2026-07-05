@@ -1,0 +1,181 @@
+{
+  "all_within_budget": true,
+  "cassette_count": 7,
+  "cassettes": [
+    {
+      "file": "assemblyai-transcript-success.json",
+      "id": "assemblyai-transcript-success",
+      "metrics": {
+        "acceptable_for_2026_premium": true,
+        "budget_ms": 7000,
+        "recorded_latency_ms": 4100,
+        "replay_latency_ms": 5
+      },
+      "nmp_doctrine_refs": [],
+      "operation": "stt_transcription",
+      "provider": "assemblyai",
+      "redaction": {},
+      "scenario_refs": [
+        "E2",
+        "J5"
+      ]
+    },
+    {
+      "file": "elevenlabs-scribe-success.json",
+      "id": "elevenlabs-scribe-success",
+      "metrics": {
+        "acceptable_for_2026_premium": true,
+        "budget_ms": 6000,
+        "recorded_latency_ms": 2840,
+        "replay_latency_ms": 5
+      },
+      "nmp_doctrine_refs": [],
+      "operation": "stt_transcription",
+      "provider": "elevenlabs",
+      "redaction": {},
+      "scenario_refs": [
+        "E2",
+        "M3"
+      ]
+    },
+    {
+      "file": "ollama-agent-answer-success.json",
+      "id": "ollama-agent-answer-success",
+      "metrics": {
+        "acceptable_for_2026_premium": true,
+        "budget_ms": 2200,
+        "recorded_latency_ms": 980,
+        "replay_latency_ms": 4
+      },
+      "nmp_doctrine_refs": [],
+      "operation": "chat_completion",
+      "provider": "ollama",
+      "redaction": {},
+      "scenario_refs": [
+        "G1",
+        "L2",
+        "L4"
+      ]
+    },
+    {
+      "file": "openrouter-agent-answer-success.json",
+      "id": "openrouter-agent-answer-success",
+      "metrics": {
+        "acceptable_for_2026_premium": true,
+        "budget_ms": 2500,
+        "recorded_latency_ms": 1240,
+        "replay_latency_ms": 4
+      },
+      "nmp_doctrine_refs": [],
+      "operation": "chat_completion",
+      "provider": "openrouter",
+      "redaction": {},
+      "scenario_refs": [
+        "G3",
+        "L4",
+        "M3"
+      ]
+    },
+    {
+      "file": "openrouter-embedding-success.json",
+      "id": "openrouter-embedding-success",
+      "metrics": {
+        "acceptable_for_2026_premium": true,
+        "budget_ms": 900,
+        "recorded_latency_ms": 430,
+        "replay_latency_ms": 3
+      },
+      "nmp_doctrine_refs": [],
+      "operation": "embedding",
+      "provider": "openrouter",
+      "redaction": {},
+      "scenario_refs": [
+        "E4",
+        "L7"
+      ]
+    },
+    {
+      "file": "openrouter-whisper-success.json",
+      "id": "openrouter-whisper-success",
+      "metrics": {
+        "acceptable_for_2026_premium": true,
+        "budget_ms": 6000,
+        "recorded_latency_ms": 3120,
+        "replay_latency_ms": 5
+      },
+      "nmp_doctrine_refs": [],
+      "operation": "stt_transcription",
+      "provider": "openrouter",
+      "redaction": {},
+      "scenario_refs": [
+        "E2",
+        "K5",
+        "M3"
+      ]
+    },
+    {
+      "file": "perplexity-search-success.json",
+      "id": "perplexity-search-success",
+      "metrics": {
+        "acceptable_for_2026_premium": true,
+        "budget_ms": 3000,
+        "recorded_latency_ms": 1460,
+        "replay_latency_ms": 4
+      },
+      "nmp_doctrine_refs": [],
+      "operation": "web_search",
+      "provider": "perplexity",
+      "redaction": {},
+      "scenario_refs": [
+        "G2",
+        "L7"
+      ]
+    }
+  ],
+  "operations": [
+    "chat_completion",
+    "embedding",
+    "stt_transcription",
+    "web_search"
+  ],
+  "providers": [
+    "assemblyai",
+    "elevenlabs",
+    "ollama",
+    "openrouter",
+    "perplexity"
+  ],
+  "scenario_refs": [
+    "E2",
+    "E4",
+    "G1",
+    "G2",
+    "G3",
+    "J5",
+    "K5",
+    "L2",
+    "L4",
+    "L7",
+    "M3"
+  ],
+  "validation": {
+    "commands": [
+      {
+        "command": "cargo run -p nmp-app-podcast --bin provider-cassettes -- verify tests/fixtures/provider_cassettes",
+        "status": "pass",
+        "summary": "provider cassette verification passed: 7 cassette(s)"
+      },
+      {
+        "command": "POD0_PROVIDER_CASSETTE_DIR=tests/fixtures/provider_cassettes cargo test -p nmp-app-podcast provider_replay --lib",
+        "status": "pass",
+        "summary": "2 provider_replay tests passed; 0 failed"
+      }
+    ],
+    "notes": [
+      "Replay mode fails closed on cassette misses instead of falling through to live provider calls.",
+      "Fixture metadata includes recorded latency, replay latency, 2026 premium-app budget, scenario references, and redaction markers."
+    ],
+    "verified_at": "2026-07-05T22:21:54Z",
+    "verified_by": "Codex"
+  }
+}
