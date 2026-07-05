@@ -1,0 +1,25 @@
+{
+  "generated_by": "scenario-report-generator/0.1.0",
+  "skills": [
+    {
+      "coverage": "Liquid Glass restraint, Reduce Transparency behavior, system chrome, and iOS 26 visual primitives.",
+      "name": "vabole/apple-skills@ios-liquid-glass",
+      "search_terms": "liquid glass iOS primitives"
+    },
+    {
+      "coverage": "Apple platform controls, navigation, typography, accessibility, and native interaction expectations.",
+      "name": "vabole/apple-skills@hig",
+      "search_terms": "Apple HIG iOS"
+    },
+    {
+      "coverage": "Task clarity, cognitive load, thumb ergonomics, interruption recovery, and mobile flow cohesion.",
+      "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
+      "search_terms": "mobile UX design"
+    },
+    {
+      "coverage": "Rust-owned state and policy, bounded FFI/projections, privacy fail-closed behavior, and replayable clocks.",
+      "name": "nmp-app-architecture",
+      "search_terms": "NMP architecture Rust core thin shell"
+    }
+  ]
+}

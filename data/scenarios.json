@@ -1,0 +1,6759 @@
+[
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-001/data.json",
+    "id": "FND-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-001",
+    "tags": [
+      "catalog-scaffold",
+      "d1",
+      "d5",
+      "fnd",
+      "foundation-and-first-run",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Onboarding page 1 appears and no main-tab state is reachable behind it",
+    "url": "scenarios/fnd-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-002/data.json",
+    "id": "FND-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-002",
+    "tags": [
+      "catalog-scaffold",
+      "d1",
+      "fnd",
+      "foundation-and-first-run",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Page order, progress indicators, and final app entry are stable",
+    "url": "scenarios/fnd-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-003/data.json",
+    "id": "FND-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-003",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "fnd",
+      "foundation-and-first-run",
+      "visual-evidence-required"
+    ],
+    "title": "Provider settings remain disconnected without blocking library or playback",
+    "url": "scenarios/fnd-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-004/data.json",
+    "id": "FND-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-004",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "fnd",
+      "foundation-and-first-run",
+      "visual-evidence-required"
+    ],
+    "title": "Settings identity shows the same display name from kernel state",
+    "url": "scenarios/fnd-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-005/data.json",
+    "id": "FND-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "fnd-005",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "d8",
+      "fnd",
+      "foundation-and-first-run",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The show appears in Library without manual refresh",
+    "url": "scenarios/fnd-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-006/data.json",
+    "id": "FND-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "fnd-006",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "fnd",
+      "foundation-and-first-run",
+      "visual-evidence-required"
+    ],
+    "title": "An inline recoverable error appears and onboarding can continue",
+    "url": "scenarios/fnd-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-007/data.json",
+    "id": "FND-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-007",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "fnd",
+      "foundation-and-first-run",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Onboarding does not reappear",
+    "url": "scenarios/fnd-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-008/data.json",
+    "id": "FND-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-008",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d9",
+      "fnd",
+      "foundation-and-first-run",
+      "visual-evidence-required"
+    ],
+    "title": "It restores the correct step or restarts safely without duplicate identity creation",
+    "url": "scenarios/fnd-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-009/data.json",
+    "id": "FND-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-009",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "fnd",
+      "foundation-and-first-run",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The Home, Library, Bookmarks, and Clippings tabs render deterministic fixtures",
+    "url": "scenarios/fnd-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-010/data.json",
+    "id": "FND-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-010",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "fnd",
+      "foundation-and-first-run",
+      "visual-evidence-required"
+    ],
+    "title": "Playback and library persistence survive without reseeding destructive data",
+    "url": "scenarios/fnd-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-011/data.json",
+    "id": "FND-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-011",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "fnd",
+      "foundation-and-first-run",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Only screen-shaped projections cross FFI and scroll remains responsive",
+    "url": "scenarios/fnd-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-012/data.json",
+    "id": "FND-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-012",
+    "tags": [
+      "catalog-scaffold",
+      "d1",
+      "fnd",
+      "foundation-and-first-run",
+      "visual-evidence-required"
+    ],
+    "title": "The empty state offers add/import actions without agent chatter",
+    "url": "scenarios/fnd-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-013/data.json",
+    "id": "FND-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-013",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "fnd",
+      "foundation-and-first-run",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "It routes to the episode after kernel readiness",
+    "url": "scenarios/fnd-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-014/data.json",
+    "id": "FND-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-014",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d8",
+      "fnd",
+      "foundation-and-first-run",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Offline state is explicit and no spinner loops",
+    "url": "scenarios/fnd-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-015/data.json",
+    "id": "FND-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-015",
+    "tags": [
+      "catalog-scaffold",
+      "fnd",
+      "foundation-and-first-run",
+      "native-render",
+      "visual-evidence-required"
+    ],
+    "title": "Text remains readable and controls do not overlap",
+    "url": "scenarios/fnd-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Foundation And First Run",
+    "data_url": "scenarios/fnd-016/data.json",
+    "id": "FND-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "fnd-016",
+    "tags": [
+      "catalog-scaffold",
+      "fnd",
+      "foundation-and-first-run",
+      "native-render",
+      "visual-evidence-required"
+    ],
+    "title": "Transitions simplify and controls remain discoverable",
+    "url": "scenarios/fnd-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-001/data.json",
+    "id": "ID-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "id-001",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "d7",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "A local Nostr identity is generated and the npub is non-empty",
+    "url": "scenarios/id-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-002/data.json",
+    "id": "ID-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "id-002",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d5",
+      "d7",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "The account becomes active and no secret is displayed in normal snapshots",
+    "url": "scenarios/id-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-003/data.json",
+    "id": "ID-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "id-003",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "The error is stateful and the app does not crash",
+    "url": "scenarios/id-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-004/data.json",
+    "id": "ID-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "id-004",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "Profile fields survive relaunch and are projected from Rust-owned state",
+    "url": "scenarios/id-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-005/data.json",
+    "id": "ID-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "id-005",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "Initials fallback is shown without blocking account details",
+    "url": "scenarios/id-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-006/data.json",
+    "id": "ID-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "id-006",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "Clipboard actions succeed without exposing nsec",
+    "url": "scenarios/id-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-007/data.json",
+    "id": "ID-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "id-007",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "d7",
+      "id",
+      "identity-and-accounts",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Pairing state is visible and signing remains pending until callback/projection confirms",
+    "url": "scenarios/id-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-008/data.json",
+    "id": "ID-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "id-008",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d9",
+      "id",
+      "identity-and-accounts",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Busy state clears and retry is available",
+    "url": "scenarios/id-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-009/data.json",
+    "id": "ID-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "id-009",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "It rejects or isolates the callback without switching active account",
+    "url": "scenarios/id-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-010/data.json",
+    "id": "ID-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "id-010",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "id",
+      "identity-and-accounts",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Identity, relays, and social surfaces update from a single projected active account",
+    "url": "scenarios/id-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-011/data.json",
+    "id": "ID-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "id-011",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "Active account and key material remain unchanged",
+    "url": "scenarios/id-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-012/data.json",
+    "id": "ID-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "id-012",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "d5",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "The app transitions to a no-active-account state without stale profile data",
+    "url": "scenarios/id-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-013/data.json",
+    "id": "ID-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "id-013",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d4",
+      "d7",
+      "id",
+      "identity-and-accounts",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Display values hydrate without native relay policy",
+    "url": "scenarios/id-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-014/data.json",
+    "id": "ID-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "id-014",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "id",
+      "identity-and-accounts",
+      "nostr-or-relay",
+      "visual-evidence-required"
+    ],
+    "title": "The profile degrades to stable fallback labels",
+    "url": "scenarios/id-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-015/data.json",
+    "id": "ID-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "id-015",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "id",
+      "identity-and-accounts",
+      "visual-evidence-required"
+    ],
+    "title": "No secret appears in exported logs or state files",
+    "url": "scenarios/id-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Identity And Accounts",
+    "data_url": "scenarios/id-016/data.json",
+    "id": "ID-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "id-016",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "id",
+      "identity-and-accounts",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Account fields map to the current projection without duplicate accounts",
+    "url": "scenarios/id-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-001/data.json",
+    "id": "DISC-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "disc-001",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "disc",
+      "discovery-and-search",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Keyword results show podcast rows with title, author, artwork, and feed URL",
+    "url": "scenarios/disc-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-002/data.json",
+    "id": "DISC-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "disc-002",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "disc",
+      "discovery-and-search",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "URL intent is detected and feed parsing is used instead of keyword search",
+    "url": "scenarios/disc-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-003/data.json",
+    "id": "DISC-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "disc-003",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d8",
+      "disc",
+      "discovery-and-search",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Input error appears and no network retry loop starts",
+    "url": "scenarios/disc-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-004/data.json",
+    "id": "DISC-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "disc-004",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "disc",
+      "discovery-and-search",
+      "visual-evidence-required"
+    ],
+    "title": "Rows render resolved absolute media URLs",
+    "url": "scenarios/disc-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-005/data.json",
+    "id": "DISC-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "disc-005",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "disc",
+      "discovery-and-search",
+      "visual-evidence-required"
+    ],
+    "title": "Stable synthesized GUIDs persist across refresh",
+    "url": "scenarios/disc-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-006/data.json",
+    "id": "DISC-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "disc-006",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "disc",
+      "discovery-and-search",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The subscribe control shows subscribed state immediately",
+    "url": "scenarios/disc-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-007/data.json",
+    "id": "DISC-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "disc-007",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d6",
+      "disc",
+      "discovery-and-search",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Each recommendation has provenance or a deterministic fallback reason",
+    "url": "scenarios/disc-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-008/data.json",
+    "id": "DISC-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "disc-008",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d3",
+      "d7",
+      "disc",
+      "discovery-and-search",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "A NIP-F4 show detail opens through the NMP open-search path",
+    "url": "scenarios/disc-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-009/data.json",
+    "id": "DISC-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "disc-009",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d5",
+      "d7",
+      "disc",
+      "discovery-and-search",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Episode detail opens without app-side relay selection",
+    "url": "scenarios/disc-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-010/data.json",
+    "id": "DISC-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "disc-010",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "disc",
+      "discovery-and-search",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Transcript snippets appear before online escalation",
+    "url": "scenarios/disc-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-011/data.json",
+    "id": "DISC-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "disc-011",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "disc",
+      "discovery-and-search",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Perplexity/OpenRouter search uses a cassette in replay mode",
+    "url": "scenarios/disc-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-012/data.json",
+    "id": "DISC-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "blocked",
+    "slug": "disc-012",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "disc",
+      "discovery-and-search",
+      "visual-evidence-required"
+    ],
+    "title": "Rust-owned missing-credential state is shown",
+    "url": "scenarios/disc-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-013/data.json",
+    "id": "DISC-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "disc-013",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "disc",
+      "discovery-and-search",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Cached/local results show and online sections explain they are unavailable",
+    "url": "scenarios/disc-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-014/data.json",
+    "id": "DISC-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "disc-014",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "disc",
+      "discovery-and-search",
+      "visual-evidence-required"
+    ],
+    "title": "Duplicates are collapsed by canonical feed URL",
+    "url": "scenarios/disc-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-015/data.json",
+    "id": "DISC-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "disc-015",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "disc",
+      "discovery-and-search",
+      "visual-evidence-required"
+    ],
+    "title": "No subscription state mutates until the user confirms",
+    "url": "scenarios/disc-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Discovery And Search",
+    "data_url": "scenarios/disc-016/data.json",
+    "id": "DISC-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "disc-016",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "disc",
+      "discovery-and-search",
+      "visual-evidence-required"
+    ],
+    "title": "Normalized intent preserves user-visible query but routes correctly",
+    "url": "scenarios/disc-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-001/data.json",
+    "id": "LIB-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-001",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The show appears with artwork, title, author, and episode count",
+    "url": "scenarios/lib-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-002/data.json",
+    "id": "LIB-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-002",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The same Rust-owned show set renders without changing sort or filters",
+    "url": "scenarios/lib-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-003/data.json",
+    "id": "LIB-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-003",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Only shows or episodes with unplayed content remain visible",
+    "url": "scenarios/lib-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-004/data.json",
+    "id": "LIB-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-004",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Only downloaded content remains visible and offline playback affordances remain",
+    "url": "scenarios/lib-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-005/data.json",
+    "id": "LIB-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-005",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Episode sort order is newest-first unless the user changes it",
+    "url": "scenarios/lib-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-006/data.json",
+    "id": "LIB-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-006",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "d8",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Played state changes in the kernel and projections update once",
+    "url": "scenarios/lib-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-007/data.json",
+    "id": "LIB-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-007",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "lib",
+      "library-and-episode-management",
+      "visual-evidence-required"
+    ],
+    "title": "Progress and played threshold derive from the kernel state",
+    "url": "scenarios/lib-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-008/data.json",
+    "id": "LIB-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-008",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Show is removed but episode history remains searchable",
+    "url": "scenarios/lib-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-009/data.json",
+    "id": "LIB-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "lib-009",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "New rows appear without clobbering existing progress",
+    "url": "scenarios/lib-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-010/data.json",
+    "id": "LIB-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "lib-010",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "lib",
+      "library-and-episode-management",
+      "visual-evidence-required"
+    ],
+    "title": "The show remains listenable and feed-gone state is visible",
+    "url": "scenarios/lib-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-011/data.json",
+    "id": "LIB-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-011",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Valid feeds import and invalid line errors are listed",
+    "url": "scenarios/lib-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-012/data.json",
+    "id": "LIB-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-012",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Exported XML includes current subscriptions and no private secrets",
+    "url": "scenarios/lib-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-013/data.json",
+    "id": "LIB-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-013",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "lib",
+      "library-and-episode-management",
+      "visual-evidence-required"
+    ],
+    "title": "The same category scoping is not silently applied unless projected as active filter",
+    "url": "scenarios/lib-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-014/data.json",
+    "id": "LIB-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-014",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "lib",
+      "library-and-episode-management",
+      "visual-evidence-required"
+    ],
+    "title": "Category membership survives relaunch and Android/TUI projections can decode it",
+    "url": "scenarios/lib-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-015/data.json",
+    "id": "LIB-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "lib-015",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Sanitized text and links render without script execution",
+    "url": "scenarios/lib-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Library And Episode Management",
+    "data_url": "scenarios/lib-016/data.json",
+    "id": "LIB-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "lib-016",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d6",
+      "d8",
+      "lib",
+      "library-and-episode-management",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Prior good data remains and resync state is visible",
+    "url": "scenarios/lib-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-001/data.json",
+    "id": "PLAY-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-001",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "d8",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Playback starts, mini-player appears, and elapsed time advances",
+    "url": "scenarios/play-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-002/data.json",
+    "id": "PLAY-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-002",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Audio pauses and elapsed time stops advancing",
+    "url": "scenarios/play-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-003/data.json",
+    "id": "PLAY-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-003",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Playback resumes near T instead of restarting",
+    "url": "scenarios/play-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-004/data.json",
+    "id": "PLAY-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-004",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Position advances by configured interval within tolerance",
+    "url": "scenarios/play-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-005/data.json",
+    "id": "PLAY-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-005",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Position decreases by configured interval without pausing",
+    "url": "scenarios/play-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-006/data.json",
+    "id": "PLAY-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-006",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "The active chapter changes and position seeks to chapter boundary",
+    "url": "scenarios/play-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-007/data.json",
+    "id": "PLAY-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-007",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Elapsed label, slider position, and audio position align",
+    "url": "scenarios/play-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-008/data.json",
+    "id": "PLAY-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-008",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Elapsed time advances about 6 seconds",
+    "url": "scenarios/play-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-009/data.json",
+    "id": "PLAY-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "play-009",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Saved speed is applied from Rust-owned settings",
+    "url": "scenarios/play-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-010/data.json",
+    "id": "PLAY-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-010",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d9",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Player shows countdown and clears on cancellation",
+    "url": "scenarios/play-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-011/data.json",
+    "id": "PLAY-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-011",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d9",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Audio stops and timer clears",
+    "url": "scenarios/play-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-012/data.json",
+    "id": "PLAY-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-012",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Position jumps to content start",
+    "url": "scenarios/play-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-013/data.json",
+    "id": "PLAY-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-013",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d8",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Playhead skips without visible loops",
+    "url": "scenarios/play-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-014/data.json",
+    "id": "PLAY-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-014",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Audio continues and full player resumes current state",
+    "url": "scenarios/play-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-015/data.json",
+    "id": "PLAY-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "play-015",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Episode detail shows resume at persisted position",
+    "url": "scenarios/play-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Playback",
+    "data_url": "scenarios/play-016/data.json",
+    "id": "PLAY-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "play-016",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "performance-required",
+      "play",
+      "playback",
+      "visual-evidence-required"
+    ],
+    "title": "Kernel playback state updates and UI follows",
+    "url": "scenarios/play-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-001/data.json",
+    "id": "QD-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-001",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "The episode appears in Up Next from the kernel queue projection",
+    "url": "scenarios/qd-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-002/data.json",
+    "id": "QD-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-002",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Order changes and persists through relaunch",
+    "url": "scenarios/qd-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-003/data.json",
+    "id": "QD-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-003",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "It disappears and current playback is unaffected",
+    "url": "scenarios/qd-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-004/data.json",
+    "id": "QD-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-004",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d9",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Next queued episode starts automatically if auto-play is enabled",
+    "url": "scenarios/qd-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-005/data.json",
+    "id": "QD-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-005",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "No next episode starts and queue remains intact",
+    "url": "scenarios/qd-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-006/data.json",
+    "id": "QD-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-006",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d7",
+      "d8",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Progress appears and reaches downloaded state",
+    "url": "scenarios/qd-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-007/data.json",
+    "id": "QD-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "qd-007",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "d8",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Failed/paused state appears with retry and no crash",
+    "url": "scenarios/qd-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-008/data.json",
+    "id": "QD-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-008",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "A new capability request starts and progress resumes from policy",
+    "url": "scenarios/qd-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-009/data.json",
+    "id": "QD-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-009",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "d8",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Capability stop is idempotent and item returns to not downloaded",
+    "url": "scenarios/qd-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-010/data.json",
+    "id": "QD-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-010",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "d7",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "File storage is reclaimed and episode remains in library",
+    "url": "scenarios/qd-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-011/data.json",
+    "id": "QD-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-011",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Auto-download queues but does not start",
+    "url": "scenarios/qd-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-012/data.json",
+    "id": "QD-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-012",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Older eligible files are deleted by Rust policy, not native UI",
+    "url": "scenarios/qd-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-013/data.json",
+    "id": "QD-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-013",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Only the download projection updates and no full library jank occurs",
+    "url": "scenarios/qd-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-014/data.json",
+    "id": "QD-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-014",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d7",
+      "d8",
+      "performance-required",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Live Activity/widget surfaces show bounded summary data only",
+    "url": "scenarios/qd-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-015/data.json",
+    "id": "QD-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "qd-015",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "State falls back to stream or error according to Rust policy",
+    "url": "scenarios/qd-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Queue And Downloads",
+    "data_url": "scenarios/qd-016/data.json",
+    "id": "QD-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "qd-016",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d5",
+      "qd",
+      "queue-and-downloads",
+      "visual-evidence-required"
+    ],
+    "title": "Token is not exposed in screenshots, logs, or normal snapshots",
+    "url": "scenarios/qd-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-001/data.json",
+    "id": "TR-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "tr-001",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Transcript CTA and segments render",
+    "url": "scenarios/tr-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-002/data.json",
+    "id": "TR-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "tr-002",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Timing and segment text render correctly",
+    "url": "scenarios/tr-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-003/data.json",
+    "id": "TR-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "tr-003",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Speaker/timing fields map to transcript state",
+    "url": "scenarios/tr-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-004/data.json",
+    "id": "TR-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "tr-004",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Graceful unsupported state appears",
+    "url": "scenarios/tr-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-005/data.json",
+    "id": "TR-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "tr-005",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "STT request is routed through Rust and replayable",
+    "url": "scenarios/tr-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-006/data.json",
+    "id": "TR-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "tr-006",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Missing credential state appears from shared provider policy",
+    "url": "scenarios/tr-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-007/data.json",
+    "id": "TR-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "tr-007",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Selected model and result are captured in a Scribe cassette",
+    "url": "scenarios/tr-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-008/data.json",
+    "id": "TR-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "tr-008",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "d9",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Submit/poll result is replayed from cassette with injected clock",
+    "url": "scenarios/tr-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-009/data.json",
+    "id": "TR-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "tr-009",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "The app shows recoverable permission state",
+    "url": "scenarios/tr-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-010/data.json",
+    "id": "TR-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "blocked",
+    "slug": "tr-010",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d8",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Progress continues or cancels according to kernel state and is visible on return",
+    "url": "scenarios/tr-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-011/data.json",
+    "id": "TR-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "tr-011",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Playback seeks to that segment timestamp",
+    "url": "scenarios/tr-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-012/data.json",
+    "id": "TR-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "tr-012",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "The transcript opens at the matching segment",
+    "url": "scenarios/tr-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-013/data.json",
+    "id": "TR-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "tr-013",
+    "tags": [
+      "catalog-scaffold",
+      "d1",
+      "d4",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Uncertainty is visible and not silently hidden",
+    "url": "scenarios/tr-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-014/data.json",
+    "id": "TR-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "tr-014",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Virtualization preserves scroll performance and active line correctness",
+    "url": "scenarios/tr-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-015/data.json",
+    "id": "TR-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "tr-015",
+    "tags": [
+      "catalog-scaffold",
+      "d8",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Auto-scroll pauses and returns only on explicit action",
+    "url": "scenarios/tr-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Transcripts",
+    "data_url": "scenarios/tr-016/data.json",
+    "id": "TR-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "tr-016",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "tr",
+      "transcripts",
+      "visual-evidence-required"
+    ],
+    "title": "Transcript search works without refetching provider data",
+    "url": "scenarios/tr-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-001/data.json",
+    "id": "CLIP-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-001",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d4",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Clip composer opens with sentence-snapped bounds",
+    "url": "scenarios/clip-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-002/data.json",
+    "id": "CLIP-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-002",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d4",
+      "visual-evidence-required"
+    ],
+    "title": "Boundaries snap to transcript utterances",
+    "url": "scenarios/clip-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-003/data.json",
+    "id": "CLIP-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-003",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d10",
+      "d6",
+      "visual-evidence-required"
+    ],
+    "title": "The app either blocks publishing or uses a documented fallback without false context",
+    "url": "scenarios/clip-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-004/data.json",
+    "id": "CLIP-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-004",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d4",
+      "d5",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Stored bounds refine to meaningful utterance edges when transcript exists",
+    "url": "scenarios/clip-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-005/data.json",
+    "id": "CLIP-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-005",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d4",
+      "d5",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "It appears with caption, episode, show, and timestamp",
+    "url": "scenarios/clip-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-006/data.json",
+    "id": "CLIP-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "clip-006",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d4",
+      "d7",
+      "visual-evidence-required"
+    ],
+    "title": "Source badge identifies `.agent` and includes tool provenance",
+    "url": "scenarios/clip-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-007/data.json",
+    "id": "CLIP-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-007",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d4",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "It disappears from Clippings and related episode marks update",
+    "url": "scenarios/clip-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-008/data.json",
+    "id": "CLIP-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-008",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "native-render",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Generated card includes title, show, timestamp, and safe text layout",
+    "url": "scenarios/clip-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-009/data.json",
+    "id": "CLIP-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-009",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d7",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Media file uses selected in/out bounds and excludes unrelated audio",
+    "url": "scenarios/clip-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-010/data.json",
+    "id": "CLIP-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-010",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d10",
+      "d3",
+      "d7",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Raw event tags include `i`, `context`, and `alt` with no `a` tag",
+    "url": "scenarios/clip-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-011/data.json",
+    "id": "CLIP-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "clip-011",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d6",
+      "d7",
+      "nostr-or-relay",
+      "visual-evidence-required"
+    ],
+    "title": "Publish state shows retry and local clip remains",
+    "url": "scenarios/clip-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-012/data.json",
+    "id": "CLIP-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-012",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "native-render",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Text is escaped and no layout overlap occurs",
+    "url": "scenarios/clip-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-013/data.json",
+    "id": "CLIP-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-013",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d4",
+      "d9",
+      "visual-evidence-required"
+    ],
+    "title": "Grouping is stable and date buckets use injected time",
+    "url": "scenarios/clip-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-014/data.json",
+    "id": "CLIP-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-014",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d4",
+      "d5",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Clip detail opens and can jump to source episode",
+    "url": "scenarios/clip-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-015/data.json",
+    "id": "CLIP-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-015",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d6",
+      "visual-evidence-required"
+    ],
+    "title": "It shows recoverable orphan state without crashing",
+    "url": "scenarios/clip-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Clips, Highlights, And Sharing",
+    "data_url": "scenarios/clip-016/data.json",
+    "id": "CLIP-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "clip-016",
+    "tags": [
+      "catalog-scaffold",
+      "clip",
+      "clips-highlights-and-sharing",
+      "d4",
+      "d7",
+      "visual-evidence-required"
+    ],
+    "title": "Updated caption persists and publish metadata updates only through kernel action",
+    "url": "scenarios/clip-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-001/data.json",
+    "id": "AG-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-001",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d5",
+      "native-render",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Agent Chat opens with composer, history affordance, and empty state",
+    "url": "scenarios/ag-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-002/data.json",
+    "id": "AG-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-002",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "A canned assistant reply appears and history stores the turn",
+    "url": "scenarios/ag-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-003/data.json",
+    "id": "AG-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-003",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d5",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Chat opens with episode and segment context attached",
+    "url": "scenarios/ag-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-004/data.json",
+    "id": "AG-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-004",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "visual-evidence-required"
+    ],
+    "title": "Now-playing context is attached by default and removable by the user",
+    "url": "scenarios/ag-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-005/data.json",
+    "id": "AG-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "ag-005",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "cassette-required",
+      "catalog-scaffold",
+      "d5",
+      "d7",
+      "visual-evidence-required"
+    ],
+    "title": "Tool calls include that episode scope only",
+    "url": "scenarios/ag-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-006/data.json",
+    "id": "AG-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-006",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d5",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Episode cards render title, show, date, and play affordance",
+    "url": "scenarios/ag-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-007/data.json",
+    "id": "AG-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-007",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Playback seeks through kernel player action",
+    "url": "scenarios/ag-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-008/data.json",
+    "id": "AG-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "ag-008",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Clip composer opens with suggested bounds and provenance",
+    "url": "scenarios/ag-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-009/data.json",
+    "id": "AG-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-009",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d6",
+      "visual-evidence-required"
+    ],
+    "title": "Failure is visible in state and inspector without throwing UI exceptions",
+    "url": "scenarios/ag-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-010/data.json",
+    "id": "AG-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "ag-010",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d8",
+      "d9",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Progress and cancel affordance are visible",
+    "url": "scenarios/ag-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-011/data.json",
+    "id": "AG-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "ag-011",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d8",
+      "d9",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Stale reply is ignored or marked canceled consistently",
+    "url": "scenarios/ag-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-012/data.json",
+    "id": "AG-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-012",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "visual-evidence-required"
+    ],
+    "title": "Prior conversation context does not bleed in",
+    "url": "scenarios/ag-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-013/data.json",
+    "id": "AG-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-013",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d10",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Messages and tool summaries are included without provider keys",
+    "url": "scenarios/ag-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-014/data.json",
+    "id": "AG-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "ag-014",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "cassette-required",
+      "catalog-scaffold",
+      "native-render",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Layout is readable and links are tappable",
+    "url": "scenarios/ag-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-015/data.json",
+    "id": "AG-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-015",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "visual-evidence-required"
+    ],
+    "title": "Relay glyph and trust status are shown",
+    "url": "scenarios/ag-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-016/data.json",
+    "id": "AG-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-016",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Memory appears with source and can be deleted",
+    "url": "scenarios/ag-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-017/data.json",
+    "id": "AG-017",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "ag-017",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "visual-evidence-required"
+    ],
+    "title": "Task intent label appears without raw dispatch JSON in normal UI",
+    "url": "scenarios/ag-017/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Agent Chat And Tools",
+    "data_url": "scenarios/ag-018/data.json",
+    "id": "AG-018",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "ag-018",
+    "tags": [
+      "ag",
+      "agent-chat-and-tools",
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "d9",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Rust run-due policy triggers a task run and projects result",
+    "url": "scenarios/ag-018/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-001/data.json",
+    "id": "LLM-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-001",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Model list appears from shared provider catalog",
+    "url": "scenarios/llm-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-002/data.json",
+    "id": "LLM-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "llm-002",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "visual-evidence-required"
+    ],
+    "title": "Role-to-model selection persists",
+    "url": "scenarios/llm-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-003/data.json",
+    "id": "LLM-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-003",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Rust validator owns status and message",
+    "url": "scenarios/llm-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-004/data.json",
+    "id": "LLM-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-004",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d6",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "visual-evidence-required"
+    ],
+    "title": "Provider-specific failure is shown without exposing the key",
+    "url": "scenarios/llm-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-005/data.json",
+    "id": "LLM-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-005",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Voice account status is replayable from cassette",
+    "url": "scenarios/llm-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-006/data.json",
+    "id": "LLM-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "llm-006",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "visual-evidence-required"
+    ],
+    "title": "Missing credential state comes from Rust provider policy",
+    "url": "scenarios/llm-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-007/data.json",
+    "id": "LLM-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-007",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Citations and fallback provider choice are captured in replay",
+    "url": "scenarios/llm-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-008/data.json",
+    "id": "LLM-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-008",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Fallback is visible in tool inspector",
+    "url": "scenarios/llm-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-009/data.json",
+    "id": "LLM-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "llm-009",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "State renders without live network",
+    "url": "scenarios/llm-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-010/data.json",
+    "id": "LLM-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-010",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "llm",
+      "llm-provider-and-replay",
+      "visual-evidence-required"
+    ],
+    "title": "The app shows structured failure and preserves chat",
+    "url": "scenarios/llm-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-011/data.json",
+    "id": "LLM-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-011",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d9",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Normalized answer and tool calls match snapshot",
+    "url": "scenarios/llm-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-012/data.json",
+    "id": "LLM-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-012",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "llm",
+      "llm-provider-and-replay",
+      "visual-evidence-required"
+    ],
+    "title": "It contains no API keys, nsec, bearer tokens, or raw private audio",
+    "url": "scenarios/llm-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-013/data.json",
+    "id": "LLM-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "llm-013",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "visual-evidence-required"
+    ],
+    "title": "Rust reports missing model and UI offers settings recovery",
+    "url": "scenarios/llm-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-014/data.json",
+    "id": "LLM-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-014",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d9",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Rate limit copy and retry timing are projected from Rust",
+    "url": "scenarios/llm-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-015/data.json",
+    "id": "LLM-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-015",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Rust validates state/verifier and platform stores only returned secrets",
+    "url": "scenarios/llm-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-016/data.json",
+    "id": "LLM-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-016",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d6",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "visual-evidence-required"
+    ],
+    "title": "Connection fails closed and no credential is stored",
+    "url": "scenarios/llm-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-017/data.json",
+    "id": "LLM-017",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-017",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Result is displayed and replay stores only metadata",
+    "url": "scenarios/llm-017/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "LLM Provider And Replay",
+    "data_url": "scenarios/llm-018/data.json",
+    "id": "LLM-018",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "llm-018",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "llm",
+      "llm-provider-and-replay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "UI ordering follows Rust-ranked output, not native heuristics",
+    "url": "scenarios/llm-018/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-001/data.json",
+    "id": "WIKI-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "wiki-001",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d5",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "The answer cites matching transcript spans",
+    "url": "scenarios/wiki-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-002/data.json",
+    "id": "WIKI-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "wiki-002",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "The agent declines or says not in transcript without fabrication",
+    "url": "scenarios/wiki-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-003/data.json",
+    "id": "WIKI-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "wiki-003",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "The cited timestamp opens playback at the same span",
+    "url": "scenarios/wiki-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-004/data.json",
+    "id": "WIKI-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "wiki-004",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Summary, source count, citations, and related topics render",
+    "url": "scenarios/wiki-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-005/data.json",
+    "id": "WIKI-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "wiki-005",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Single-source confidence styling is visible",
+    "url": "scenarios/wiki-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-006/data.json",
+    "id": "WIKI-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "wiki-006",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "The claim is omitted or clearly marked general knowledge",
+    "url": "scenarios/wiki-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-007/data.json",
+    "id": "WIKI-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "wiki-007",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Contradiction rows include cited quote pairs",
+    "url": "scenarios/wiki-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-008/data.json",
+    "id": "WIKI-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "wiki-008",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "It uses low-confidence styling and caveat copy",
+    "url": "scenarios/wiki-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-009/data.json",
+    "id": "WIKI-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "wiki-009",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "d9",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Generation progress is replayable and citations resolve incrementally",
+    "url": "scenarios/wiki-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-010/data.json",
+    "id": "WIKI-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "wiki-010",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Contested state persists until next regeneration",
+    "url": "scenarios/wiki-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-011/data.json",
+    "id": "WIKI-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "wiki-011",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d5",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Answer includes cross-show evidence and avoids ungrounded broad claims",
+    "url": "scenarios/wiki-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-012/data.json",
+    "id": "WIKI-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "wiki-012",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "d9",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Outline/tool plan is visible and replayable",
+    "url": "scenarios/wiki-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-013/data.json",
+    "id": "WIKI-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "wiki-013",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "The segment is labeled paraphrased or failed, not silently omitted",
+    "url": "scenarios/wiki-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-014/data.json",
+    "id": "WIKI-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "wiki-014",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Source episode opens at timestamp",
+    "url": "scenarios/wiki-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-015/data.json",
+    "id": "WIKI-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "wiki-015",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Fuzzy result cards include why-match snippets",
+    "url": "scenarios/wiki-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-016/data.json",
+    "id": "WIKI-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "wiki-016",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d8",
+      "performance-required",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Stale-index banner appears and background reindex begins",
+    "url": "scenarios/wiki-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-017/data.json",
+    "id": "WIKI-017",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "wiki-017",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "Partial profile renders with missing data marked explicitly",
+    "url": "scenarios/wiki-017/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Wiki, RAG, Knowledge, And Briefings",
+    "data_url": "scenarios/wiki-018/data.json",
+    "id": "WIKI-018",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "wiki-018",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "visual-evidence-required",
+      "wiki",
+      "wiki-rag-knowledge-and-briefings"
+    ],
+    "title": "It states limited grounding and cites show notes only",
+    "url": "scenarios/wiki-018/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-001/data.json",
+    "id": "VOICE-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-001",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Canonical VoiceView opens and not the voice-note sheet",
+    "url": "scenarios/voice-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-002/data.json",
+    "id": "VOICE-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-002",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Permission prompt appears in context",
+    "url": "scenarios/voice-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-003/data.json",
+    "id": "VOICE-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-003",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Denied state offers settings recovery and text fallback",
+    "url": "scenarios/voice-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-004/data.json",
+    "id": "VOICE-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-004",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "d8",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Orb state changes to transcribing and transcript partials appear",
+    "url": "scenarios/voice-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-005/data.json",
+    "id": "VOICE-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "voice-005",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Text is attached to chat and LLM cassette replays answer",
+    "url": "scenarios/voice-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-006/data.json",
+    "id": "VOICE-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "blocked",
+    "slug": "voice-006",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "d8",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "TTS ducks/stops and listening state starts within latency budget",
+    "url": "scenarios/voice-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-007/data.json",
+    "id": "VOICE-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-007",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "d8",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "TTS resumes without committing a user turn",
+    "url": "scenarios/voice-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-008/data.json",
+    "id": "VOICE-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "voice-008",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Preview plays and cassette captures voice/model metadata",
+    "url": "scenarios/voice-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-009/data.json",
+    "id": "VOICE-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "voice-009",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "d8",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "AVSpeech fallback is labeled and no provider loop starts",
+    "url": "scenarios/voice-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-010/data.json",
+    "id": "VOICE-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-010",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "It creates a timestamped note rather than starting canonical VoiceView",
+    "url": "scenarios/voice-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-011/data.json",
+    "id": "VOICE-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "voice-011",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Playback seeks and stays in player",
+    "url": "scenarios/voice-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-012/data.json",
+    "id": "VOICE-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "voice-012",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Semantic clip composer opens with proposed bounds",
+    "url": "scenarios/voice-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-013/data.json",
+    "id": "VOICE-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "blocked",
+    "slug": "voice-013",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Online tools are disabled and local transcript scope is explicit",
+    "url": "scenarios/voice-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-014/data.json",
+    "id": "VOICE-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-014",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Only final text persists, not raw audio buffers",
+    "url": "scenarios/voice-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-015/data.json",
+    "id": "VOICE-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-015",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "App state and CarPlay UI remain synchronized",
+    "url": "scenarios/voice-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-016/data.json",
+    "id": "VOICE-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-016",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Phrase is routed as user intent through Rust",
+    "url": "scenarios/voice-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-017/data.json",
+    "id": "VOICE-017",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "voice-017",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "d8",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Capability lifecycle is idempotent",
+    "url": "scenarios/voice-017/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Voice And Generated Audio",
+    "data_url": "scenarios/voice-018/data.json",
+    "id": "VOICE-018",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "voice-018",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d5",
+      "d7",
+      "performance-required",
+      "visual-evidence-required",
+      "voice",
+      "voice-and-generated-audio"
+    ],
+    "title": "Visible transcript answer includes tap-to-play citations",
+    "url": "scenarios/voice-018/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-001/data.json",
+    "id": "NOSTR-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-001",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d3",
+      "d7",
+      "nostr",
+      "nostr-or-relay",
+      "nostr-publishing-and-protocol",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Kind:10154 event is signed and accepted by relay",
+    "url": "scenarios/nostr-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-002/data.json",
+    "id": "NOSTR-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-002",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d3",
+      "d7",
+      "nostr",
+      "nostr-or-relay",
+      "nostr-publishing-and-protocol",
+      "visual-evidence-required"
+    ],
+    "title": "Kind:10064 links author identity and podcast correctly",
+    "url": "scenarios/nostr-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-003/data.json",
+    "id": "NOSTR-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-003",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d7",
+      "nostr",
+      "nostr-or-relay",
+      "nostr-publishing-and-protocol",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Tags match expected podcast and enclosure metadata",
+    "url": "scenarios/nostr-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-004/data.json",
+    "id": "NOSTR-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-004",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d6",
+      "d7",
+      "nostr",
+      "nostr-publishing-and-protocol",
+      "visual-evidence-required"
+    ],
+    "title": "Signing-required state appears",
+    "url": "scenarios/nostr-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-005/data.json",
+    "id": "NOSTR-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "nostr-005",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d7",
+      "nostr",
+      "nostr-or-relay",
+      "nostr-publishing-and-protocol",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Event signs and publishes without exposing secret material",
+    "url": "scenarios/nostr-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-006/data.json",
+    "id": "NOSTR-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "nostr-006",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "nostr",
+      "nostr-or-relay",
+      "nostr-publishing-and-protocol",
+      "visual-evidence-required"
+    ],
+    "title": "Publish remains failed and retry is available",
+    "url": "scenarios/nostr-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-007/data.json",
+    "id": "NOSTR-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-007",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "nostr",
+      "nostr-or-relay",
+      "nostr-publishing-and-protocol",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Queue state persists and resumes according to Rust policy",
+    "url": "scenarios/nostr-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-008/data.json",
+    "id": "NOSTR-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-008",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "d9",
+      "nostr",
+      "nostr-publishing-and-protocol",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "UI shows pending state without native retry policy",
+    "url": "scenarios/nostr-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-009/data.json",
+    "id": "NOSTR-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-009",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d4",
+      "nostr",
+      "nostr-or-relay",
+      "nostr-publishing-and-protocol",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "It opens the same show on a clean install",
+    "url": "scenarios/nostr-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-010/data.json",
+    "id": "NOSTR-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-010",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "nostr",
+      "nostr-publishing-and-protocol",
+      "visual-evidence-required"
+    ],
+    "title": "Error state is explicit and no relay request is made",
+    "url": "scenarios/nostr-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-011/data.json",
+    "id": "NOSTR-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-011",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d7",
+      "nostr",
+      "nostr-or-relay",
+      "nostr-publishing-and-protocol",
+      "visual-evidence-required"
+    ],
+    "title": "App-facing UI never asks for manual relay URL",
+    "url": "scenarios/nostr-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-012/data.json",
+    "id": "NOSTR-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-012",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d4",
+      "d7",
+      "nostr",
+      "nostr-publishing-and-protocol",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Configured relays projection updates and routing remains Rust-owned",
+    "url": "scenarios/nostr-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-013/data.json",
+    "id": "NOSTR-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-013",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "nostr",
+      "nostr-or-relay",
+      "nostr-publishing-and-protocol",
+      "visual-evidence-required"
+    ],
+    "title": "Diagnostics show raw connectivity facts only",
+    "url": "scenarios/nostr-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-014/data.json",
+    "id": "NOSTR-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-014",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "nostr",
+      "nostr-publishing-and-protocol",
+      "visual-evidence-required"
+    ],
+    "title": "Send fails closed",
+    "url": "scenarios/nostr-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-015/data.json",
+    "id": "NOSTR-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-015",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "nostr",
+      "nostr-publishing-and-protocol",
+      "visual-evidence-required"
+    ],
+    "title": "Content never republishes to public relays",
+    "url": "scenarios/nostr-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Nostr Publishing And Protocol",
+    "data_url": "scenarios/nostr-016/data.json",
+    "id": "NOSTR-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "nostr-016",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d6",
+      "d7",
+      "nostr",
+      "nostr-publishing-and-protocol",
+      "visual-evidence-required"
+    ],
+    "title": "Kernel rejects it and UI degrades safely",
+    "url": "scenarios/nostr-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-001/data.json",
+    "id": "SOC-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-001",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d4",
+      "d7",
+      "nostr-or-relay",
+      "performance-required",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Friend appears after NMP resolves profile data",
+    "url": "scenarios/soc-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-002/data.json",
+    "id": "SOC-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-002",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Validation error appears without network requests",
+    "url": "scenarios/soc-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-003/data.json",
+    "id": "SOC-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-003",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "nostr-or-relay",
+      "performance-required",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Followed users render from kind:3 projection",
+    "url": "scenarios/soc-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-004/data.json",
+    "id": "SOC-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-004",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d3",
+      "d7",
+      "nostr-or-relay",
+      "performance-required",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "UI reflects follow state and raw event verifies",
+    "url": "scenarios/soc-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-005/data.json",
+    "id": "SOC-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-005",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "nostr-or-relay",
+      "performance-required",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Contact list projection removes only that user",
+    "url": "scenarios/soc-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-006/data.json",
+    "id": "SOC-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-006",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Activity row links to episode if resolvable",
+    "url": "scenarios/soc-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-007/data.json",
+    "id": "SOC-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-007",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Raw reference is represented without crash",
+    "url": "scenarios/soc-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-008/data.json",
+    "id": "SOC-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-008",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "nostr-or-relay",
+      "performance-required",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Comment target includes episode identity and author",
+    "url": "scenarios/soc-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-009/data.json",
+    "id": "SOC-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "soc-009",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "nostr-or-relay",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "The composer preserves draft and shows retry",
+    "url": "scenarios/soc-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-010/data.json",
+    "id": "SOC-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-010",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d7",
+      "performance-required",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Image attachment is bounded and redaction warning is visible",
+    "url": "scenarios/soc-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-011/data.json",
+    "id": "SOC-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-011",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d7",
+      "nostr-or-relay",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "The app shows approval controls before tool execution",
+    "url": "scenarios/soc-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-012/data.json",
+    "id": "SOC-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-012",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "It is hidden or marked blocked and no tools run",
+    "url": "scenarios/soc-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-013/data.json",
+    "id": "SOC-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "soc-013",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d7",
+      "nostr-or-relay",
+      "performance-required",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Outbound reply is signed and sent through Rust policy",
+    "url": "scenarios/soc-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-014/data.json",
+    "id": "SOC-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-014",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Policy denies and reply does not include secrets",
+    "url": "scenarios/soc-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-015/data.json",
+    "id": "SOC-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-015",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Trust and direction fields match",
+    "url": "scenarios/soc-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Social, Friends, Feedback",
+    "data_url": "scenarios/soc-016/data.json",
+    "id": "SOC-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "soc-016",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "performance-required",
+      "soc",
+      "social-friends-feedback",
+      "visual-evidence-required"
+    ],
+    "title": "Migration writes one canonical Rust-owned representation",
+    "url": "scenarios/soc-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-001/data.json",
+    "id": "SET-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "set-001",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Player uses new values and settings persist",
+    "url": "scenarios/set-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-002/data.json",
+    "id": "SET-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "set-002",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Policy applies from Rust settings",
+    "url": "scenarios/set-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-003/data.json",
+    "id": "SET-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "set-003",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Native prompt appears and result reports raw capability status",
+    "url": "scenarios/set-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-004/data.json",
+    "id": "SET-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "set-004",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "UI shows denied state without pretending alerts are active",
+    "url": "scenarios/set-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-005/data.json",
+    "id": "SET-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "set-005",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "performance-required",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Storage breakdown shows audio, transcripts, cache, and total values",
+    "url": "scenarios/set-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-006/data.json",
+    "id": "SET-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "set-006",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "performance-required",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "User data is removed and app returns to onboarding safely",
+    "url": "scenarios/set-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-007/data.json",
+    "id": "SET-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "set-007",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "performance-required",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "OPML, JSON, and diagnostics are included without secrets",
+    "url": "scenarios/set-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-008/data.json",
+    "id": "SET-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "set-008",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d9",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Only entries newer than last seen display",
+    "url": "scenarios/set-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-009/data.json",
+    "id": "SET-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "set-009",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "d7",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Missing credential state appears and no stale key is used",
+    "url": "scenarios/set-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-010/data.json",
+    "id": "SET-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "set-010",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Stored ID survives projection round trip",
+    "url": "scenarios/set-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-011/data.json",
+    "id": "SET-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "set-011",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d4",
+      "nostr-or-relay",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Configured relay projection matches prior edits",
+    "url": "scenarios/set-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-012/data.json",
+    "id": "SET-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "set-012",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Results are replayed and user edits override generated labels",
+    "url": "scenarios/set-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-013/data.json",
+    "id": "SET-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "set-013",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Logs redact secrets and show correlation IDs",
+    "url": "scenarios/set-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-014/data.json",
+    "id": "SET-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "set-014",
+    "tags": [
+      "catalog-scaffold",
+      "d8",
+      "performance-required",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Update cadence does not exceed 60 Hz and UI stays responsive",
+    "url": "scenarios/set-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-015/data.json",
+    "id": "SET-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "set-015",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "Setting applies to that show only",
+    "url": "scenarios/set-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Settings And Storage",
+    "data_url": "scenarios/set-016/data.json",
+    "id": "SET-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "set-016",
+    "tags": [
+      "catalog-scaffold",
+      "native-render",
+      "set",
+      "settings-and-storage",
+      "visual-evidence-required"
+    ],
+    "title": "No serif fonts are used anywhere in Pod0 UI",
+    "url": "scenarios/set-016/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-001/data.json",
+    "id": "XPLAT-001",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-001",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Title, episode count, and subscription state match",
+    "url": "scenarios/xplat-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-002/data.json",
+    "id": "XPLAT-002",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics",
+      "cassettes"
+    ],
+    "provider_mode": "blocked",
+    "slug": "xplat-002",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Shared Rust action path matches iOS behavior",
+    "url": "scenarios/xplat-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-003/data.json",
+    "id": "XPLAT-003",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-003",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "performance-required",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Media service reports raw audio events to Rust",
+    "url": "scenarios/xplat-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-004/data.json",
+    "id": "XPLAT-004",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-004",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Shared settings projection matches iOS field semantics",
+    "url": "scenarios/xplat-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-005/data.json",
+    "id": "XPLAT-005",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-005",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "TUI renders changed list without app-side business policy",
+    "url": "scenarios/xplat-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-006/data.json",
+    "id": "XPLAT-006",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-006",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "d9",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Task intent fields match iOS and Android",
+    "url": "scenarios/xplat-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-007/data.json",
+    "id": "XPLAT-007",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-007",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d6",
+      "performance-required",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Prior good cache remains and needs-resync latches",
+    "url": "scenarios/xplat-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-008/data.json",
+    "id": "XPLAT-008",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-008",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "performance-required",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Decode and commit stay off main hot path",
+    "url": "scenarios/xplat-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-009/data.json",
+    "id": "XPLAT-009",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-009",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "performance-required",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Amplification stays bounded to download domain",
+    "url": "scenarios/xplat-009/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-010/data.json",
+    "id": "XPLAT-010",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-010",
+    "tags": [
+      "catalog-scaffold",
+      "d8",
+      "performance-required",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Update cadence is coalesced and no queue grows unbounded",
+    "url": "scenarios/xplat-010/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-011/data.json",
+    "id": "XPLAT-011",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-011",
+    "tags": [
+      "catalog-scaffold",
+      "d9",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Outputs are deterministic",
+    "url": "scenarios/xplat-011/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-012/data.json",
+    "id": "XPLAT-012",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-012",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "User-visible retry policy comes from state",
+    "url": "scenarios/xplat-012/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-013/data.json",
+    "id": "XPLAT-013",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding",
+      "metrics"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-013",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d8",
+      "performance-required",
+      "platform-parity-performance-regression",
+      "rmp",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Dispatch remains fire-and-forget and success/failure arrives via update state",
+    "url": "scenarios/xplat-013/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-014/data.json",
+    "id": "XPLAT-014",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-014",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "Rust receives raw completion result only if needed",
+    "url": "scenarios/xplat-014/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-015/data.json",
+    "id": "XPLAT-015",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-015",
+    "tags": [
+      "catalog-scaffold",
+      "platform-parity-performance-regression",
+      "process",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "No app code or WIP entries are staged",
+    "url": "scenarios/xplat-015/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Platform, Parity, Performance, Regression",
+    "data_url": "scenarios/xplat-016/data.json",
+    "id": "XPLAT-016",
+    "missing_evidence": [
+      "screenshots",
+      "ui_tree",
+      "accessibility",
+      "reviewed_skill_grounding"
+    ],
+    "provider_mode": "none",
+    "slug": "xplat-016",
+    "tags": [
+      "all-doctrine",
+      "catalog-scaffold",
+      "platform-parity-performance-regression",
+      "visual-evidence-required",
+      "xplat"
+    ],
+    "title": "D4/D5/D6/D7/D8/D9/D10 risks map to catalog rows",
+    "url": "scenarios/xplat-016/",
+    "verdict": "incomplete"
+  }
+]

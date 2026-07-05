@@ -1,0 +1,202 @@
+[
+  {
+    "count": 18,
+    "tag": "ag"
+  },
+  {
+    "count": 18,
+    "tag": "agent-chat-and-tools"
+  },
+  {
+    "count": 1,
+    "tag": "all-doctrine"
+  },
+  {
+    "count": 70,
+    "tag": "cassette-required"
+  },
+  {
+    "count": 264,
+    "tag": "catalog-scaffold"
+  },
+  {
+    "count": 16,
+    "tag": "clip"
+  },
+  {
+    "count": 16,
+    "tag": "clips-highlights-and-sharing"
+  },
+  {
+    "count": 4,
+    "tag": "d1"
+  },
+  {
+    "count": 38,
+    "tag": "d10"
+  },
+  {
+    "count": 13,
+    "tag": "d3"
+  },
+  {
+    "count": 114,
+    "tag": "d4"
+  },
+  {
+    "count": 60,
+    "tag": "d5"
+  },
+  {
+    "count": 51,
+    "tag": "d6"
+  },
+  {
+    "count": 126,
+    "tag": "d7"
+  },
+  {
+    "count": 32,
+    "tag": "d8"
+  },
+  {
+    "count": 18,
+    "tag": "d9"
+  },
+  {
+    "count": 16,
+    "tag": "disc"
+  },
+  {
+    "count": 16,
+    "tag": "discovery-and-search"
+  },
+  {
+    "count": 16,
+    "tag": "fnd"
+  },
+  {
+    "count": 16,
+    "tag": "foundation-and-first-run"
+  },
+  {
+    "count": 16,
+    "tag": "id"
+  },
+  {
+    "count": 16,
+    "tag": "identity-and-accounts"
+  },
+  {
+    "count": 16,
+    "tag": "lib"
+  },
+  {
+    "count": 16,
+    "tag": "library-and-episode-management"
+  },
+  {
+    "count": 18,
+    "tag": "llm"
+  },
+  {
+    "count": 18,
+    "tag": "llm-provider-and-replay"
+  },
+  {
+    "count": 7,
+    "tag": "native-render"
+  },
+  {
+    "count": 16,
+    "tag": "nostr"
+  },
+  {
+    "count": 25,
+    "tag": "nostr-or-relay"
+  },
+  {
+    "count": 16,
+    "tag": "nostr-publishing-and-protocol"
+  },
+  {
+    "count": 159,
+    "tag": "performance-required"
+  },
+  {
+    "count": 16,
+    "tag": "platform-parity-performance-regression"
+  },
+  {
+    "count": 16,
+    "tag": "play"
+  },
+  {
+    "count": 16,
+    "tag": "playback"
+  },
+  {
+    "count": 1,
+    "tag": "process"
+  },
+  {
+    "count": 16,
+    "tag": "qd"
+  },
+  {
+    "count": 16,
+    "tag": "queue-and-downloads"
+  },
+  {
+    "count": 1,
+    "tag": "rmp"
+  },
+  {
+    "count": 16,
+    "tag": "set"
+  },
+  {
+    "count": 16,
+    "tag": "settings-and-storage"
+  },
+  {
+    "count": 16,
+    "tag": "soc"
+  },
+  {
+    "count": 16,
+    "tag": "social-friends-feedback"
+  },
+  {
+    "count": 16,
+    "tag": "tr"
+  },
+  {
+    "count": 16,
+    "tag": "transcripts"
+  },
+  {
+    "count": 264,
+    "tag": "visual-evidence-required"
+  },
+  {
+    "count": 18,
+    "tag": "voice"
+  },
+  {
+    "count": 18,
+    "tag": "voice-and-generated-audio"
+  },
+  {
+    "count": 18,
+    "tag": "wiki"
+  },
+  {
+    "count": 18,
+    "tag": "wiki-rag-knowledge-and-briefings"
+  },
+  {
+    "count": 16,
+    "tag": "xplat"
+  }
+]
