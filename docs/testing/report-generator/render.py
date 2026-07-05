@@ -10,8 +10,12 @@ from records import count_boundaries, count_by, count_tags, missing_evidence_for
 
 def render_home(records: list[dict[str, Any]], depth: int) -> str:
     rollups = rollups_for(records)
+    observed = sum(1 for record in records if record["execution"]["status"] != "not_run")
     body = [
-        hero("Pod0 Scenario Validation Report", f"{len(records)} generated scenario pages. Current verdict: incomplete until run evidence is attached."),
+        hero(
+            "Pod0 Scenario Validation Report",
+            f"{len(records)} generated scenario pages; {observed} now include run evidence. Overall suite readiness remains incomplete until every scenario is evidence-backed and cluster-reviewed.",
+        ),
         stat_band(rollups["by_verdict"]),
         section("Scenario Page System", p("Each BDD catalog scenario now has a stable page, JSON record, source link, structured flow steps, attempts, evidence inventory, skill-grounded quality review, product-cluster coherence, readiness gates, and rollup membership.")),
         link_list("Indexes", [("All scenarios", rel("scenarios/", depth)), ("Tags", rel("tags/", depth)), ("Issues", rel("issues/", depth)), ("Performance rollup", rel("rollups/performance/", depth)), ("Raw scenario JSON", rel("data/scenarios.json", depth))]),
