@@ -8,14 +8,12 @@ No cassette files or app implementation files were changed.
 
 | Repository | Ref inspected | Commit | Notes |
 |---|---:|---|---|
-| Pod0 | `origin/main` / audit base | `fb9db53260bfb2caeb2b79529bdaa33295b01eee` | `Finish app-facing UniFFI bridge migration (#699)` |
+| Pod0 | `origin/main` after refresh | `d4fe09b7084db589a8122f403024196d9178548d` | Includes `Stabilize show follow option flow (#716)` on top of the UniFFI migration base. |
 | Pod0 NMP pin | `Cargo.toml` | `1fc3e6bea390224cef30e37d2ccaa90615197521` | All `nmp-*` crates use this single rev (`Cargo.toml:47-72`). |
-| NMP local checkout | `/Users/customer/Work/nostr-multi-platform` `origin/master` | `4d5ee5ca5ae87dacb7e6b6c180c0a7f33a751e21` | 36 commits ahead of Pod0's pin after fetch. |
-| NMP local checkout | `/Users/customer/Work/nostr-multi-platform` local `master` | `3d0e9e06cdad15b16634ac777499b96bfcd9b171` | Behind fetched `origin/master`. |
-| NMP local checkout | `/Users/customer/Work/nostrmultiplatform` `origin/master` | `4d5ee5ca5ae87dacb7e6b6c180c0a7f33a751e21` | Second local checkout has same fetched upstream tip. |
-| Chirp | `origin/master` | `ee6160a8b3ecb4cd08e58c5ad00085c70ce73fb6` | Latest shipped Chirp master inspected after fetch. |
-| Chirp | local `codex/issue-144-joined-groups-chats` | `e87077f7119d94ac3c33970458a01bdf872456ec` | Local unmerged NIP-29 groups branch, inspected for applicability only. |
-| Chirp | `origin/chirp-repin-marmot-retest` | `4654987` | Non-master reverify branch that re-pins through NMP `4d5ee5ca`; not treated as shipped Pod0 guidance. |
+| NMP local checkout | `/Users/customer/Work/nostr-multi-platform` `origin/master` | `bc6b42592d7fd61bc6767cac246a24a6b23bf8e3` | 44 commits ahead of Pod0's pin after fetch. |
+| NMP local checkout | `/Users/customer/Work/nostr-multi-platform` local `master` | `3d0e9e06cdad15b16634ac777499b96bfcd9b171` | Behind fetched `origin/master`; remote state is authoritative for this audit. |
+| Chirp | `origin/master` | `b8474e71c5ce2d710861f92b7c0d80858d934304` | Shipped master re-pins all NMP crates to `bc6b42592` for relay-config persistence and Marmot freshness. |
+| Chirp | local `codex/issue-144-joined-groups-chats` | `e87077f7119d94ac3c33970458a01bdf872456ec` | Local worktree is stale relative to shipped `origin/master`; only remote blobs/logs are used as shipped Chirp evidence. |
 
 ## Applicable Fixes / Patterns
 
@@ -24,7 +22,10 @@ No cassette files or app implementation files were changed.
   retargeting, `53f2bbf9f` relay-lifecycle D8 rate limiting, `b3d446a30`
   action-stage D8 rate limiting, `f5664e963` permanently-failed publish
   surfacing, `1908fd895` observed terminal action-lifecycle retention, and
-  `7be89305f` emitted action lifecycle for dispatched publishes. Pod0 also
+  `7be89305f` emitted action lifecycle for dispatched publishes. Current NMP
+  `bc6b42592` also fixes runtime startup so persisted relay configuration is
+  loaded in `start_runtime`, not only through the builder path. Chirp master
+  re-pinned every NMP crate to that exact commit in `b8474e7`. Pod0 also
   currently discards `nmp.publish` dispatch errors and returns `"queued"`
   unconditionally from `apps/nmp-app-podcast/src/nmp_dispatch.rs:310`.
   Tracked as [#707](https://github.com/pablof7z/podcast-player/issues/707).
@@ -56,8 +57,8 @@ No cassette files or app implementation files were changed.
   The guard pattern is still useful and is covered by #709's generated-code
   drift/backstop work.
 
-- Chirp NIP-29 group-chat work (`e87077f`, NMP `0f7ea7bac`, `488fa7a13`, and
-  Marmot welcome/key-package fixes through `4d5ee5ca`) is not directly
+- Chirp NIP-29 group-chat work (NMP `0f7ea7bac`, `488fa7a13`, and Marmot
+  welcome/key-package fixes through `944f0997`) is not directly
   applicable to Pod0 today. Pod0 does not depend on `nmp-nip29` or `nmp-marmot`,
   and its user-visible social messaging is still public notes/comments/friends
   rather than private group chat.
@@ -66,12 +67,14 @@ No cassette files or app implementation files were changed.
   discovery UI state, not Pod0's app relay editor. Pod0 relay editing dispatches
   canonical role/url actions through the settings kernel path.
 
-- NMP wallet/Cashu/nutzap commits after `1fc3e6b` are not currently applicable;
-  Pod0 does not depend on the wallet or mint-discovery crates.
+- NMP wallet/Cashu/nutzap/mint-discovery commits after `1fc3e6b` are not
+  currently applicable; Pod0 does not depend on the wallet or mint-discovery
+  crates.
 
 ## Concrete Pod0 Gaps
 
-1. **NMP pin is behind current publish/relay/action-lifecycle fixes.**
+1. **NMP pin is behind current publish/relay/action-lifecycle and relay-config
+   persistence fixes.**
    File: `Cargo.toml:47-72`. Issue: [#707](https://github.com/pablof7z/podcast-player/issues/707).
 
 2. **NMP publish dispatch currently hides immediate rejection and has no generic
@@ -106,6 +109,12 @@ No cassette files or app implementation files were changed.
 - Created isolated worktree `/Users/customer/Work/podcast-player-nmp-chirp-audit`
   on branch `codex/nmp-chirp-sync-audit`.
 - Ran `python3 /Users/customer/.codex/skills/nmp-app-architecture/scripts/nmp_architecture_scan.py /Users/customer/Work/podcast-player-nmp-chirp-audit`.
-- Ran `git fetch --all --prune` in Pod0, `../chirp`, and both local NMP checkouts.
+- Ran `git fetch --all --prune` in Pod0, `../chirp`, and local NMP checkouts.
+- Refreshed the current remote comparison on 2026-07-05T22:37Z:
+  Pod0 `origin/main` = `d4fe09b7`, NMP `origin/master` = `bc6b42592`,
+  Chirp `origin/master` = `b8474e7`.
+- Verified Chirp `origin/master:Cargo.toml` pins all NMP crates to
+  `bc6b42592d7fd61bc6767cac246a24a6b23bf8e3`.
+- Counted NMP `origin/master` as 44 commits ahead of Pod0's `1fc3e6b` pin.
 - Inspected Pod0 manifests, generated bridge files, runtime dispatch/NIP-05
   seams, CI drift gates, Chirp recent commits, and NMP commits after Pod0's pin.
