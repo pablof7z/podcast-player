@@ -1,7 +1,7 @@
 SCHEMA_VERSION = "1.0.0"
-GENERATOR_VERSION = "scenario-report-generator/0.3.1"
+GENERATOR_VERSION = "scenario-report-generator/0.3.2"
 SITE_BASE = "https://pablof7z.github.io/podcast-player/"
-SKILL_SEARCH_QUERY = "liquid glass iOS primitives mobile frontend design UI polish UX"
+SKILL_SEARCH_QUERY = "liquid glass iOS mobile frontend design UI polish"
 
 SECTION_TO_DIMENSION = {
     "persona_job_acceptance": "persona_acceptance",
@@ -12,6 +12,7 @@ SECTION_TO_DIMENSION = {
     "expected_behavior": "expected_behavior",
     "actual_result": "actual_result",
     "artifacts": "artifacts",
+    "evidence_provenance": "evidence_provenance",
     "review_skill_grounding": "review_skill_grounding",
     "ui_polish_report": "ui_polish",
     "ux_polish_report": "ux_polish",
@@ -23,9 +24,11 @@ SECTION_TO_DIMENSION = {
     "nmp_architecture_cohesiveness": "nmp_architecture",
     "product_coherence_in_context": "product_coherence",
     "product_cluster_coherence": "product_cluster_coherence",
+    "before_after_deltas": "before_after_deltas",
     "reliability_flakiness": "reliability_flakiness",
     "regression_risk": "regression_risk",
     "defects_issues_filed": "defects_issues_filed",
+    "revalidation_status": "revalidation_status",
     "risks_follow_up": "risks_follow_up",
     "instrumentation_gaps": "instrumentation_gaps",
     "localization_content_quality": "localization_content_quality",
@@ -34,6 +37,7 @@ SECTION_TO_DIMENSION = {
     "readiness_gates": "readiness_gates",
     "verdict": "verdict",
     "next_actions": "next_actions",
+    "owner_status": "owner_status",
     "cross_screen_continuity": "cross_screen_continuity",
     "states_resilience": "states_resilience",
     "touch_ergonomics": "touch_ergonomics",
@@ -57,6 +61,7 @@ SECTION_LABELS = {
     "expected_behavior": "Expected Behavior",
     "actual_result": "Actual Result",
     "artifacts": "Artifacts, Screenshots, Video",
+    "evidence_provenance": "Evidence Provenance",
     "review_skill_grounding": "Review Skill Grounding",
     "ui_polish_report": "UI Polish Report",
     "ux_polish_report": "UX Polish Report",
@@ -68,9 +73,11 @@ SECTION_LABELS = {
     "nmp_architecture_cohesiveness": "NMP Architecture And Cohesiveness",
     "product_coherence_in_context": "Product Coherence In Context",
     "product_cluster_coherence": "Product Cluster Coherence",
+    "before_after_deltas": "Before/After Deltas",
     "reliability_flakiness": "Reliability And Flakiness",
     "regression_risk": "Regression Risk",
     "defects_issues_filed": "Defects And Issues Filed",
+    "revalidation_status": "Revalidation Status",
     "risks_follow_up": "Risks, Follow-Up, And Back-Links",
     "instrumentation_gaps": "Instrumentation Gaps And Missing Evidence",
     "localization_content_quality": "Localization And Content Quality",
@@ -79,6 +86,7 @@ SECTION_LABELS = {
     "readiness_gates": "Readiness Gates",
     "verdict": "Verdict",
     "next_actions": "Next Actions",
+    "owner_status": "Owner And Status",
     "cross_screen_continuity": "Cross-Screen Continuity",
     "states_resilience": "Empty, Loading, Offline, And Recovery States",
     "touch_ergonomics": "Touch Ergonomics",
@@ -108,6 +116,7 @@ GROUPS = {
     ],
     "evidence_reproducibility": [
         "artifacts",
+        "evidence_provenance",
         "review_skill_grounding",
         "replayability_cassette_provenance",
         "device_os_matrix",
@@ -122,6 +131,7 @@ GROUPS = {
         "cross_screen_continuity",
         "states_resilience",
         "touch_ergonomics",
+        "before_after_deltas",
         "motion_haptics",
         "information_architecture",
         "content_hierarchy",
@@ -142,9 +152,11 @@ GROUPS = {
     ],
     "follow_through": [
         "defects_issues_filed",
+        "revalidation_status",
         "risks_follow_up",
         "verdict",
         "next_actions",
+        "owner_status",
     ],
 }
 
@@ -152,14 +164,26 @@ SKILL_GROUNDING = [
     {
         "selected": True,
         "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "liquid glass iOS primitives",
+        "search_terms": SKILL_SEARCH_QUERY,
         "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
     },
     {
         "selected": True,
-        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
-        "search_terms": "mobile frontend design UI polish UX",
-        "coverage": "Native iOS interface validation, safe areas, SF typography and Dynamic Type, semantic colors, 44 pt touch targets, navigation conventions, accessibility roles, performance-as-UX budgets, and Liquid Glass overlay restraint.",
+        "name": "local web-design-guidelines",
+        "search_terms": "local skill plus fetched Vercel Web Interface Guidelines",
+        "coverage": "Semantic HTML, focus, accessibility labels, image metadata, reduced motion, touch behavior, safe areas, locale-safe formatting, content overflow, and frontend performance review gates.",
+    },
+    {
+        "selected": True,
+        "name": "local playwright-cli",
+        "search_terms": "local browser validation skill",
+        "coverage": "Local GitHub Pages validation, screenshots, snapshots, responsive viewport checks, interaction verification, and generated-site smoke testing.",
+    },
+    {
+        "selected": False,
+        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
+        "search_terms": SKILL_SEARCH_QUERY,
+        "coverage": "Search result considered as an alternate glass-design critic; vabole/apple-skills@ios-liquid-glass was loaded as the primary Liquid Glass reference.",
     },
     {
         "selected": False,

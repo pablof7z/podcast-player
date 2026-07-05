@@ -38,36 +38,40 @@ The generated site includes:
 - rollups for verdict, provider mode, NMP boundary, performance requirements,
   and issues
 - JSON rollups under `data/`
+- preserved `assets/` content when regenerating over an existing Pages checkout
+- preserved evidence-bearing per-scenario `data.json` fields when an existing
+  record uses the same schema
+- copied repo screenshots from `docs/images/` and `docs/testing/scenarios/` into
+  the existing Pages asset path conventions
 
 Each scenario record also includes structured `product_context`, `flow_steps`,
 `execution`, `review_grounding`, `quality_review`, `coherence`, `readiness`,
-`evidence.missing`, `instrumentation_gaps`, and `risks` fields. These are
-intentionally first-class JSON fields so future importers can populate observed
-runs without scraping prose.
+`evidence.missing`, `evidence_provenance`, `before_after_deltas`,
+`revalidation_status`, `owner_status`, `instrumentation_gaps`, and `risks`
+fields. These are intentionally first-class JSON fields so future importers can
+populate observed runs without scraping prose.
 
 ## Review Skill Grounding
 
 This pass used:
 
 ```sh
-npx skills search "iOS UI polish Apple Human Interface Guidelines accessibility UX performance mobile design review Liquid Glass"
-npx skills use alirezarezvani/claude-skills@apple-hig-expert
+npx skills search "liquid glass iOS mobile frontend design UI polish"
 npx skills use vabole/apple-skills@ios-liquid-glass
-npx skills use qodex-ai/ai-agent-skills@mobile-app-interface
+# plus local skills: web-design-guidelines and playwright-cli
 ```
 
-The local `web-design-guidelines` skill was also loaded and its current Web
-Interface Guidelines were fetched. `data/skill-grounding.json` records these
-selected skills and the template impact:
+`data/skill-grounding.json` records these selected skills and the template
+impact:
 
-- Apple HIG Expert: 44 pt targets, contrast, Dynamic Type, VoiceOver, safe
-  areas, semantic colors, SF typography, and iPhone navigation ergonomics.
 - iOS Liquid Glass: hierarchy, harmony, consistency, control-layer glass use,
   GlassEffect composition, semantic foreground styles, and Reduce
   Motion/Transparency behavior.
-- Mobile App Interface: safe areas, SF typography, Dynamic Type, semantic color,
-  44 pt touch targets, native navigation, accessibility roles, state resilience,
-  and performance-as-UX budgets.
+- Web Interface Guidelines: semantic HTML, focus, accessibility labels, image
+  metadata, reduced motion, touch behavior, safe areas, locale-safe formatting,
+  content overflow, and frontend performance review gates.
+- Playwright CLI: generated-site screenshots, snapshots, responsive viewport
+  checks, interaction verification, and local Pages smoke testing.
 
 UI, UX, accessibility, performance, and product-coherence scores must stay at
 `2` or below until the relevant evidence and grounded critique are attached.

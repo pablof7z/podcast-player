@@ -120,7 +120,7 @@ Each scenario page is generated from one `ScenarioReport` JSON object:
 | `flow_steps` | Ordered step-by-step flow with expected state and required evidence per step. |
 | `execution` | Attempts, retries, branches, commands, tools, rerun notes, and branch coverage. |
 | `review_grounding` | Exact skill-search command, selected/considered skills, and how those skills shape the template. |
-| `sections` | Required narrative sections from the page template. |
+| `sections` | Required narrative sections from the page template, including provenance, before/after deltas, revalidation status, and owner/status. |
 | `dimension_scores` | Per-dimension scores and evidence references. |
 | `group_scores` | Functional/product/engineering/follow-through grouped scores. |
 | `quality_review` | Structured UI, UX, performance, accessibility, reliability, privacy/security, content, controls, offline/resume, and observability checks. |
@@ -150,6 +150,7 @@ execution_attempts
 expected_behavior
 actual_result
 artifacts
+evidence_provenance
 review_skill_grounding
 ui_polish
 ux_polish
@@ -161,9 +162,11 @@ privacy_security
 nmp_architecture
 product_coherence
 product_cluster_coherence
+before_after_deltas
 reliability_flakiness
 regression_risk
 defects_issues_filed
+revalidation_status
 risks_follow_up
 instrumentation_gaps
 localization_content_quality
@@ -172,6 +175,7 @@ offline_resume_behavior
 readiness_gates
 verdict
 next_actions
+owner_status
 cross_screen_continuity
 states_resilience
 touch_ergonomics
@@ -227,6 +231,14 @@ Missing evidence:
   dimensions it blocks.
 - `instrumentation_gaps` repeats missing evidence as an owner/severity queue so
   rollups can find gaps without parsing section prose.
+- `evidence_provenance` records capture origin, source commit, branch, device/OS,
+  redaction, freshness, and live/replay/generated/copied status.
+- `before_after_deltas` records the state before an action, the action itself,
+  the state after it, the intended delta, and any unexpected regression.
+- `revalidation_status` records fix PRs, revalidation run IDs, rerun commits,
+  affected dimensions, and still-open gaps.
+- `owner_status` makes owners and statuses explicit across blockers, gates,
+  risks, issues, and follow-up actions.
 
 Security:
 

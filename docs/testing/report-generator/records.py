@@ -148,7 +148,8 @@ def section_text(scenario: Scenario) -> dict[str, dict[str, Any]]:
         "expected_behavior": s(f"Expected behavior from BDD: {scenario.bdd['then'][0]}. NMP/RMP boundary declared by the catalog: {boundary}.", [source_ref]),
         "actual_result": s(missing, [source_ref], ["Attach step-by-step observed behavior before changing this verdict."]),
         "artifacts": s(f"Required visual/raw evidence from the catalog: {screenshots}. Only the source catalog and rubric metadata exist right now.", [source_ref, skill_ref]),
-        "review_skill_grounding": s("Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives plus mobile interface, safe-area, Dynamic Type, touch, navigation, accessibility, and performance-as-UX criteria.", [skill_ref], [f"Selected skills: {', '.join(item['name'] for item in SKILL_GROUNDING if item.get('selected'))}."]),
+        "evidence_provenance": s("Not assessed. Every artifact must identify its source command/tool, capture context, source commit, branch, device/OS, SHA/path, redaction state, freshness, and whether it is live, replayed, generated, or copied from prior evidence.", [source_ref, skill_ref]),
+        "review_skill_grounding": s("Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives, generated-site accessibility and interaction guidelines, and Playwright-based page verification.", [skill_ref], [f"Selected skills: {', '.join(item['name'] for item in SKILL_GROUNDING if item.get('selected'))}."]),
         "ui_polish_report": s("Not assessed. Requires annotated screenshots for layout, spacing, typography, color, symbols, component state, and platform-native finish.", [skill_ref]),
         "ux_polish_report": s("Not assessed. Requires notes on task clarity, user effort, feedback, interruption/resume, recovery, and cognitive load.", [skill_ref]),
         "performance_metrics": s(f"Not measured. Required performance evidence: {perf}.", [source_ref]),
@@ -159,9 +160,11 @@ def section_text(scenario: Scenario) -> dict[str, dict[str, Any]]:
         "nmp_architecture_cohesiveness": s(f"Not assessed. Declared NMP/RMP boundary: {boundary}. Review must check Rust-owned state/policy, thin native renderers, bounded FFI, replay clocks, and privacy fail-closed behavior.", [source_ref, skill_ref]),
         "product_coherence_in_context": s("Not assessed. The page must explain how this flow fits nearby Pod0 surfaces such as library, player, transcript, agent, settings, and Nostr/social state.", [source_ref]),
         "product_cluster_coherence": s("Not assessed. Related scenarios must be judged as a group so UI/UX/product coherence does not pass in isolation while the cluster remains inconsistent.", [source_ref, skill_ref]),
+        "before_after_deltas": s("Not assessed. Capture the before state, user action, after state, expected delta, unexpected regression, and screenshot pair for every visible product change.", [source_ref]),
         "reliability_flakiness": s("Not assessed. Validation must record rerun count, retry causes, flake history, stale-build risk, timeout behavior, and deterministic replay coverage.", [source_ref]),
         "regression_risk": s("Not assessed. Validation must list adjacent scenarios and modules to rerun after any fix.", [source_ref]),
         "defects_issues_filed": s("No defects have been observed yet because the scenario has not run. Any actionable defect found later must link a GitHub issue before the page can leave incomplete.", [source_ref]),
+        "revalidation_status": s("No fix or revalidation cycle exists yet. Every fixed defect must link the fix PR, revalidation run ID, rerun commit, affected dimensions, and remaining open gaps.", [source_ref]),
         "risks_follow_up": s("Current risks are scaffolded from missing evidence and cluster regression exposure. Actionable defects must gain issue/PR links and revalidation run IDs.", [source_ref]),
         "instrumentation_gaps": s("Screenshots, UI trees, logs, metrics, cassettes, and accessibility audits are listed as explicit missing evidence so gaps cannot be hidden in prose.", [source_ref, skill_ref]),
         "localization_content_quality": s("Not assessed. Review must check locale-sensitive strings, podcast metadata, transcript/agent content, truncation, empty/error copy, and translation safety.", [skill_ref]),
@@ -170,6 +173,7 @@ def section_text(scenario: Scenario) -> dict[str, dict[str, Any]]:
         "readiness_gates": s("All readiness gates are blocked until evidence, skill-grounded scoring, product-cluster coherence, defect tracking, and release readiness are populated.", [source_ref, skill_ref]),
         "verdict": s("Overall verdict is incomplete because required screenshots, metrics, cassettes, accessibility evidence, critique, and issue back-links are missing.", [source_ref, skill_ref]),
         "next_actions": s("Run the scenario, attach evidence, score every dimension, file defects, and republish this page from validated JSON.", [source_ref]),
+        "owner_status": s("Default ownership is validation-agent for evidence and review-agent for scoring/defects until a human or agent owner is assigned. Every blocker, gate, action, defect, and revalidation item must carry owner and status.", [source_ref]),
         "cross_screen_continuity": s("Not assessed. Capture before/after navigation state for adjacent surfaces and ensure mini-player, queue, transcript, agent, and settings remain coherent.", [source_ref]),
         "states_resilience": s("Not assessed. Capture empty, loading, denied, unavailable, offline, retry, and recovery states reached by this scenario.", [source_ref]),
         "touch_ergonomics": s("Not assessed. Audit primary controls for reachability, 44x44 pt targets, spacing, and gesture alternatives.", [skill_ref]),
@@ -226,6 +230,8 @@ def next_actions_for(scenario: Scenario) -> list[dict[str, str]]:
         {"id": "attach-evidence", "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, and redaction metadata.", "status": "open", "owner": "validation-agent"},
         {"id": "score-dimensions", "title": "Score every individual and grouped dimension from evidence.", "status": "open", "owner": "review-agent"},
         {"id": "file-defects", "title": "File GitHub issues for every actionable defect before leaving incomplete.", "status": "open", "owner": "review-agent"},
+        {"id": "revalidate-defects", "title": "Re-run this scenario after each fix PR and attach revalidation run IDs.", "status": "open", "owner": "validation-agent"},
+        {"id": "assign-owners", "title": "Assign owner and status for every blocker, gate, action, defect, and revalidation item.", "status": "open", "owner": "review-agent"},
     ]
     if scenario.cassettes or scenario.provider_mode == "blocked":
         actions.append({"id": "attach-cassettes", "title": "Attach deterministic provider, relay, STT, TTS, LLM, or network cassettes.", "status": "open", "owner": "validation-agent"})
