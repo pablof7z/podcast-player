@@ -1,7 +1,38 @@
 {
   "counts": {
-    "fixed": 0,
-    "open": 0
+    "open": 2
   },
-  "issues": []
+  "issues": [
+    {
+      "affected_dimensions": [
+        "performance",
+        "reliability_flakiness",
+        "regression_risk"
+      ],
+      "id": "#718",
+      "owner": "unowned",
+      "scenario_id": "PLAY-001",
+      "scenario_slug": "play-001",
+      "severity": "major",
+      "status": "open",
+      "title": "D1: Seeded playback reaches end at 1:00 despite 5m episode metadata, blocking resume validation",
+      "url": "https://github.com/pablof7z/podcast-player/issues/718"
+    },
+    {
+      "affected_dimensions": [
+        "actual_result",
+        "ux_polish",
+        "performance",
+        "verdict"
+      ],
+      "id": "#717",
+      "owner": "unowned",
+      "scenario_id": "SET-005",
+      "scenario_slug": "set-005",
+      "severity": "major",
+      "status": "open",
+      "title": "I4/SET-005: Downloads & Disk reports Zero KB while Downloads shows a saved 240 KB episode",
+      "url": "https://github.com/pablof7z/podcast-player/issues/717"
+    }
+  ]
 }

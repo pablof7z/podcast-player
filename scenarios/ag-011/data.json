@@ -512,14 +512,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-05T19:02:36Z",
+        "completed_at": "2026-07-05T20:02:31Z",
         "evidence_refs": [
           "catalog:ag-011"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-05T19:02:36Z",
+        "started_at": "2026-07-05T20:02:31Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -787,7 +787,7 @@
   "page": {
     "assets_base": "assets/scenarios/ag-011/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/ag-011/",
-    "generated_at": "2026-07-05T19:02:36Z",
+    "generated_at": "2026-07-05T20:02:31Z",
     "navigation": {
       "category_url": "../agent-chat-and-tools/",
       "next_url": "../ag-012/",
@@ -1178,7 +1178,7 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "codex/scenario-report-template-hardening",
+    "branch": "codex/pod0-evidence-validation-pack",
     "cassettes": [
       {
         "id": "delayed-cassette",
@@ -1187,7 +1187,7 @@
         "redaction_hash": "pending-redaction-hash"
       }
     ],
-    "completed_at": "2026-07-05T19:02:36Z",
+    "completed_at": "2026-07-05T20:02:31Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1208,9 +1208,9 @@
     "generator_version": "scenario-report-generator/0.2.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "blocked",
-    "run_id": "catalog-scaffold-20260705T190236Z-ag-011",
-    "source_commit": "2b07993e77f8cc20b1743ebf7b4ce42c7bb0925a",
-    "started_at": "2026-07-05T19:02:36Z"
+    "run_id": "catalog-scaffold-20260705T200231Z-ag-011",
+    "source_commit": "8856ca38e2686aa336c8584698748b61702fb965",
+    "started_at": "2026-07-05T20:02:31Z"
   },
   "scenario": {
     "bdd": {

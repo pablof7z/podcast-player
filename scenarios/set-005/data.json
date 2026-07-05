@@ -25,30 +25,44 @@
         "cross-flow state continuity"
       ],
       "evidence_refs": [
-        "catalog:set-005",
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-export-data",
+        "i4-screenshot-settings-system-row",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-ui-tree",
+        "pod0-local-run-log",
         "rubric:review-skill-grounding"
       ],
       "gaps": [
         "Review adjacent scenario pages as a cluster before promoting group coherence."
       ],
       "status": "incomplete",
-      "summary": "Group-level coherence for Settings And Storage is unproven until adjacent scenarios are reviewed together."
+      "summary": "Settings And Storage cluster coherence remains incomplete until adjacent scenarios are judged together; SET-005 now contributes current evidence and linked defects to that group view."
     },
     "individual_judgment": {
       "checks": [
-        "scenario-level UI polish",
-        "scenario-level UX polish",
-        "scenario-level performance/accessibility evidence",
+        "observed scenario-level UI polish",
+        "observed scenario-level UX polish",
+        "observed performance/accessibility evidence",
         "scenario-level product fit"
       ],
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-export-data",
+        "i4-screenshot-settings-system-row",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
       ],
       "gaps": [
-        "Attach observed behavior before making an individual product-coherence judgment."
+        "clear-all-data-teardown",
+        "accessibility_audit"
       ],
-      "status": "incomplete",
-      "summary": "SET-005 has not been judged in isolation because observed product behavior is missing."
+      "status": "fail",
+      "summary": "SET-005 has current run evidence and currently fails its scenario-level product job; linked defects and revalidation remain required."
     },
     "themes": [
       "Does the flow preserve the same product mental model as adjacent scenarios?",
@@ -67,11 +81,15 @@
     },
     "actual_result": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-storage-detail-zero-kb"
       ],
-      "rationale": "Actual Result has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#717"
+      ],
+      "rationale": "Storage detail contradicts the downloads manager in the same run.",
+      "score": 1,
+      "status": "fail"
     },
     "analytics_privacy_boundaries": {
       "evidence_refs": [
@@ -83,20 +101,24 @@
     },
     "artifacts": {
       "evidence_refs": [
-        "catalog:set-005",
-        "rubric:review-skill-grounding"
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-screenshot-export-data",
+        "i4-ui-tree"
       ],
-      "rationale": "Artifacts, Screenshots, Video has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Screenshots, UI tree, metrics, log references, and issue link are attached.",
+      "score": 4,
+      "status": "pass"
     },
     "attempted_test": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-ui-tree",
+        "pod0-local-run-log"
       ],
-      "rationale": "Attempted Test has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "A current simulator run exercised downloads, data/storage, disk detail, and export paths.",
+      "score": 4,
+      "status": "pass"
     },
     "content_hierarchy": {
       "evidence_refs": [
@@ -124,11 +146,14 @@
     },
     "defects_issues_filed": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-ui-tree"
       ],
-      "rationale": "Defects And Issues Filed has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#717"
+      ],
+      "rationale": "The real defect is filed as #717 with current evidence references.",
+      "score": 4,
+      "status": "pass"
     },
     "device_os_matrix": {
       "evidence_refs": [
@@ -254,11 +279,11 @@
     },
     "performance": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-ui-tree"
       ],
-      "rationale": "Performance Metrics has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Node-count metrics are attached; no Instruments trace is attached.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "persona_acceptance": {
       "evidence_refs": [
@@ -270,11 +295,12 @@
     },
     "privacy_security": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-export-data"
       ],
-      "rationale": "Privacy And Security has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Export and clear-data copy make credential/private-key boundaries explicit; destructive teardown was not run.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "product_cluster_coherence": {
       "evidence_refs": [
@@ -376,28 +402,34 @@
     },
     "ui_polish": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-data-storage-main"
       ],
-      "rationale": "UI Polish Report has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "The screens are readable and stable; the failure is data inconsistency.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "ux_polish": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i4-screenshot-storage-detail-zero-kb"
       ],
-      "rationale": "UX Polish Report has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#717"
+      ],
+      "rationale": "Conflicting storage numbers make disk management untrustworthy.",
+      "score": 1,
+      "status": "fail"
     },
     "verdict": {
       "evidence_refs": [
-        "catalog:set-005",
-        "rubric:review-skill-grounding"
+        "i4-ui-tree"
       ],
-      "rationale": "Verdict has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#717"
+      ],
+      "rationale": "SET-005 fails until #717 is resolved and revalidated.",
+      "score": 1,
+      "status": "fail"
     }
   },
   "evidence": {
@@ -421,73 +453,147 @@
         },
         "required": true,
         "type": "source_doc"
+      },
+      {
+        "alt": "Downloads manager with one saved This American Life episode marked Downloaded 240 KB.",
+        "caption": "Downloads manager reports one saved 240 KB download.",
+        "captured_at": "2026-07-05T19:40:50Z",
+        "description": "Downloads manager showing one saved downloaded episode at 240 KB.",
+        "device": "iPhone 17",
+        "id": "i4-screenshot-downloads-list",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194050Z-downloads-list.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "008aa94859ac120f0da9ee48c01bafd61b7458f9abc5bca098d939d99ad6731c",
+        "step_id": "step-01-preconditions",
+        "type": "screenshot"
+      },
+      {
+        "alt": "Settings list showing Data & Storage, 4 records.",
+        "caption": "Data & Storage is reachable from Settings System section.",
+        "captured_at": "2026-07-05T19:41:00Z",
+        "description": "Settings lower section with Data & Storage row showing 4 records.",
+        "device": "iPhone 17",
+        "id": "i4-screenshot-settings-system-row",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194100Z-settings-system-row.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "c456fac064b73871ae8ed2730a78002e7e390754403533b885e5865a8ec38d15",
+        "step_id": "step-02-action",
+        "type": "screenshot"
+      },
+      {
+        "alt": "Data & Storage screen with Export Data, Downloads & Disk, and Clear All Data controls.",
+        "caption": "Data & Storage exposes the expected main actions.",
+        "captured_at": "2026-07-05T19:41:10Z",
+        "description": "Data & Storage main screen with Export Data, Downloads & Disk, and Clear All Data.",
+        "device": "iPhone 17",
+        "id": "i4-screenshot-data-storage-main",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194110Z-data-storage-main.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "60cf770c575bda104dc0b4ee415aca2fe0f473add710738646e87f3ffc6bd103",
+        "step_id": "step-02-action",
+        "type": "screenshot"
+      },
+      {
+        "alt": "Storage detail showing Zero KB and Nothing on disk.",
+        "caption": "Storage detail contradicts the downloads manager saved 240 KB item.",
+        "captured_at": "2026-07-05T19:41:20Z",
+        "description": "Downloads & Disk detail incorrectly showing Zero KB and Nothing on disk.",
+        "device": "iPhone 17",
+        "id": "i4-screenshot-storage-detail-zero-kb",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194120Z-storage-detail-zero-kb.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "33d1e243ed134cba0a4de3683d005001ec7655aa4aaefc2b715dc2c5adc4485e",
+        "step_id": "step-03-result",
+        "type": "screenshot"
+      },
+      {
+        "alt": "Export Data screen with record breakdown and Export & Share button.",
+        "caption": "Export path is visible and record count matches the visible breakdown.",
+        "captured_at": "2026-07-05T19:41:30Z",
+        "description": "Export Data detail showing 4 records and JSON schema v1.",
+        "device": "iPhone 17",
+        "id": "i4-screenshot-export-data",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194130Z-export-data.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "8e05d1c746f68b7296b7a39b7b939441cb14b103e6335ffbfa894cf86897c414",
+        "step_id": "step-04-exit",
+        "type": "screenshot"
+      },
+      {
+        "captured_at": "2026-07-05T19:41:30Z",
+        "description": "XcodeBuildMCP semantic UI-tree excerpts for Downloads, Data & Storage, disk detail, and export.",
+        "device": "iPhone 17",
+        "id": "i4-ui-tree",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i4-storage-downloads-settings/20260705T194130Z-ui-tree-excerpt.json",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "type": "ui_tree"
+      },
+      {
+        "captured_at": "2026-07-05T19:32:05Z",
+        "description": "Shared build, runtime, simulator, and command log references for the local evidence run.",
+        "device": "iPhone 17",
+        "id": "pod0-local-run-log",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/shared/20260705T193205Z-run-log-references.json",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "type": "log"
       }
     ],
     "missing": [
+      {
+        "blocks_dimensions": [
+          "offline_resume_behavior",
+          "privacy_security"
+        ],
+        "kind": "clear-all-data-teardown",
+        "reason": "Destructive Clear All Data branch was intentionally skipped.",
+        "required": true
+      },
       {
         "blocks_dimensions": [
           "accessibility_dynamic_type",
           "touch_ergonomics"
         ],
         "kind": "accessibility_audit",
-        "reason": "Apple HIG evidence is required before accessibility can pass.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "attempted_test",
-          "execution_attempts"
-        ],
-        "kind": "command_output",
-        "reason": "Attempt commands or manual/tool notes are required for reproducibility.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "observability",
-          "reliability_flakiness"
-        ],
-        "kind": "log",
-        "reason": "Failures and state transitions need diagnostic context.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "performance"
-        ],
-        "kind": "metric_trace",
-        "reason": "Catalog performance requirement is unmeasured: calculation latency.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "actual_result",
-          "ui_polish",
-          "content_hierarchy"
-        ],
-        "kind": "screenshot",
-        "reason": "Every meaningful user-visible step needs a screenshot.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "accessibility_dynamic_type",
-          "information_architecture"
-        ],
-        "kind": "ui_tree",
-        "reason": "Accessibility labels, hierarchy, and Dynamic Type behavior need UI-tree evidence.",
+        "reason": "VoiceOver, Dynamic Type, and contrast were not audited.",
         "required": true
       }
     ],
-    "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
+    "redaction_summary": "Screenshots and UI-tree excerpts contain seeded public podcast/settings data only. No API keys or private keys are exposed.",
     "required_kinds": [
-      "accessibility_audit",
-      "command_output",
+      "source_doc",
+      "screenshot",
+      "ui_tree",
       "log",
       "metric_trace",
-      "screenshot",
-      "source_doc",
-      "ui_tree"
+      "accessibility_audit"
     ]
   },
   "execution": {
@@ -495,37 +601,77 @@
       {
         "branches": [
           {
-            "expected": "storage breakdown shows audio, transcripts, cache, and total values",
-            "id": "happy-path",
-            "status": "not_run",
-            "trigger": "downloads exist"
+            "expected": "Downloads manager lists saved download and removal affordances.",
+            "id": "downloads-list",
+            "status": "pass",
+            "trigger": "Settings -> Downloads"
+          },
+          {
+            "expected": "Storage detail reflects downloaded bytes.",
+            "id": "storage-summary",
+            "status": "fail",
+            "trigger": "Settings -> Data & Storage -> Downloads & Disk"
+          },
+          {
+            "expected": "Export detail lists record count and share path.",
+            "id": "export-data",
+            "status": "pass",
+            "trigger": "Settings -> Data & Storage -> Export Data"
           }
         ],
-        "commands": [],
-        "completed_at": "2026-07-05T19:02:36Z",
-        "evidence_refs": [
-          "catalog:set-005"
+        "commands": [
+          "build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=--UITestSeed"
         ],
-        "executor": "validation-agent",
+        "completed_at": "2026-07-05T19:41:30Z",
+        "evidence_refs": [
+          "i4-screenshot-downloads-list",
+          "i4-screenshot-data-storage-main",
+          "i4-screenshot-storage-detail-zero-kb",
+          "i4-screenshot-export-data",
+          "i4-ui-tree",
+          "pod0-local-run-log"
+        ],
+        "executor": "Codex via XcodeBuildMCP",
         "id": "attempt-001",
-        "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-05T19:02:36Z",
-        "status": "not_run",
+        "notes": "Downloads manager reports one saved 240 KB episode, but Downloads & Disk reports Zero KB and Nothing on disk. Export Data shows 4 records and JSON schema v1.",
+        "started_at": "2026-07-05T19:40:50Z",
+        "status": "fail",
         "tools": [
-          "not-run"
+          "mcp__xcode.tap",
+          "mcp__xcode.swipe",
+          "mcp__xcode.snapshot_ui",
+          "mcp__xcode.screenshot"
         ]
       }
     ],
     "branch_coverage": [
       {
-        "expected": "storage breakdown shows audio, transcripts, cache, and total values",
-        "id": "happy-path",
+        "expected": "Saved download is visible.",
+        "id": "downloads-list",
+        "status": "pass",
+        "trigger": "Open Downloads manager."
+      },
+      {
+        "expected": "Storage summary matches saved downloads.",
+        "id": "storage-summary",
+        "status": "fail",
+        "trigger": "Open Downloads & Disk."
+      },
+      {
+        "expected": "Export screen lists records and share action.",
+        "id": "export-data",
+        "status": "pass",
+        "trigger": "Open Export Data."
+      },
+      {
+        "expected": "Content is wiped while credentials and identity are preserved.",
+        "id": "clear-all-data",
         "status": "not_run",
-        "trigger": "downloads exist"
+        "trigger": "Tap Clear All Data and confirm."
       }
     ],
-    "retry_policy": "Record every retry as a separate attempt with cause, changed fixture/state, and whether the retry invalidates earlier evidence.",
-    "status": "not_run"
+    "retry_policy": "Re-run I4 after fixing #717; destructive Clear All Data remains a deliberate teardown branch.",
+    "status": "fail"
   },
   "flow_steps": [
     {
@@ -595,171 +741,157 @@
     "engineering_quality": {
       "dimension_refs": [
         "performance",
-        "accessibility_dynamic_type",
         "privacy_security",
-        "nmp_architecture",
-        "observability",
-        "analytics_privacy_boundaries",
-        "reliability_flakiness"
+        "observability"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Storage accounting is inconsistent between two app surfaces.",
+      "score": 1,
+      "status": "fail"
     },
     "evidence_reproducibility": {
       "dimension_refs": [
         "artifacts",
-        "review_skill_grounding",
-        "replayability_cassette_provenance",
         "device_os_matrix",
         "evidence_confidence",
-        "instrumentation_gaps",
         "defects_issues_filed"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Current screenshots, UI tree, metrics, issue link, and log references are attached.",
+      "score": 4,
+      "status": "pass"
     },
     "follow_through": {
       "dimension_refs": [
         "defects_issues_filed",
-        "risks_follow_up",
-        "verdict",
-        "next_actions"
+        "next_actions",
+        "verdict"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "A GitHub issue is filed; revalidation remains open.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "functional_correctness": {
       "dimension_refs": [
-        "persona_acceptance",
-        "flow",
-        "attempted_test",
-        "scenario_setup",
-        "execution_attempts",
-        "expected_behavior",
         "actual_result",
-        "error_recovery",
-        "offline_resume_behavior",
-        "regression_risk"
+        "expected_behavior",
+        "error_recovery"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Core storage summary acceptance fails.",
+      "score": 1,
+      "status": "fail"
     },
     "product_experience": {
       "dimension_refs": [
         "ui_polish",
         "ux_polish",
-        "liquid_glass_ios_primitives",
-        "cross_screen_continuity",
-        "states_resilience",
-        "touch_ergonomics",
-        "motion_haptics",
-        "information_architecture",
-        "content_hierarchy",
-        "product_coherence",
-        "product_cluster_coherence",
-        "localization_content_quality",
-        "controls_gestures_audio",
-        "readiness_gates"
+        "information_architecture"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "The UI is coherent, but contradictory storage numbers hurt trust.",
+      "score": 2,
+      "status": "pass_with_issues"
     }
   },
   "instrumentation_gaps": [
     {
       "affected_dimensions": [
-        "artifacts",
-        "ui_polish",
-        "actual_result"
+        "actual_result",
+        "ux_polish",
+        "verdict"
       ],
-      "id": "screenshots",
-      "owner": "validation-agent",
+      "id": "i4-storage-accounting-defect",
+      "owner": "app-team",
       "severity": "major",
       "status": "open",
-      "summary": "No step-by-step screenshots are attached."
+      "summary": "Downloads & Disk reports Zero KB while Downloads reports one saved 240 KB episode."
     },
     {
       "affected_dimensions": [
-        "accessibility_dynamic_type",
-        "actual_result"
+        "privacy_security",
+        "offline_resume_behavior"
       ],
-      "id": "ui-tree",
+      "id": "i4-clear-all-data-skipped",
       "owner": "validation-agent",
-      "severity": "major",
+      "severity": "minor",
       "status": "open",
-      "summary": "No accessibility/UI tree snapshot is attached."
-    },
-    {
-      "affected_dimensions": [
-        "observability",
-        "reliability_flakiness"
-      ],
-      "id": "logs",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No structured logs or command outputs are attached."
-    },
-    {
-      "affected_dimensions": [
-        "accessibility_dynamic_type",
-        "touch_ergonomics"
-      ],
-      "id": "accessibility",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or Reduce Transparency evidence is attached."
-    },
-    {
-      "affected_dimensions": [
-        "performance",
-        "reliability_flakiness"
-      ],
-      "id": "performance-metrics",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "Catalog requires performance evidence, but no trace or metric is attached."
+      "summary": "Destructive Clear All Data teardown branch was skipped."
     }
   ],
-  "issues": [],
-  "metrics": [],
+  "issues": [
+    {
+      "affected_dimensions": [
+        "actual_result",
+        "ux_polish",
+        "performance",
+        "verdict"
+      ],
+      "id": "#717",
+      "owner": "unowned",
+      "severity": "major",
+      "status": "open",
+      "title": "I4/SET-005: Downloads & Disk reports Zero KB while Downloads shows a saved 240 KB episode",
+      "url": "https://github.com/pablof7z/podcast-player/issues/717"
+    }
+  ],
+  "metrics": [
+    {
+      "budget": "Should match or be accounted for by storage detail",
+      "evidence_refs": [
+        "i4-ui-tree",
+        "i4-screenshot-downloads-list"
+      ],
+      "id": "i4-downloads-list-saved-kb",
+      "method": "Downloads UI tree text",
+      "name": "Downloads manager saved download size",
+      "status": "pass",
+      "unit": "KB",
+      "value": 240
+    },
+    {
+      "budget": "Should account for saved downloaded episode bytes",
+      "evidence_refs": [
+        "i4-ui-tree",
+        "i4-screenshot-storage-detail-zero-kb"
+      ],
+      "id": "i4-storage-detail-kb",
+      "method": "Storage detail UI tree text",
+      "name": "Downloads & Disk reported storage",
+      "status": "fail",
+      "unit": "KB",
+      "value": 0
+    },
+    {
+      "budget": "Visible count should match category breakdown",
+      "evidence_refs": [
+        "i4-ui-tree",
+        "i4-screenshot-export-data"
+      ],
+      "id": "i4-export-record-count",
+      "method": "Export Data UI tree text",
+      "name": "Export Data visible record count",
+      "status": "pass",
+      "unit": "records",
+      "value": 4
+    }
+  ],
   "next_actions": [
     {
-      "id": "run-scenario",
+      "id": "fix-storage-accounting",
+      "owner": "app-team",
+      "status": "open",
+      "title": "Fix Downloads & Disk accounting so it matches saved downloads or explains exclusions.",
+      "url": "https://github.com/pablof7z/podcast-player/issues/717"
+    },
+    {
+      "id": "rerun-i4-after-fix",
       "owner": "validation-agent",
-      "status": "open",
-      "title": "Execute SET-005 on the target simulator/device."
-    },
-    {
-      "id": "attach-evidence",
-      "owner": "validation-agent",
-      "status": "open",
-      "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, and redaction metadata."
-    },
-    {
-      "id": "score-dimensions",
-      "owner": "review-agent",
-      "status": "open",
-      "title": "Score every individual and grouped dimension from evidence."
-    },
-    {
-      "id": "file-defects",
-      "owner": "review-agent",
-      "status": "open",
-      "title": "File GitHub issues for every actionable defect before leaving incomplete."
+      "status": "blocked",
+      "title": "Re-run SET-005 and capture Downloads, Downloads & Disk, and Export Data after the fix.",
+      "url": "https://github.com/pablof7z/podcast-player/issues/717"
     }
   ],
   "page": {
     "assets_base": "assets/scenarios/set-005/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-005/",
-    "generated_at": "2026-07-05T19:02:36Z",
+    "generated_at": "2026-07-05T20:02:31Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-006/",
@@ -886,36 +1018,33 @@
     },
     "performance": {
       "checks": [
-        "launch latency",
-        "tap latency",
-        "screen settle",
-        "scroll hitches",
-        "provider/audio/network latency"
+        "screen responsiveness",
+        "snapshot node count"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i4-ui-tree"
       ],
       "gaps": [
-        "Attach performance evidence before scoring this area above 2."
+        "No Instruments trace."
       ],
-      "status": "incomplete",
-      "summary": "Launch, interaction latency, screen-settle time, scroll hitches, memory, CPU, audio, network, and provider latency. Current scaffold has no run evidence for SET-005."
+      "status": "pass_with_issues",
+      "summary": "Node-count metrics are captured for all I4 screens; no Instruments trace is attached."
     },
     "privacy_security": {
       "checks": [
-        "no secrets in screenshots/logs",
-        "permission clarity",
-        "redaction hashes",
-        "private Nostr material safe"
+        "secret exclusion copy",
+        "destructive-action copy",
+        "redaction"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-export-data"
       ],
       "gaps": [
-        "Attach privacy security evidence before scoring this area above 2."
+        "Destructive teardown branch skipped."
       ],
-      "status": "incomplete",
-      "summary": "Secrets, private keys, permissions, logs, analytics, relay visibility, cassette redaction, and export safety. Current scaffold has no run evidence for SET-005."
+      "status": "pass_with_issues",
+      "summary": "Export and clear-data copy state credential/private-key boundaries. Clear All Data was not executed."
     },
     "reliability": {
       "checks": [
@@ -936,53 +1065,60 @@
     },
     "ui": {
       "checks": [
-        "SF/system typography",
-        "semantic color",
+        "layout",
         "visual hierarchy",
-        "no overlapping text",
-        "platform-native controls"
+        "destructive action clarity"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-storage-detail-zero-kb"
       ],
       "gaps": [
-        "Attach ui evidence before scoring this area above 2."
+        "Revalidate after #717."
       ],
-      "status": "incomplete",
-      "summary": "Layout, spacing, typography, visual hierarchy, semantic color, SF Symbols, screenshots, and platform-native finish. Current scaffold has no run evidence for SET-005."
+      "status": "pass_with_issues",
+      "summary": "The settings surfaces are legible and use native controls; the storage detail content is wrong."
     },
     "ux": {
       "checks": [
-        "clear user goal",
-        "low cognitive load",
-        "visible feedback",
-        "recoverable errors",
-        "predictable navigation"
+        "task clarity",
+        "data consistency",
+        "recovery trust"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i4-ui-tree"
       ],
       "gaps": [
-        "Attach ux evidence before scoring this area above 2."
+        "Fix and revalidate #717."
       ],
-      "status": "incomplete",
-      "summary": "Task clarity, user effort, feedback, interruption recovery, cognitive load, and route predictability. Current scaffold has no run evidence for SET-005."
+      "status": "fail",
+      "summary": "Users see one saved download, then a Zero KB disk report. This breaks the disk-management task."
     }
   },
   "readiness": {
     "blocking_reasons": [
-      "No current execution evidence is attached.",
-      "Product-quality judgments are scaffolded, not observed."
+      "Current run evidence contains a functional failure that must be fixed and revalidated.",
+      "Linked open defect(s): #717.",
+      "Remaining missing evidence: clear-all-data-teardown, accessibility_audit.",
+      "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
     ],
     "gates": [
       {
         "evidence_refs": [
-          "catalog:set-005"
+          "i4-screenshot-data-storage-main",
+          "i4-screenshot-downloads-list",
+          "i4-screenshot-export-data",
+          "i4-screenshot-settings-system-row",
+          "i4-screenshot-storage-detail-zero-kb",
+          "i4-ui-tree",
+          "pod0-local-run-log",
+          "rubric:review-skill-grounding"
         ],
         "id": "required_evidence",
         "owner": "validation-agent",
         "requirement": "Screenshots/UI trees/logs/cassettes/metrics required by the scenario are attached and redacted.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
@@ -991,37 +1127,65 @@
         "id": "skill_grounding",
         "owner": "validation-agent",
         "requirement": "UI, UX, accessibility, performance, and product judgments cite the loaded review skills or local doctrine.",
-        "status": "blocked"
+        "status": "pass"
       },
       {
         "evidence_refs": [
+          "i4-screenshot-data-storage-main",
+          "i4-screenshot-downloads-list",
+          "i4-screenshot-export-data",
+          "i4-screenshot-settings-system-row",
+          "i4-screenshot-storage-detail-zero-kb",
+          "i4-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "score_integrity",
         "owner": "validation-agent",
         "requirement": "Every dimension and group score follows the evidence gates and matches the final verdict.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
+          "i4-screenshot-data-storage-main",
+          "i4-screenshot-downloads-list",
+          "i4-screenshot-export-data",
+          "i4-screenshot-settings-system-row",
+          "i4-screenshot-storage-detail-zero-kb",
+          "i4-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "product_coherence",
         "owner": "validation-agent",
         "requirement": "Individual scenario judgment and related-scenario group judgment are both present.",
-        "status": "blocked"
+        "status": "incomplete"
       },
       {
         "evidence_refs": [
+          "i4-screenshot-data-storage-main",
+          "i4-screenshot-downloads-list",
+          "i4-screenshot-export-data",
+          "i4-screenshot-settings-system-row",
+          "i4-screenshot-storage-detail-zero-kb",
+          "i4-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "defect_tracking",
         "owner": "validation-agent",
         "requirement": "Every actionable defect has severity, owner, GitHub issue link, and fix/revalidation state.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
+          "i4-screenshot-data-storage-main",
+          "i4-screenshot-downloads-list",
+          "i4-screenshot-export-data",
+          "i4-screenshot-settings-system-row",
+          "i4-screenshot-storage-detail-zero-kb",
+          "i4-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "release_readiness",
@@ -1030,7 +1194,7 @@
         "status": "blocked"
       }
     ],
-    "ship_gate": "incomplete"
+    "ship_gate": "blocked"
   },
   "review_grounding": {
     "all_considered": [
@@ -1113,69 +1277,52 @@
   "risks": [
     {
       "affected_dimensions": [
-        "artifacts",
-        "evidence_confidence",
+        "actual_result",
+        "ux_polish",
         "verdict"
       ],
-      "id": "risk-missing-evidence",
-      "mitigation": "Keep verdict incomplete until run artifacts, scores, and issue links are attached.",
+      "id": "risk-i4-storage-trust",
+      "mitigation": "Fix #717 and re-run I4 with the same seeded downloaded episode.",
       "priority": "p0",
       "severity": "major",
       "status": "open",
-      "title": "Scenario could be misread as validated without current evidence."
-    },
-    {
-      "affected_dimensions": [
-        "product_cluster_coherence",
-        "regression_risk"
-      ],
-      "id": "risk-cluster-regression",
-      "mitigation": "Revalidate the scenario cluster before promoting group coherence.",
-      "priority": "p1",
-      "severity": "major",
-      "status": "open",
-      "title": "Fixes for this flow may regress related scenarios: SET-001, SET-002, SET-003, SET-004."
-    },
-    {
-      "affected_dimensions": [
-        "performance"
-      ],
-      "id": "risk-performance-budget",
-      "mitigation": "Attach metric trace with budget, value, unit, method, and status.",
-      "priority": "p1",
-      "severity": "major",
-      "status": "open",
-      "title": "Performance budget is declared but unmeasured."
+      "title": "Users cannot trust disk usage or cleanup if downloads and storage disagree."
     }
   ],
   "run": {
-    "app_build": "not-built-catalog-scaffold",
-    "branch": "codex/scenario-report-template-hardening",
+    "app_build": "Pod0 1.0.0 build 202606011109",
+    "branch": "codex/pod0-evidence-validation-pack",
     "cassettes": [],
-    "completed_at": "2026-07-05T19:02:36Z",
+    "completed_at": "2026-07-05T19:41:30Z",
     "device_matrix": [
       {
-        "form_factor": "other",
-        "name": "not-run",
-        "os_version": "not-run"
+        "form_factor": "iphone",
+        "name": "iPhone 17",
+        "os_version": "iOS 26.2",
+        "udid": "B4E1F31A-044B-4860-860B-C325BE5CC36E"
       }
     ],
     "environment": {
-      "appearance": "unspecified",
-      "launch_arguments": [],
-      "locale": "unspecified",
-      "network_condition": "not-run"
+      "appearance": "light",
+      "dynamic_type": "unspecified",
+      "launch_arguments": [
+        "--UITestSeed"
+      ],
+      "locale": "en_US",
+      "network_condition": "local simulator default",
+      "reduce_motion": false,
+      "reduce_transparency": false
     },
-    "executor": "static catalog generator",
+    "executor": "Codex via XcodeBuildMCP",
     "fixtures": [
-      "storage seed"
+      "UITestSeed downloaded episode and storage settings state"
     ],
     "generator_version": "scenario-report-generator/0.2.0",
-    "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
+    "live_dependency_rationale": "No paid provider or live LLM dependency is used by storage/download settings.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260705T190236Z-set-005",
-    "source_commit": "2b07993e77f8cc20b1743ebf7b4ce42c7bb0925a",
-    "started_at": "2026-07-05T19:02:36Z"
+    "run_id": "pod0-local-20260705T194050Z-set-005",
+    "source_commit": "8856ca38e2686aa336c8584698748b61702fb965",
+    "started_at": "2026-07-05T19:40:50Z"
   },
   "scenario": {
     "bdd": {
@@ -1223,12 +1370,15 @@
     },
     "actual_result": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-screenshot-export-data",
+        "i4-ui-tree"
       ],
       "notes": [
-        "Attach step-by-step observed behavior before changing this verdict."
+        "Filed https://github.com/pablof7z/podcast-player/issues/717."
       ],
-      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete."
+      "summary": "Downloads manager shows one saved downloaded episode at 240 KB. Downloads & Disk reports Zero KB and Nothing on disk. Export Data shows 4 records with JSON schema v1."
     },
     "analytics_privacy_boundaries": {
       "evidence_refs": [
@@ -1239,18 +1389,28 @@
     },
     "artifacts": {
       "evidence_refs": [
-        "catalog:set-005",
-        "rubric:review-skill-grounding"
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-settings-system-row",
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-screenshot-export-data",
+        "i4-ui-tree",
+        "pod0-local-run-log"
       ],
       "notes": [],
-      "summary": "Required visual/raw evidence from the catalog: storage breakdown. Only the source catalog and rubric metadata exist right now."
+      "summary": "Attached five current screenshots, a semantic UI-tree excerpt, and shared log references."
     },
     "attempted_test": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-screenshot-export-data",
+        "i4-ui-tree",
+        "pod0-local-run-log"
       ],
       "notes": [],
-      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete. A simulator, manual, or automation run must execute scenario SET-005."
+      "summary": "Executed SET-005 locally with XcodeBuildMCP using --UITestSeed. Captured Downloads manager, Data & Storage main, Downloads & Disk, and Export Data."
     },
     "content_hierarchy": {
       "evidence_refs": [
@@ -1275,10 +1435,12 @@
     },
     "defects_issues_filed": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-ui-tree"
       ],
-      "notes": [],
-      "summary": "No defects have been observed yet because the scenario has not run. Any actionable defect found later must link a GitHub issue before the page can leave incomplete."
+      "notes": [
+        "https://github.com/pablof7z/podcast-player/issues/717"
+      ],
+      "summary": "Filed #717 for the Downloads & Disk storage mismatch."
     },
     "device_os_matrix": {
       "evidence_refs": [
@@ -1389,10 +1551,10 @@
     },
     "performance_metrics": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-ui-tree"
       ],
       "notes": [],
-      "summary": "Not measured. Required performance evidence: calculation latency."
+      "summary": "Local UI-tree node counts were collected for Downloads (183), Data & Storage (171), Storage detail (174), and Export Data (213)."
     },
     "persona_job_acceptance": {
       "evidence_refs": [
@@ -1403,33 +1565,63 @@
     },
     "privacy_security": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-export-data"
       ],
       "notes": [],
-      "summary": "Not assessed. Validation must scan screenshots, logs, cassettes, relays, and exports for leaked keys, tokens, private audio, or private Nostr material."
+      "summary": "Export Data copy states API keys and the Nostr private key are never included; Clear All Data copy states credentials and identity are preserved."
     },
     "product_cluster_coherence": {
       "evidence_refs": [
-        "catalog:set-005",
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-export-data",
+        "i4-screenshot-settings-system-row",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-ui-tree",
+        "pod0-local-run-log",
         "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. Related scenarios must be judged as a group so UI/UX/product coherence does not pass in isolation while the cluster remains inconsistent."
+      "notes": [
+        "Review adjacent scenario pages as a cluster before promoting group coherence."
+      ],
+      "summary": "Settings And Storage cluster coherence remains incomplete until adjacent scenarios are judged together; SET-005 now contributes current evidence and linked defects to that group view."
     },
     "product_coherence_in_context": {
       "evidence_refs": [
-        "catalog:set-005"
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-export-data",
+        "i4-screenshot-settings-system-row",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. The page must explain how this flow fits nearby Pod0 surfaces such as library, player, transcript, agent, settings, and Nostr/social state."
+      "notes": [
+        "clear-all-data-teardown",
+        "accessibility_audit"
+      ],
+      "summary": "SET-005 has current run evidence and currently fails its scenario-level product job; linked defects and revalidation remain required."
     },
     "readiness_gates": {
       "evidence_refs": [
-        "catalog:set-005",
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-export-data",
+        "i4-screenshot-settings-system-row",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-ui-tree",
+        "pod0-local-run-log",
         "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "All readiness gates are blocked until evidence, skill-grounded scoring, product-cluster coherence, defect tracking, and release readiness are populated."
+      "notes": [
+        "Current run evidence contains a functional failure that must be fixed and revalidated.",
+        "Linked open defect(s): #717.",
+        "Remaining missing evidence: clear-all-data-teardown, accessibility_audit.",
+        "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
+      ],
+      "summary": "Ship gate is blocked; gates now reflect attached evidence, remaining missing evidence, linked defects, and cluster-level follow-up."
     },
     "regression_risk": {
       "evidence_refs": [
@@ -1498,30 +1690,36 @@
     },
     "ui_polish_report": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-data-storage-main",
+        "i4-screenshot-export-data"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires annotated screenshots for layout, spacing, typography, color, symbols, component state, and platform-native finish."
+      "summary": "Downloads, Data & Storage, and Export Data screens are readable and native; the failing state is data consistency, not visual layout."
     },
     "ux_polish_report": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-screenshot-export-data"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires notes on task clarity, user effort, feedback, interruption/resume, recovery, and cognitive load."
+      "summary": "Storage accounting contradiction breaks user trust in cleanup and disk usage. Export copy correctly excludes API and private keys."
     },
     "verdict": {
       "evidence_refs": [
-        "catalog:set-005",
-        "rubric:review-skill-grounding"
+        "i4-screenshot-downloads-list",
+        "i4-screenshot-storage-detail-zero-kb",
+        "i4-ui-tree"
       ],
       "notes": [],
-      "summary": "Overall verdict is incomplete because required screenshots, metrics, cassettes, accessibility evidence, critique, and issue back-links are missing."
+      "summary": "Evidence-backed fail for SET-005 due to storage accounting mismatch. Clear All Data teardown remains intentionally unrun."
     }
   },
   "verdict": {
-    "overall": "incomplete",
-    "score_gate_explanation": "Every dimension is scored 0, so the mechanical verdict is incomplete.",
-    "summary": "Generated catalog scaffold only. Required execution evidence and critique are missing."
+    "overall": "fail",
+    "reviewed_at": "2026-07-05T19:41:30Z",
+    "reviewer": "Codex",
+    "score_gate_explanation": "The storage accounting contradiction is a current functional defect tracked by #717.",
+    "summary": "SET-005 fails because Downloads reports one saved 240 KB episode while Downloads & Disk reports Zero KB and Nothing on disk in the same seeded run."
   }
 }

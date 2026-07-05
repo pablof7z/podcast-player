@@ -25,30 +25,37 @@
         "cross-flow state continuity"
       ],
       "evidence_refs": [
-        "catalog:lib-001",
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree",
+        "pod0-local-run-log",
         "rubric:review-skill-grounding"
       ],
       "gaps": [
         "Review adjacent scenario pages as a cluster before promoting group coherence."
       ],
       "status": "incomplete",
-      "summary": "Group-level coherence for Library And Episode Management is unproven until adjacent scenarios are reviewed together."
+      "summary": "Library And Episode Management cluster coherence remains incomplete until adjacent scenarios are judged together; LIB-001 now contributes current evidence and linked defects to that group view."
     },
     "individual_judgment": {
       "checks": [
-        "scenario-level UI polish",
-        "scenario-level UX polish",
-        "scenario-level performance/accessibility evidence",
+        "observed scenario-level UI polish",
+        "observed scenario-level UX polish",
+        "observed performance/accessibility evidence",
         "scenario-level product fit"
       ],
       "evidence_refs": [
-        "catalog:lib-001"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
       ],
       "gaps": [
-        "Attach observed behavior before making an individual product-coherence judgment."
+        "accessibility_audit"
       ],
-      "status": "incomplete",
-      "summary": "LIB-001 has not been judged in isolation because observed product behavior is missing."
+      "status": "pass_with_issues",
+      "summary": "LIB-001 has current run evidence for the exercised product path, with remaining gaps tracked in missing evidence and follow-up."
     },
     "themes": [
       "Does the flow preserve the same product mental model as adjacent scenarios?",
@@ -67,11 +74,12 @@
     },
     "actual_result": {
       "evidence_refs": [
-        "catalog:lib-001"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail"
       ],
-      "rationale": "Actual Result has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "The observed list/show path satisfies LIB-001; adjacent filter and context-menu behavior remain separate follow-up.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "analytics_privacy_boundaries": {
       "evidence_refs": [
@@ -83,20 +91,23 @@
     },
     "artifacts": {
       "evidence_refs": [
-        "catalog:lib-001",
-        "rubric:review-skill-grounding"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree",
+        "pod0-local-run-log"
       ],
-      "rationale": "Artifacts, Screenshots, Video has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Screenshots, UI tree, and log references are attached; no video or full accessibility audit is attached.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "attempted_test": {
       "evidence_refs": [
-        "catalog:lib-001"
+        "c1-ui-tree",
+        "pod0-local-run-log"
       ],
-      "rationale": "Attempted Test has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "A current simulator run was performed, but not every branch was exercised.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "content_hierarchy": {
       "evidence_refs": [
@@ -148,11 +159,11 @@
     },
     "evidence_confidence": {
       "evidence_refs": [
-        "catalog:lib-001"
+        "pod0-local-run-log"
       ],
-      "rationale": "Evidence Confidence has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Current, dated simulator evidence exists for part of the scenario.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "execution_attempts": {
       "evidence_refs": [
@@ -254,11 +265,11 @@
     },
     "performance": {
       "evidence_refs": [
-        "catalog:lib-001"
+        "c1-ui-tree"
       ],
-      "rationale": "Performance Metrics has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Snapshot node counts were collected and no visible wait was observed; no Instruments trace is attached.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "persona_acceptance": {
       "evidence_refs": [
@@ -376,28 +387,27 @@
     },
     "ui_polish": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "c1-screenshot-all-podcasts"
       ],
-      "rationale": "UI Polish Report has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Readable list/detail UI for LIB-001; filter/unplayed-count variants are adjacent follow-up.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "ux_polish": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "c1-screenshot-show-detail"
       ],
-      "rationale": "UX Polish Report has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Show discovery and navigation work for LIB-001; additional list-management tasks are not part of this row.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "verdict": {
       "evidence_refs": [
-        "catalog:lib-001",
-        "rubric:review-skill-grounding"
+        "c1-ui-tree"
       ],
-      "rationale": "Verdict has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "LIB-001 is validated with caveats for adjacent untested branches.",
+      "score": 3,
+      "status": "pass_with_issues"
     }
   },
   "evidence": {
@@ -421,6 +431,66 @@
         },
         "required": true,
         "type": "source_doc"
+      },
+      {
+        "alt": "All Podcasts screen with This American Life row, Following state, and search/add controls.",
+        "caption": "All Podcasts lists the seeded subscription but does not show filters or unplayed-count indicators.",
+        "captured_at": "2026-07-05T19:34:00Z",
+        "description": "All Podcasts screen showing seeded This American Life subscription row.",
+        "device": "iPhone 17",
+        "id": "c1-screenshot-all-podcasts",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/c1-view-library/20260705T193400Z-all-podcasts.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "8e26182c3ac927556b81da8092e7335034adcdd2acc13001c016d5b6659b76f6",
+        "step_id": "step-02-action",
+        "type": "screenshot"
+      },
+      {
+        "alt": "This American Life show detail with three episode rows and Show options button.",
+        "caption": "Podcast navigation reached show detail and exposed episode rows.",
+        "captured_at": "2026-07-05T19:35:00Z",
+        "description": "Show detail screen for This American Life after opening the podcast row.",
+        "device": "iPhone 17",
+        "id": "c1-screenshot-show-detail",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/c1-view-library/20260705T193500Z-show-detail.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "20ead94559c03b30f1926ba67d55f40dee48f7d0d44d626e53fea2a6b3977425",
+        "step_id": "step-03-result",
+        "type": "screenshot"
+      },
+      {
+        "captured_at": "2026-07-05T19:35:00Z",
+        "description": "XcodeBuildMCP semantic UI-tree excerpts for All Podcasts and show detail.",
+        "device": "iPhone 17",
+        "id": "c1-ui-tree",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/c1-view-library/20260705T193500Z-ui-tree-excerpt.json",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "type": "ui_tree"
+      },
+      {
+        "captured_at": "2026-07-05T19:32:05Z",
+        "description": "Shared build, runtime, simulator, and command log references for the local evidence run.",
+        "device": "iPhone 17",
+        "id": "pod0-local-run-log",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/shared/20260705T193205Z-run-log-references.json",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "type": "log"
       }
     ],
     "missing": [
@@ -430,64 +500,18 @@
           "touch_ergonomics"
         ],
         "kind": "accessibility_audit",
-        "reason": "Apple HIG evidence is required before accessibility can pass.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "attempted_test",
-          "execution_attempts"
-        ],
-        "kind": "command_output",
-        "reason": "Attempt commands or manual/tool notes are required for reproducibility.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "observability",
-          "reliability_flakiness"
-        ],
-        "kind": "log",
-        "reason": "Failures and state transitions need diagnostic context.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "performance"
-        ],
-        "kind": "metric_trace",
-        "reason": "Catalog performance requirement is unmeasured: render under 1 sec.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "actual_result",
-          "ui_polish",
-          "content_hierarchy"
-        ],
-        "kind": "screenshot",
-        "reason": "Every meaningful user-visible step needs a screenshot.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "accessibility_dynamic_type",
-          "information_architecture"
-        ],
-        "kind": "ui_tree",
-        "reason": "Accessibility labels, hierarchy, and Dynamic Type behavior need UI-tree evidence.",
+        "reason": "VoiceOver, Dynamic Type, and contrast were not audited.",
         "required": true
       }
     ],
-    "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
+    "redaction_summary": "Screenshots and UI-tree excerpts contain seeded public podcast data only. No secrets or private keys are exposed.",
     "required_kinds": [
-      "accessibility_audit",
-      "command_output",
+      "source_doc",
+      "screenshot",
+      "ui_tree",
       "log",
       "metric_trace",
-      "screenshot",
-      "source_doc",
-      "ui_tree"
+      "accessibility_audit"
     ]
   },
   "execution": {
@@ -495,37 +519,56 @@
       {
         "branches": [
           {
-            "expected": "the show appears with artwork, title, author, and episode count",
-            "id": "happy-path",
+            "expected": "Subscribed podcast appears and opens show detail.",
+            "id": "library-list-and-open-show",
+            "status": "pass_with_issues",
+            "trigger": "Open All Podcasts, inspect subscription row, and open the seeded show."
+          },
+          {
+            "expected": "Covered by adjacent LIB rows, not by LIB-001.",
+            "id": "adjacent-list-management",
             "status": "not_run",
-            "trigger": "Library opens"
+            "trigger": "Filter/category scope and long-press unsubscribe from legacy C1."
           }
         ],
-        "commands": [],
-        "completed_at": "2026-07-05T19:02:36Z",
-        "evidence_refs": [
-          "catalog:lib-001"
+        "commands": [
+          "build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=--UITestSeed"
         ],
-        "executor": "validation-agent",
+        "completed_at": "2026-07-05T19:35:00Z",
+        "evidence_refs": [
+          "c1-screenshot-all-podcasts",
+          "c1-screenshot-show-detail",
+          "c1-ui-tree",
+          "pod0-local-run-log"
+        ],
+        "executor": "Codex via XcodeBuildMCP",
         "id": "attempt-001",
-        "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-05T19:02:36Z",
-        "status": "not_run",
+        "notes": "Current evidence covers LIB-001's podcast list row and show-detail navigation. Filter/category and long-press branches are adjacent follow-up.",
+        "started_at": "2026-07-05T19:34:00Z",
+        "status": "pass_with_issues",
         "tools": [
-          "not-run"
+          "mcp__xcode.snapshot_ui",
+          "mcp__xcode.tap",
+          "mcp__xcode.screenshot"
         ]
       }
     ],
     "branch_coverage": [
       {
-        "expected": "the show appears with artwork, title, author, and episode count",
-        "id": "happy-path",
+        "expected": "The seeded subscribed show is visible and navigable.",
+        "id": "library-list-and-open-show",
+        "status": "pass_with_issues",
+        "trigger": "Open All Podcasts and show detail."
+      },
+      {
+        "expected": "Adjacent LIB rows or legacy C1 follow-up prove list-management behavior.",
+        "id": "adjacent-list-management",
         "status": "not_run",
-        "trigger": "Library opens"
+        "trigger": "Exercise filter/category and long-press unsubscribe controls."
       }
     ],
-    "retry_policy": "Record every retry as a separate attempt with cause, changed fixture/state, and whether the retry invalidates earlier evidence.",
-    "status": "not_run"
+    "retry_policy": "No retry was needed for list/show capture. Remaining branches require explicit follow-up evidence.",
+    "status": "pass_with_issues"
   },
   "flow_steps": [
     {
@@ -596,170 +639,111 @@
       "dimension_refs": [
         "performance",
         "accessibility_dynamic_type",
-        "privacy_security",
-        "nmp_architecture",
-        "observability",
-        "analytics_privacy_boundaries",
-        "reliability_flakiness"
+        "observability"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
+      "rationale": "Node-count evidence exists; accessibility/performance audits are not complete.",
+      "score": 2,
       "status": "incomplete"
     },
     "evidence_reproducibility": {
       "dimension_refs": [
         "artifacts",
-        "review_skill_grounding",
-        "replayability_cassette_provenance",
         "device_os_matrix",
-        "evidence_confidence",
-        "instrumentation_gaps",
-        "defects_issues_filed"
+        "evidence_confidence"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Screenshots, UI trees, and log references make the captured path reproducible.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "follow_through": {
       "dimension_refs": [
-        "defects_issues_filed",
         "risks_follow_up",
-        "verdict",
-        "next_actions"
+        "next_actions",
+        "verdict"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
+      "rationale": "No app defect was filed; remaining gaps need scenario follow-up.",
+      "score": 2,
       "status": "incomplete"
     },
     "functional_correctness": {
       "dimension_refs": [
-        "persona_acceptance",
-        "flow",
-        "attempted_test",
-        "scenario_setup",
-        "execution_attempts",
-        "expected_behavior",
         "actual_result",
-        "error_recovery",
-        "offline_resume_behavior",
-        "regression_risk"
+        "flow",
+        "expected_behavior"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Core LIB-001 list/show path works; adjacent filter/context-menu branches remain untested.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "product_experience": {
       "dimension_refs": [
         "ui_polish",
         "ux_polish",
-        "liquid_glass_ios_primitives",
-        "cross_screen_continuity",
-        "states_resilience",
-        "touch_ergonomics",
-        "motion_haptics",
-        "information_architecture",
-        "content_hierarchy",
-        "product_coherence",
-        "product_cluster_coherence",
-        "localization_content_quality",
-        "controls_gestures_audio",
-        "readiness_gates"
+        "information_architecture"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
+      "rationale": "List/detail UI is coherent, but expected filters/unplayed count are unresolved.",
+      "score": 2,
       "status": "incomplete"
     }
   },
   "instrumentation_gaps": [
     {
       "affected_dimensions": [
-        "artifacts",
-        "ui_polish",
-        "actual_result"
-      ],
-      "id": "screenshots",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No step-by-step screenshots are attached."
-    },
-    {
-      "affected_dimensions": [
-        "accessibility_dynamic_type",
-        "actual_result"
-      ],
-      "id": "ui-tree",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No accessibility/UI tree snapshot is attached."
-    },
-    {
-      "affected_dimensions": [
-        "observability",
-        "reliability_flakiness"
-      ],
-      "id": "logs",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No structured logs or command outputs are attached."
-    },
-    {
-      "affected_dimensions": [
         "accessibility_dynamic_type",
         "touch_ergonomics"
       ],
-      "id": "accessibility",
+      "id": "c1-accessibility-audit-missing",
       "owner": "validation-agent",
       "severity": "major",
       "status": "open",
-      "summary": "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or Reduce Transparency evidence is attached."
-    },
-    {
-      "affected_dimensions": [
-        "performance",
-        "reliability_flakiness"
-      ],
-      "id": "performance-metrics",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "Catalog requires performance evidence, but no trace or metric is attached."
+      "summary": "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or target-size audit was run."
     }
   ],
   "issues": [],
-  "metrics": [],
+  "metrics": [
+    {
+      "budget": "Informational local metric",
+      "evidence_refs": [
+        "c1-ui-tree"
+      ],
+      "id": "c1-all-podcasts-node-count",
+      "method": "XcodeBuildMCP snapshot_ui",
+      "name": "All Podcasts UI-tree node count",
+      "status": "pass",
+      "unit": "nodes",
+      "value": 69
+    },
+    {
+      "budget": "Informational local metric",
+      "evidence_refs": [
+        "c1-ui-tree"
+      ],
+      "id": "c1-show-detail-node-count",
+      "method": "XcodeBuildMCP snapshot_ui",
+      "name": "Show detail UI-tree node count",
+      "status": "pass",
+      "unit": "nodes",
+      "value": 128
+    }
+  ],
   "next_actions": [
     {
-      "id": "run-scenario",
+      "id": "capture-adjacent-filter-rows",
       "owner": "validation-agent",
       "status": "open",
-      "title": "Execute LIB-001 on the target simulator/device."
+      "title": "Capture separate evidence for LIB filter/category rows."
     },
     {
-      "id": "attach-evidence",
+      "id": "capture-adjacent-unsubscribe-row",
       "owner": "validation-agent",
       "status": "open",
-      "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, and redaction metadata."
-    },
-    {
-      "id": "score-dimensions",
-      "owner": "review-agent",
-      "status": "open",
-      "title": "Score every individual and grouped dimension from evidence."
-    },
-    {
-      "id": "file-defects",
-      "owner": "review-agent",
-      "status": "open",
-      "title": "File GitHub issues for every actionable defect before leaving incomplete."
+      "title": "Capture separate evidence for unsubscribe behavior."
     }
   ],
   "page": {
     "assets_base": "assets/scenarios/lib-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/lib-001/",
-    "generated_at": "2026-07-05T19:02:36Z",
+    "generated_at": "2026-07-05T20:02:31Z",
     "navigation": {
       "category_url": "../library-and-episode-management/",
       "next_url": "../lib-002/",
@@ -801,20 +785,18 @@
   "quality_review": {
     "accessibility": {
       "checks": [
-        "VoiceOver labels",
-        "Dynamic Type",
-        "4.5:1 contrast",
-        "44 pt targets",
-        "Reduce Motion/Transparency"
+        "semantic labels",
+        "target size",
+        "Dynamic Type"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "c1-ui-tree"
       ],
       "gaps": [
-        "Attach accessibility evidence before scoring this area above 2."
+        "Formal accessibility audit missing."
       ],
       "status": "incomplete",
-      "summary": "VoiceOver, Dynamic Type, contrast, Reduce Motion, Reduce Transparency, 44 pt targets, captions, and assistive navigation. Current scaffold has no run evidence for LIB-001."
+      "summary": "Rows expose useful labels, but no VoiceOver/Dynamic Type/contrast pass was run."
     },
     "content_localization": {
       "checks": [
@@ -886,20 +868,17 @@
     },
     "performance": {
       "checks": [
-        "launch latency",
-        "tap latency",
-        "screen settle",
-        "scroll hitches",
-        "provider/audio/network latency"
+        "snapshot node count",
+        "screen responsiveness"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "c1-ui-tree"
       ],
       "gaps": [
-        "Attach performance evidence before scoring this area above 2."
+        "No Instruments trace."
       ],
-      "status": "incomplete",
-      "summary": "Launch, interaction latency, screen-settle time, scroll hitches, memory, CPU, audio, network, and provider latency. Current scaffold has no run evidence for LIB-001."
+      "status": "pass_with_issues",
+      "summary": "Semantic snapshot counts are captured for the two screens; no visible load delay was observed."
     },
     "privacy_security": {
       "checks": [
@@ -936,53 +915,54 @@
     },
     "ui": {
       "checks": [
-        "SF/system typography",
-        "semantic color",
         "visual hierarchy",
-        "no overlapping text",
+        "row state",
         "platform-native controls"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail"
       ],
       "gaps": [
-        "Attach ui evidence before scoring this area above 2."
+        "Capture filter/category and unplayed-count behavior."
       ],
       "status": "incomplete",
-      "summary": "Layout, spacing, typography, visual hierarchy, semantic color, SF Symbols, screenshots, and platform-native finish. Current scaffold has no run evidence for LIB-001."
+      "summary": "Readable native list/detail UI; missing filter and unplayed-count evidence prevents a pass."
     },
     "ux": {
       "checks": [
-        "clear user goal",
-        "low cognitive load",
-        "visible feedback",
-        "recoverable errors",
+        "task clarity",
+        "discoverability",
         "predictable navigation"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "c1-ui-tree"
       ],
       "gaps": [
-        "Attach ux evidence before scoring this area above 2."
+        "Capture context menu and filter escape path."
       ],
       "status": "incomplete",
-      "summary": "Task clarity, user effort, feedback, interruption recovery, cognitive load, and route predictability. Current scaffold has no run evidence for LIB-001."
+      "summary": "Navigation to show detail is clear; remaining list-management tasks are not validated."
     }
   },
   "readiness": {
     "blocking_reasons": [
-      "No current execution evidence is attached.",
-      "Product-quality judgments are scaffolded, not observed."
+      "Remaining missing evidence: accessibility_audit.",
+      "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
     ],
     "gates": [
       {
         "evidence_refs": [
-          "catalog:lib-001"
+          "c1-screenshot-all-podcasts",
+          "c1-screenshot-show-detail",
+          "c1-ui-tree",
+          "pod0-local-run-log",
+          "rubric:review-skill-grounding"
         ],
         "id": "required_evidence",
         "owner": "validation-agent",
         "requirement": "Screenshots/UI trees/logs/cassettes/metrics required by the scenario are attached and redacted.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
@@ -991,43 +971,59 @@
         "id": "skill_grounding",
         "owner": "validation-agent",
         "requirement": "UI, UX, accessibility, performance, and product judgments cite the loaded review skills or local doctrine.",
-        "status": "blocked"
+        "status": "pass"
       },
       {
         "evidence_refs": [
+          "c1-screenshot-all-podcasts",
+          "c1-screenshot-show-detail",
+          "c1-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "score_integrity",
         "owner": "validation-agent",
         "requirement": "Every dimension and group score follows the evidence gates and matches the final verdict.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
+          "c1-screenshot-all-podcasts",
+          "c1-screenshot-show-detail",
+          "c1-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "product_coherence",
         "owner": "validation-agent",
         "requirement": "Individual scenario judgment and related-scenario group judgment are both present.",
-        "status": "blocked"
+        "status": "incomplete"
       },
       {
         "evidence_refs": [
+          "c1-screenshot-all-podcasts",
+          "c1-screenshot-show-detail",
+          "c1-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "defect_tracking",
         "owner": "validation-agent",
         "requirement": "Every actionable defect has severity, owner, GitHub issue link, and fix/revalidation state.",
-        "status": "blocked"
+        "status": "incomplete"
       },
       {
         "evidence_refs": [
+          "c1-screenshot-all-podcasts",
+          "c1-screenshot-show-detail",
+          "c1-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "release_readiness",
         "owner": "validation-agent",
         "requirement": "No blocker or major unresolved risk remains without an explicit owner and acceptance rationale.",
-        "status": "blocked"
+        "status": "incomplete"
       }
     ],
     "ship_gate": "incomplete"
@@ -1113,69 +1109,51 @@
   "risks": [
     {
       "affected_dimensions": [
-        "artifacts",
-        "evidence_confidence",
-        "verdict"
+        "regression_risk",
+        "product_cluster_coherence"
       ],
-      "id": "risk-missing-evidence",
-      "mitigation": "Keep verdict incomplete until run artifacts, scores, and issue links are attached.",
-      "priority": "p0",
-      "severity": "major",
+      "id": "risk-lib001-adjacent-coverage",
+      "mitigation": "Keep adjacent LIB rows separate and collect their own evidence.",
+      "priority": "p2",
+      "severity": "minor",
       "status": "open",
-      "title": "Scenario could be misread as validated without current evidence."
-    },
-    {
-      "affected_dimensions": [
-        "product_cluster_coherence",
-        "regression_risk"
-      ],
-      "id": "risk-cluster-regression",
-      "mitigation": "Revalidate the scenario cluster before promoting group coherence.",
-      "priority": "p1",
-      "severity": "major",
-      "status": "open",
-      "title": "Fixes for this flow may regress related scenarios: LIB-002, LIB-003, LIB-004, LIB-005."
-    },
-    {
-      "affected_dimensions": [
-        "performance"
-      ],
-      "id": "risk-performance-budget",
-      "mitigation": "Attach metric trace with budget, value, unit, method, and status.",
-      "priority": "p1",
-      "severity": "major",
-      "status": "open",
-      "title": "Performance budget is declared but unmeasured."
+      "title": "LIB-001 evidence should not be overread as covering adjacent filter or unsubscribe scenarios."
     }
   ],
   "run": {
-    "app_build": "not-built-catalog-scaffold",
-    "branch": "codex/scenario-report-template-hardening",
+    "app_build": "Pod0 1.0.0 build 202606011109",
+    "branch": "codex/pod0-evidence-validation-pack",
     "cassettes": [],
-    "completed_at": "2026-07-05T19:02:36Z",
+    "completed_at": "2026-07-05T19:35:00Z",
     "device_matrix": [
       {
-        "form_factor": "other",
-        "name": "not-run",
-        "os_version": "not-run"
+        "form_factor": "iphone",
+        "name": "iPhone 17",
+        "os_version": "iOS 26.2",
+        "udid": "B4E1F31A-044B-4860-860B-C325BE5CC36E"
       }
     ],
     "environment": {
-      "appearance": "unspecified",
-      "launch_arguments": [],
-      "locale": "unspecified",
-      "network_condition": "not-run"
+      "appearance": "light",
+      "dynamic_type": "unspecified",
+      "launch_arguments": [
+        "--UITestSeed"
+      ],
+      "locale": "en_US",
+      "network_condition": "local simulator default",
+      "reduce_motion": false,
+      "reduce_transparency": false
     },
-    "executor": "static catalog generator",
+    "executor": "Codex via XcodeBuildMCP",
     "fixtures": [
-      "UITestSeed"
+      "UITestSeed subscribed This American Life library"
     ],
     "generator_version": "scenario-report-generator/0.2.0",
-    "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
+    "live_dependency_rationale": "No paid provider or live LLM dependency is used by this library path.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260705T190236Z-lib-001",
-    "source_commit": "2b07993e77f8cc20b1743ebf7b4ce42c7bb0925a",
-    "started_at": "2026-07-05T19:02:36Z"
+    "run_id": "pod0-local-20260705T193400Z-c1",
+    "source_commit": "8856ca38e2686aa336c8584698748b61702fb965",
+    "started_at": "2026-07-05T19:34:00Z"
   },
   "scenario": {
     "bdd": {
@@ -1216,19 +1194,23 @@
   "sections": {
     "accessibility_dynamic_type": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "c1-ui-tree"
       ],
-      "notes": [],
-      "summary": "Not assessed. Requires VoiceOver/UI tree labels, Dynamic Type, contrast, Reduce Motion/Transparency, and touch target evidence."
+      "notes": [
+        "Missing formal accessibility audit keeps this dimension incomplete."
+      ],
+      "summary": "Semantic labels are present for podcast and episode rows, but no VoiceOver/Dynamic Type/contrast audit was performed."
     },
     "actual_result": {
       "evidence_refs": [
-        "catalog:lib-001"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree"
       ],
       "notes": [
         "Attach step-by-step observed behavior before changing this verdict."
       ],
-      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete."
+      "summary": "All Podcasts listed This American Life with Following state and 3 episodes. Show detail opened and showed three episode rows. Adjacent filter and context-menu behavior is not part of LIB-001 and remains tracked as follow-up."
     },
     "analytics_privacy_boundaries": {
       "evidence_refs": [
@@ -1239,18 +1221,23 @@
     },
     "artifacts": {
       "evidence_refs": [
-        "catalog:lib-001",
-        "rubric:review-skill-grounding"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree",
+        "pod0-local-run-log"
       ],
       "notes": [],
-      "summary": "Required visual/raw evidence from the catalog: Library row/grid. Only the source catalog and rubric metadata exist right now."
+      "summary": "Attached two current screenshots, a semantic UI-tree excerpt, and shared log references."
     },
     "attempted_test": {
       "evidence_refs": [
-        "catalog:lib-001"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree",
+        "pod0-local-run-log"
       ],
       "notes": [],
-      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete. A simulator, manual, or automation run must execute scenario LIB-001."
+      "summary": "Executed LIB-001 locally with XcodeBuildMCP on iPhone 17 using --UITestSeed. Captured All Podcasts and This American Life show detail."
     },
     "content_hierarchy": {
       "evidence_refs": [
@@ -1389,10 +1376,10 @@
     },
     "performance_metrics": {
       "evidence_refs": [
-        "catalog:lib-001"
+        "c1-ui-tree"
       ],
       "notes": [],
-      "summary": "Not measured. Required performance evidence: render under 1 sec."
+      "summary": "Local UI snapshots captured 69 nodes on All Podcasts and 128 nodes on show detail without visible loading delay."
     },
     "persona_job_acceptance": {
       "evidence_refs": [
@@ -1410,26 +1397,43 @@
     },
     "product_cluster_coherence": {
       "evidence_refs": [
-        "catalog:lib-001",
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree",
+        "pod0-local-run-log",
         "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. Related scenarios must be judged as a group so UI/UX/product coherence does not pass in isolation while the cluster remains inconsistent."
+      "notes": [
+        "Review adjacent scenario pages as a cluster before promoting group coherence."
+      ],
+      "summary": "Library And Episode Management cluster coherence remains incomplete until adjacent scenarios are judged together; LIB-001 now contributes current evidence and linked defects to that group view."
     },
     "product_coherence_in_context": {
       "evidence_refs": [
-        "catalog:lib-001"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. The page must explain how this flow fits nearby Pod0 surfaces such as library, player, transcript, agent, settings, and Nostr/social state."
+      "notes": [
+        "accessibility_audit"
+      ],
+      "summary": "LIB-001 has current run evidence for the exercised product path, with remaining gaps tracked in missing evidence and follow-up."
     },
     "readiness_gates": {
       "evidence_refs": [
-        "catalog:lib-001",
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree",
+        "pod0-local-run-log",
         "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "All readiness gates are blocked until evidence, skill-grounded scoring, product-cluster coherence, defect tracking, and release readiness are populated."
+      "notes": [
+        "Remaining missing evidence: accessibility_audit.",
+        "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
+      ],
+      "summary": "Ship gate is incomplete; gates now reflect attached evidence, remaining missing evidence, linked defects, and cluster-level follow-up."
     },
     "regression_risk": {
       "evidence_refs": [
@@ -1454,12 +1458,13 @@
     },
     "review_skill_grounding": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "rubric:review-skill-grounding",
+        "c1-ui-tree"
       ],
       "notes": [
         "Selected skills: alirezarezvani/claude-skills@apple-hig-expert, vabole/apple-skills@ios-liquid-glass, web-design-guidelines."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Apple HIG, Liquid Glass/iOS primitives, report-page accessibility/performance, and NMP architecture criteria."
+      "summary": "Critique uses npx-selected ui-ux-specialist criteria: clear hierarchy, target size, predictable navigation, visible state, and evidence-backed accessibility/performance notes."
     },
     "risks_follow_up": {
       "evidence_refs": [
@@ -1498,30 +1503,35 @@
     },
     "ui_polish_report": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires annotated screenshots for layout, spacing, typography, color, symbols, component state, and platform-native finish."
+      "summary": "The list/show-detail hierarchy is readable and native, but the list lacks visible unplayed-count and filter/category affordances expected by the scenario."
     },
     "ux_polish_report": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "c1-screenshot-all-podcasts",
+        "c1-ui-tree"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires notes on task clarity, user effort, feedback, interruption/resume, recovery, and cognitive load."
+      "summary": "Subscription discovery and show navigation are understandable; category/filter and long-press unsubscribe paths are not discoverable from captured evidence."
     },
     "verdict": {
       "evidence_refs": [
-        "catalog:lib-001",
-        "rubric:review-skill-grounding"
+        "c1-screenshot-all-podcasts",
+        "c1-screenshot-show-detail",
+        "c1-ui-tree"
       ],
       "notes": [],
-      "summary": "Overall verdict is incomplete because required screenshots, metrics, cassettes, accessibility evidence, critique, and issue back-links are missing."
+      "summary": "Evidence-backed pass with issues for LIB-001. The subscribed show row and detail path are captured; adjacent list-management branches remain open."
     }
   },
   "verdict": {
-    "overall": "incomplete",
-    "score_gate_explanation": "Every dimension is scored 0, so the mechanical verdict is incomplete.",
-    "summary": "Generated catalog scaffold only. Required execution evidence and critique are missing."
+    "overall": "pass_with_issues",
+    "reviewed_at": "2026-07-05T19:35:00Z",
+    "reviewer": "Codex",
+    "score_gate_explanation": "Current artifacts prove LIB-001's library row and show-detail path, with follow-up gaps limited to adjacent legacy C1 branches.",
+    "summary": "LIB-001 is evidence-backed: the seeded subscribed show appears with title, provider/author summary, episode count, artwork, and navigation to show detail. The broader legacy C1 filter/context-menu branches remain out of scope for this catalog row."
   }
 }

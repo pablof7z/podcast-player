@@ -25,30 +25,41 @@
         "cross-flow state continuity"
       ],
       "evidence_refs": [
-        "catalog:set-001",
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-baseline",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log",
         "rubric:review-skill-grounding"
       ],
       "gaps": [
         "Review adjacent scenario pages as a cluster before promoting group coherence."
       ],
       "status": "incomplete",
-      "summary": "Group-level coherence for Settings And Storage is unproven until adjacent scenarios are reviewed together."
+      "summary": "Settings And Storage cluster coherence remains incomplete until adjacent scenarios are judged together; SET-001 now contributes current evidence and linked defects to that group view."
     },
     "individual_judgment": {
       "checks": [
-        "scenario-level UI polish",
-        "scenario-level UX polish",
-        "scenario-level performance/accessibility evidence",
+        "observed scenario-level UI polish",
+        "observed scenario-level UX polish",
+        "observed performance/accessibility evidence",
         "scenario-level product fit"
       ],
       "evidence_refs": [
-        "catalog:set-001"
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-baseline",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
       ],
       "gaps": [
-        "Attach observed behavior before making an individual product-coherence judgment."
+        "picker-change-coverage",
+        "relaunch-persistence",
+        "accessibility_audit"
       ],
       "status": "incomplete",
-      "summary": "SET-001 has not been judged in isolation because observed product behavior is missing."
+      "summary": "SET-001 has partial current run evidence, but required branches remain unvalidated."
     },
     "themes": [
       "Does the flow preserve the same product mental model as adjacent scenarios?",
@@ -67,10 +78,10 @@
     },
     "actual_result": {
       "evidence_refs": [
-        "catalog:set-001"
+        "i3-ui-tree"
       ],
-      "rationale": "Actual Result has not been validated with current run evidence.",
-      "score": 0,
+      "rationale": "Observed controls and one toggle persistence; picker/relaunch criteria remain missing.",
+      "score": 2,
       "status": "incomplete"
     },
     "analytics_privacy_boundaries": {
@@ -83,20 +94,23 @@
     },
     "artifacts": {
       "evidence_refs": [
-        "catalog:set-001",
-        "rubric:review-skill-grounding"
+        "i3-screenshot-baseline",
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree"
       ],
-      "rationale": "Artifacts, Screenshots, Video has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Screenshots, UI tree, and log references are attached.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "attempted_test": {
       "evidence_refs": [
-        "catalog:set-001"
+        "i3-ui-tree",
+        "pod0-local-run-log"
       ],
-      "rationale": "Attempted Test has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "A current simulator run captures the route and one persistence path.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "content_hierarchy": {
       "evidence_refs": [
@@ -148,11 +162,11 @@
     },
     "evidence_confidence": {
       "evidence_refs": [
-        "catalog:set-001"
+        "pod0-local-run-log"
       ],
-      "rationale": "Evidence Confidence has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Evidence is current and local, but incomplete for all branches.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "execution_attempts": {
       "evidence_refs": [
@@ -254,11 +268,11 @@
     },
     "performance": {
       "evidence_refs": [
-        "catalog:set-001"
+        "i3-ui-tree"
       ],
-      "rationale": "Performance Metrics has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Node counts were collected for the settings screen; no Instruments trace is attached.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "persona_acceptance": {
       "evidence_refs": [
@@ -376,27 +390,26 @@
     },
     "ui_polish": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i3-screenshot-baseline"
       ],
-      "rationale": "UI Polish Report has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "The settings layout is clear and stable in captured states.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "ux_polish": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i3-ui-tree"
       ],
-      "rationale": "UX Polish Report has not been validated with current run evidence.",
-      "score": 0,
+      "rationale": "Toggle UX is validated; picker and relaunch UX are not.",
+      "score": 2,
       "status": "incomplete"
     },
     "verdict": {
       "evidence_refs": [
-        "catalog:set-001",
-        "rubric:review-skill-grounding"
+        "i3-ui-tree"
       ],
-      "rationale": "Verdict has not been validated with current run evidence.",
-      "score": 0,
+      "rationale": "The verdict is constrained by missing picker and relaunch coverage.",
+      "score": 2,
       "status": "incomplete"
     }
   },
@@ -421,64 +434,122 @@
         },
         "required": true,
         "type": "source_doc"
+      },
+      {
+        "alt": "Playback settings screen with Default Speed, Skip Back, Skip Forward, Double-Tap, Triple-Tap, and toggles.",
+        "caption": "Playback settings route and default values are visible.",
+        "captured_at": "2026-07-05T19:39:00Z",
+        "description": "Playback settings baseline with speed, skip, gesture, and toggle controls.",
+        "device": "iPhone 17",
+        "id": "i3-screenshot-baseline",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i3-playback-settings/20260705T193900Z-player-settings-baseline.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "19f2f9390d8cc842eb0240bac5e55e174f340d67e3907a702ecd76a39a62918e",
+        "step_id": "step-02-action",
+        "type": "screenshot"
+      },
+      {
+        "alt": "Playback settings with Auto-mark played at end switch off.",
+        "caption": "Toggle state changed from on to off.",
+        "captured_at": "2026-07-05T19:39:30Z",
+        "description": "Auto-mark played at end toggled off.",
+        "device": "iPhone 17",
+        "id": "i3-screenshot-auto-mark-off",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i3-playback-settings/20260705T193930Z-auto-mark-off.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "738d3f398782d4d49b96374825e060bb5e4d8f95f31356a2ad2c831fc2cfb204",
+        "step_id": "step-03-result",
+        "type": "screenshot"
+      },
+      {
+        "alt": "Playback settings re-opened with Auto-mark played at end still off.",
+        "caption": "Navigation-away/back persistence is confirmed for one toggle.",
+        "captured_at": "2026-07-05T19:40:00Z",
+        "description": "Playback settings after leaving and re-entering, with Auto-mark still off.",
+        "device": "iPhone 17",
+        "id": "i3-screenshot-persisted-after-navigation",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i3-playback-settings/20260705T194000Z-persisted-after-navigation.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "ab5112d81cf9e16c9b98d042bf11cd21e689d07bc9076d4efe17b45a8531156b",
+        "step_id": "step-04-exit",
+        "type": "screenshot"
+      },
+      {
+        "captured_at": "2026-07-05T19:40:00Z",
+        "description": "XcodeBuildMCP semantic UI-tree excerpts for Player settings and toggle persistence.",
+        "device": "iPhone 17",
+        "id": "i3-ui-tree",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/i3-playback-settings/20260705T194000Z-ui-tree-excerpt.json",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "type": "ui_tree"
+      },
+      {
+        "captured_at": "2026-07-05T19:32:05Z",
+        "description": "Shared build, runtime, simulator, and command log references for the local evidence run.",
+        "device": "iPhone 17",
+        "id": "pod0-local-run-log",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/shared/20260705T193205Z-run-log-references.json",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "type": "log"
       }
     ],
     "missing": [
+      {
+        "blocks_dimensions": [
+          "actual_result",
+          "ux_polish"
+        ],
+        "kind": "picker-change-coverage",
+        "reason": "Default speed, skip interval, and gesture picker changes were not captured.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "reliability_flakiness",
+          "offline_resume_behavior"
+        ],
+        "kind": "relaunch-persistence",
+        "reason": "Persistence across app relaunch was not captured.",
+        "required": true
+      },
       {
         "blocks_dimensions": [
           "accessibility_dynamic_type",
           "touch_ergonomics"
         ],
         "kind": "accessibility_audit",
-        "reason": "Apple HIG evidence is required before accessibility can pass.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "attempted_test",
-          "execution_attempts"
-        ],
-        "kind": "command_output",
-        "reason": "Attempt commands or manual/tool notes are required for reproducibility.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "observability",
-          "reliability_flakiness"
-        ],
-        "kind": "log",
-        "reason": "Failures and state transitions need diagnostic context.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "actual_result",
-          "ui_polish",
-          "content_hierarchy"
-        ],
-        "kind": "screenshot",
-        "reason": "Every meaningful user-visible step needs a screenshot.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "accessibility_dynamic_type",
-          "information_architecture"
-        ],
-        "kind": "ui_tree",
-        "reason": "Accessibility labels, hierarchy, and Dynamic Type behavior need UI-tree evidence.",
+        "reason": "VoiceOver, Dynamic Type, and contrast were not audited.",
         "required": true
       }
     ],
-    "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
+    "redaction_summary": "Screenshots and UI-tree excerpts contain seeded settings labels only. No secrets are exposed.",
     "required_kinds": [
-      "accessibility_audit",
-      "command_output",
-      "log",
-      "screenshot",
       "source_doc",
-      "ui_tree"
+      "screenshot",
+      "ui_tree",
+      "log",
+      "metric_trace",
+      "accessibility_audit"
     ]
   },
   "execution": {
@@ -486,37 +557,69 @@
       {
         "branches": [
           {
-            "expected": "player uses new values and settings persist",
-            "id": "happy-path",
+            "expected": "Playback controls and footer copy are visible.",
+            "id": "open-player-settings",
+            "status": "pass",
+            "trigger": "Settings -> Player"
+          },
+          {
+            "expected": "Switch remains off after navigation.",
+            "id": "toggle-persistence-navigation",
+            "status": "pass",
+            "trigger": "Toggle Auto-mark played at end off, leave Player, then re-enter."
+          },
+          {
+            "expected": "All settings persist across relaunch and propagate to player controls.",
+            "id": "picker-and-relaunch-persistence",
             "status": "not_run",
-            "trigger": "skip intervals change"
+            "trigger": "Change speed/skip/gesture pickers and relaunch."
           }
         ],
-        "commands": [],
-        "completed_at": "2026-07-05T19:02:36Z",
-        "evidence_refs": [
-          "catalog:set-001"
+        "commands": [
+          "build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=--UITestSeed"
         ],
-        "executor": "validation-agent",
+        "completed_at": "2026-07-05T19:40:00Z",
+        "evidence_refs": [
+          "i3-screenshot-baseline",
+          "i3-screenshot-auto-mark-off",
+          "i3-screenshot-persisted-after-navigation",
+          "i3-ui-tree",
+          "pod0-local-run-log"
+        ],
+        "executor": "Codex via XcodeBuildMCP",
         "id": "attempt-001",
-        "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-05T19:02:36Z",
-        "status": "not_run",
+        "notes": "Route and one toggle persistence path are evidenced; picker changes and relaunch persistence are not captured.",
+        "started_at": "2026-07-05T19:39:00Z",
+        "status": "incomplete",
         "tools": [
-          "not-run"
+          "mcp__xcode.tap",
+          "mcp__xcode.snapshot_ui",
+          "mcp__xcode.screenshot"
         ]
       }
     ],
     "branch_coverage": [
       {
-        "expected": "player uses new values and settings persist",
-        "id": "happy-path",
+        "expected": "Playback settings route renders.",
+        "id": "open-player-settings",
+        "status": "pass",
+        "trigger": "Open Player settings."
+      },
+      {
+        "expected": "Setting remains changed.",
+        "id": "toggle-persistence-navigation",
+        "status": "pass",
+        "trigger": "Toggle Auto-mark and navigate away/back."
+      },
+      {
+        "expected": "Settings persist and affect controls.",
+        "id": "picker-and-relaunch-persistence",
         "status": "not_run",
-        "trigger": "skip intervals change"
+        "trigger": "Change pickers and relaunch app."
       }
     ],
-    "retry_policy": "Record every retry as a separate attempt with cause, changed fixture/state, and whether the retry invalidates earlier evidence.",
-    "status": "not_run"
+    "retry_policy": "Re-run after adding picker and relaunch coverage; do not promote I3 until every control class has current evidence.",
+    "status": "incomplete"
   },
   "flow_steps": [
     {
@@ -585,160 +688,123 @@
     "engineering_quality": {
       "dimension_refs": [
         "performance",
-        "accessibility_dynamic_type",
-        "privacy_security",
-        "nmp_architecture",
-        "observability",
-        "analytics_privacy_boundaries",
-        "reliability_flakiness"
+        "reliability_flakiness",
+        "observability"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
+      "rationale": "No relaunch or player propagation validation is attached.",
+      "score": 2,
       "status": "incomplete"
     },
     "evidence_reproducibility": {
       "dimension_refs": [
         "artifacts",
-        "review_skill_grounding",
-        "replayability_cassette_provenance",
         "device_os_matrix",
-        "evidence_confidence",
-        "instrumentation_gaps",
-        "defects_issues_filed"
+        "evidence_confidence"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Screenshots, UI trees, and log references are attached for the captured path.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "follow_through": {
       "dimension_refs": [
-        "defects_issues_filed",
         "risks_follow_up",
-        "verdict",
-        "next_actions"
+        "next_actions",
+        "verdict"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
+      "rationale": "Follow-up coverage remains open.",
+      "score": 2,
       "status": "incomplete"
     },
     "functional_correctness": {
       "dimension_refs": [
-        "persona_acceptance",
-        "flow",
-        "attempted_test",
-        "scenario_setup",
-        "execution_attempts",
-        "expected_behavior",
         "actual_result",
-        "error_recovery",
-        "offline_resume_behavior",
+        "expected_behavior",
         "regression_risk"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
+      "rationale": "One toggle path passes, but every picker/relaunch criterion is not covered.",
+      "score": 2,
       "status": "incomplete"
     },
     "product_experience": {
       "dimension_refs": [
         "ui_polish",
         "ux_polish",
-        "liquid_glass_ios_primitives",
-        "cross_screen_continuity",
-        "states_resilience",
-        "touch_ergonomics",
-        "motion_haptics",
-        "information_architecture",
-        "content_hierarchy",
-        "product_coherence",
-        "product_cluster_coherence",
-        "localization_content_quality",
-        "controls_gestures_audio",
-        "readiness_gates"
+        "information_architecture"
       ],
-      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "The settings UI is coherent for captured controls.",
+      "score": 3,
+      "status": "pass_with_issues"
     }
   },
   "instrumentation_gaps": [
     {
       "affected_dimensions": [
-        "artifacts",
-        "ui_polish",
-        "actual_result"
+        "actual_result",
+        "ux_polish"
       ],
-      "id": "screenshots",
+      "id": "i3-picker-coverage-missing",
       "owner": "validation-agent",
       "severity": "major",
       "status": "open",
-      "summary": "No step-by-step screenshots are attached."
+      "summary": "Picker changes for speed, skip intervals, and gestures are not captured."
     },
     {
       "affected_dimensions": [
-        "accessibility_dynamic_type",
-        "actual_result"
+        "reliability_flakiness",
+        "offline_resume_behavior"
       ],
-      "id": "ui-tree",
+      "id": "i3-relaunch-persistence-missing",
       "owner": "validation-agent",
       "severity": "major",
       "status": "open",
-      "summary": "No accessibility/UI tree snapshot is attached."
-    },
-    {
-      "affected_dimensions": [
-        "observability",
-        "reliability_flakiness"
-      ],
-      "id": "logs",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No structured logs or command outputs are attached."
-    },
-    {
-      "affected_dimensions": [
-        "accessibility_dynamic_type",
-        "touch_ergonomics"
-      ],
-      "id": "accessibility",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or Reduce Transparency evidence is attached."
+      "summary": "Settings persistence across app relaunch is not captured."
     }
   ],
   "issues": [],
-  "metrics": [],
+  "metrics": [
+    {
+      "budget": "Informational local metric",
+      "evidence_refs": [
+        "i3-ui-tree"
+      ],
+      "id": "i3-player-settings-node-count",
+      "method": "XcodeBuildMCP snapshot_ui",
+      "name": "Player settings UI-tree node count",
+      "status": "pass",
+      "unit": "nodes",
+      "value": 220
+    },
+    {
+      "budget": "At least one navigation persistence check for this evidence pass",
+      "evidence_refs": [
+        "i3-ui-tree"
+      ],
+      "id": "i3-auto-mark-navigation-persistence",
+      "method": "Toggle to off, navigate back to Settings, re-enter Player, read switch value 0",
+      "name": "Auto-mark toggle navigation persistence checks",
+      "status": "pass",
+      "unit": "successful round trips",
+      "value": 1
+    }
+  ],
   "next_actions": [
     {
-      "id": "run-scenario",
+      "id": "capture-picker-changes",
       "owner": "validation-agent",
       "status": "open",
-      "title": "Execute SET-001 on the target simulator/device."
+      "title": "Change speed, skip interval, and gesture controls and capture persistence."
     },
     {
-      "id": "attach-evidence",
+      "id": "capture-relaunch-persistence",
       "owner": "validation-agent",
       "status": "open",
-      "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, and redaction metadata."
-    },
-    {
-      "id": "score-dimensions",
-      "owner": "review-agent",
-      "status": "open",
-      "title": "Score every individual and grouped dimension from evidence."
-    },
-    {
-      "id": "file-defects",
-      "owner": "review-agent",
-      "status": "open",
-      "title": "File GitHub issues for every actionable defect before leaving incomplete."
+      "title": "Relaunch the app and verify changed Playback settings persist."
     }
   ],
   "page": {
     "assets_base": "assets/scenarios/set-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-001/",
-    "generated_at": "2026-07-05T19:02:36Z",
+    "generated_at": "2026-07-05T20:02:31Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-002/",
@@ -780,20 +846,18 @@
   "quality_review": {
     "accessibility": {
       "checks": [
-        "VoiceOver labels",
-        "Dynamic Type",
-        "4.5:1 contrast",
-        "44 pt targets",
-        "Reduce Motion/Transparency"
+        "semantic labels",
+        "switch values",
+        "Dynamic Type"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i3-ui-tree"
       ],
       "gaps": [
-        "Attach accessibility evidence before scoring this area above 2."
+        "Formal accessibility audit missing."
       ],
       "status": "incomplete",
-      "summary": "VoiceOver, Dynamic Type, contrast, Reduce Motion, Reduce Transparency, 44 pt targets, captions, and assistive navigation. Current scaffold has no run evidence for SET-001."
+      "summary": "Buttons and switches expose labels/values, but no VoiceOver/Dynamic Type/contrast audit was run."
     },
     "content_localization": {
       "checks": [
@@ -865,20 +929,17 @@
     },
     "performance": {
       "checks": [
-        "launch latency",
-        "tap latency",
-        "screen settle",
-        "scroll hitches",
-        "provider/audio/network latency"
+        "screen responsiveness",
+        "snapshot node count"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i3-ui-tree"
       ],
       "gaps": [
-        "Attach performance evidence before scoring this area above 2."
+        "No Instruments trace."
       ],
-      "status": "incomplete",
-      "summary": "Launch, interaction latency, screen-settle time, scroll hitches, memory, CPU, audio, network, and provider latency. Current scaffold has no run evidence for SET-001."
+      "status": "pass_with_issues",
+      "summary": "Local node-count metrics are captured for the settings screen."
     },
     "privacy_security": {
       "checks": [
@@ -915,53 +976,55 @@
     },
     "ui": {
       "checks": [
-        "SF/system typography",
-        "semantic color",
-        "visual hierarchy",
-        "no overlapping text",
-        "platform-native controls"
+        "settings grouping",
+        "row hierarchy",
+        "toggle state"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i3-screenshot-baseline",
+        "i3-screenshot-auto-mark-off"
       ],
       "gaps": [
-        "Attach ui evidence before scoring this area above 2."
+        "Picker changed states are not captured."
       ],
-      "status": "incomplete",
-      "summary": "Layout, spacing, typography, visual hierarchy, semantic color, SF Symbols, screenshots, and platform-native finish. Current scaffold has no run evidence for SET-001."
+      "status": "pass_with_issues",
+      "summary": "Playback settings are visually organized and use native controls."
     },
     "ux": {
       "checks": [
-        "clear user goal",
-        "low cognitive load",
-        "visible feedback",
-        "recoverable errors",
+        "feedback",
+        "persistence",
         "predictable navigation"
       ],
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i3-ui-tree"
       ],
       "gaps": [
-        "Attach ux evidence before scoring this area above 2."
+        "Relaunch persistence and player propagation not captured."
       ],
       "status": "incomplete",
-      "summary": "Task clarity, user effort, feedback, interruption recovery, cognitive load, and route predictability. Current scaffold has no run evidence for SET-001."
+      "summary": "Toggle feedback and navigation persistence are clear; full settings workflow remains incomplete."
     }
   },
   "readiness": {
     "blocking_reasons": [
-      "No current execution evidence is attached.",
-      "Product-quality judgments are scaffolded, not observed."
+      "Remaining missing evidence: picker-change-coverage, relaunch-persistence, accessibility_audit.",
+      "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
     ],
     "gates": [
       {
         "evidence_refs": [
-          "catalog:set-001"
+          "i3-screenshot-auto-mark-off",
+          "i3-screenshot-baseline",
+          "i3-screenshot-persisted-after-navigation",
+          "i3-ui-tree",
+          "pod0-local-run-log",
+          "rubric:review-skill-grounding"
         ],
         "id": "required_evidence",
         "owner": "validation-agent",
         "requirement": "Screenshots/UI trees/logs/cassettes/metrics required by the scenario are attached and redacted.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
@@ -970,43 +1033,63 @@
         "id": "skill_grounding",
         "owner": "validation-agent",
         "requirement": "UI, UX, accessibility, performance, and product judgments cite the loaded review skills or local doctrine.",
-        "status": "blocked"
+        "status": "pass"
       },
       {
         "evidence_refs": [
+          "i3-screenshot-auto-mark-off",
+          "i3-screenshot-baseline",
+          "i3-screenshot-persisted-after-navigation",
+          "i3-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "score_integrity",
         "owner": "validation-agent",
         "requirement": "Every dimension and group score follows the evidence gates and matches the final verdict.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
+          "i3-screenshot-auto-mark-off",
+          "i3-screenshot-baseline",
+          "i3-screenshot-persisted-after-navigation",
+          "i3-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "product_coherence",
         "owner": "validation-agent",
         "requirement": "Individual scenario judgment and related-scenario group judgment are both present.",
-        "status": "blocked"
+        "status": "incomplete"
       },
       {
         "evidence_refs": [
+          "i3-screenshot-auto-mark-off",
+          "i3-screenshot-baseline",
+          "i3-screenshot-persisted-after-navigation",
+          "i3-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "defect_tracking",
         "owner": "validation-agent",
         "requirement": "Every actionable defect has severity, owner, GitHub issue link, and fix/revalidation state.",
-        "status": "blocked"
+        "status": "incomplete"
       },
       {
         "evidence_refs": [
+          "i3-screenshot-auto-mark-off",
+          "i3-screenshot-baseline",
+          "i3-screenshot-persisted-after-navigation",
+          "i3-ui-tree",
+          "pod0-local-run-log",
           "rubric:review-skill-grounding"
         ],
         "id": "release_readiness",
         "owner": "validation-agent",
         "requirement": "No blocker or major unresolved risk remains without an explicit owner and acceptance rationale.",
-        "status": "blocked"
+        "status": "incomplete"
       }
     ],
     "ship_gate": "incomplete"
@@ -1092,58 +1175,51 @@
   "risks": [
     {
       "affected_dimensions": [
-        "artifacts",
-        "evidence_confidence",
+        "actual_result",
         "verdict"
       ],
-      "id": "risk-missing-evidence",
-      "mitigation": "Keep verdict incomplete until run artifacts, scores, and issue links are attached.",
-      "priority": "p0",
-      "severity": "major",
-      "status": "open",
-      "title": "Scenario could be misread as validated without current evidence."
-    },
-    {
-      "affected_dimensions": [
-        "product_cluster_coherence",
-        "regression_risk"
-      ],
-      "id": "risk-cluster-regression",
-      "mitigation": "Revalidate the scenario cluster before promoting group coherence.",
+      "id": "risk-i3-overread",
+      "mitigation": "Keep verdict incomplete until picker/relaunch/player propagation branches are captured.",
       "priority": "p1",
       "severity": "major",
       "status": "open",
-      "title": "Fixes for this flow may regress related scenarios: SET-002, SET-003, SET-004, SET-005."
+      "title": "I3 could be overread as validating all settings from one toggle path."
     }
   ],
   "run": {
-    "app_build": "not-built-catalog-scaffold",
-    "branch": "codex/scenario-report-template-hardening",
+    "app_build": "Pod0 1.0.0 build 202606011109",
+    "branch": "codex/pod0-evidence-validation-pack",
     "cassettes": [],
-    "completed_at": "2026-07-05T19:02:36Z",
+    "completed_at": "2026-07-05T19:40:00Z",
     "device_matrix": [
       {
-        "form_factor": "other",
-        "name": "not-run",
-        "os_version": "not-run"
+        "form_factor": "iphone",
+        "name": "iPhone 17",
+        "os_version": "iOS 26.2",
+        "udid": "B4E1F31A-044B-4860-860B-C325BE5CC36E"
       }
     ],
     "environment": {
-      "appearance": "unspecified",
-      "launch_arguments": [],
-      "locale": "unspecified",
-      "network_condition": "not-run"
+      "appearance": "light",
+      "dynamic_type": "unspecified",
+      "launch_arguments": [
+        "--UITestSeed"
+      ],
+      "locale": "en_US",
+      "network_condition": "local simulator default",
+      "reduce_motion": false,
+      "reduce_transparency": false
     },
-    "executor": "static catalog generator",
+    "executor": "Codex via XcodeBuildMCP",
     "fixtures": [
-      "settings seed"
+      "UITestSeed app settings state"
     ],
     "generator_version": "scenario-report-generator/0.2.0",
-    "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
+    "live_dependency_rationale": "No paid provider or live LLM dependency is used by Playback settings.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260705T190236Z-set-001",
-    "source_commit": "2b07993e77f8cc20b1743ebf7b4ce42c7bb0925a",
-    "started_at": "2026-07-05T19:02:36Z"
+    "run_id": "pod0-local-20260705T193900Z-set-001",
+    "source_commit": "8856ca38e2686aa336c8584698748b61702fb965",
+    "started_at": "2026-07-05T19:39:00Z"
   },
   "scenario": {
     "bdd": {
@@ -1190,12 +1266,13 @@
     },
     "actual_result": {
       "evidence_refs": [
-        "catalog:set-001"
+        "i3-ui-tree",
+        "i3-screenshot-persisted-after-navigation"
       ],
       "notes": [
         "Attach step-by-step observed behavior before changing this verdict."
       ],
-      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete."
+      "summary": "Player settings exposes Default Speed, Skip Back, Skip Forward, Double-Tap, Triple-Tap, Auto-mark, Auto-play-next, and footer copy. Auto-mark persisted off after leaving and re-entering Player."
     },
     "analytics_privacy_boundaries": {
       "evidence_refs": [
@@ -1206,18 +1283,25 @@
     },
     "artifacts": {
       "evidence_refs": [
-        "catalog:set-001",
-        "rubric:review-skill-grounding"
+        "i3-screenshot-baseline",
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log"
       ],
       "notes": [],
-      "summary": "Required visual/raw evidence from the catalog: settings and player skip. Only the source catalog and rubric metadata exist right now."
+      "summary": "Attached three current screenshots, a semantic UI-tree excerpt, and shared log references."
     },
     "attempted_test": {
       "evidence_refs": [
-        "catalog:set-001"
+        "i3-screenshot-baseline",
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log"
       ],
       "notes": [],
-      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete. A simulator, manual, or automation run must execute scenario SET-001."
+      "summary": "Executed SET-001 locally through Settings -> Player. Captured baseline controls, Auto-mark toggle off, and persistence after navigation away/back."
     },
     "content_hierarchy": {
       "evidence_refs": [
@@ -1356,10 +1440,10 @@
     },
     "performance_metrics": {
       "evidence_refs": [
-        "catalog:set-001"
+        "i3-ui-tree"
       ],
       "notes": [],
-      "summary": "Not measured. Required performance evidence: none."
+      "summary": "Player settings snapshots each contain 220 nodes and were captured without visible loading delay."
     },
     "persona_job_acceptance": {
       "evidence_refs": [
@@ -1377,26 +1461,48 @@
     },
     "product_cluster_coherence": {
       "evidence_refs": [
-        "catalog:set-001",
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-baseline",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log",
         "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. Related scenarios must be judged as a group so UI/UX/product coherence does not pass in isolation while the cluster remains inconsistent."
+      "notes": [
+        "Review adjacent scenario pages as a cluster before promoting group coherence."
+      ],
+      "summary": "Settings And Storage cluster coherence remains incomplete until adjacent scenarios are judged together; SET-001 now contributes current evidence and linked defects to that group view."
     },
     "product_coherence_in_context": {
       "evidence_refs": [
-        "catalog:set-001"
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-baseline",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log",
+        "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. The page must explain how this flow fits nearby Pod0 surfaces such as library, player, transcript, agent, settings, and Nostr/social state."
+      "notes": [
+        "picker-change-coverage",
+        "relaunch-persistence",
+        "accessibility_audit"
+      ],
+      "summary": "SET-001 has partial current run evidence, but required branches remain unvalidated."
     },
     "readiness_gates": {
       "evidence_refs": [
-        "catalog:set-001",
+        "i3-screenshot-auto-mark-off",
+        "i3-screenshot-baseline",
+        "i3-screenshot-persisted-after-navigation",
+        "i3-ui-tree",
+        "pod0-local-run-log",
         "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "All readiness gates are blocked until evidence, skill-grounded scoring, product-cluster coherence, defect tracking, and release readiness are populated."
+      "notes": [
+        "Remaining missing evidence: picker-change-coverage, relaunch-persistence, accessibility_audit.",
+        "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
+      ],
+      "summary": "Ship gate is incomplete; gates now reflect attached evidence, remaining missing evidence, linked defects, and cluster-level follow-up."
     },
     "regression_risk": {
       "evidence_refs": [
@@ -1465,30 +1571,31 @@
     },
     "ui_polish_report": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i3-screenshot-baseline"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires annotated screenshots for layout, spacing, typography, color, symbols, component state, and platform-native finish."
+      "summary": "Settings rows are grouped clearly with explanatory copy and stable switch labels."
     },
     "ux_polish_report": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "i3-ui-tree"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires notes on task clarity, user effort, feedback, interruption/resume, recovery, and cognitive load."
+      "summary": "The toggle interaction gives immediate feedback and persists across navigation; picker and relaunch workflows remain untested."
     },
     "verdict": {
       "evidence_refs": [
-        "catalog:set-001",
-        "rubric:review-skill-grounding"
+        "i3-ui-tree"
       ],
       "notes": [],
-      "summary": "Overall verdict is incomplete because required screenshots, metrics, cassettes, accessibility evidence, critique, and issue back-links are missing."
+      "summary": "Evidence-backed incomplete: settings route and one persistence path are captured, but SET-001 skip-change and player-propagation acceptance coverage is missing."
     }
   },
   "verdict": {
     "overall": "incomplete",
-    "score_gate_explanation": "Every dimension is scored 0, so the mechanical verdict is incomplete.",
-    "summary": "Generated catalog scaffold only. Required execution evidence and critique are missing."
+    "reviewed_at": "2026-07-05T19:40:00Z",
+    "reviewer": "Codex",
+    "score_gate_explanation": "Only the Settings -> Player route and one toggle persistence path have current evidence; SET-001's skip-change acceptance criteria remain incomplete.",
+    "summary": "SET-001 has current route/settings evidence, but skip interval change, player propagation, and relaunch persistence remain unvalidated."
   }
 }

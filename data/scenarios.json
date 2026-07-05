@@ -1416,12 +1416,7 @@
     "group_coherence": "incomplete",
     "id": "LIB-001",
     "missing_evidence": [
-      "accessibility_audit",
-      "command_output",
-      "log",
-      "metric_trace",
-      "screenshot",
-      "ui_tree"
+      "accessibility_audit"
     ],
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
@@ -1437,7 +1432,7 @@
     ],
     "title": "The show appears with artwork, title, author, and episode count",
     "url": "scenarios/lib-001/",
-    "verdict": "incomplete"
+    "verdict": "pass_with_issues"
   },
   {
     "category": "Library And Episode Management",
@@ -1889,12 +1884,8 @@
     "group_coherence": "incomplete",
     "id": "PLAY-001",
     "missing_evidence": [
-      "accessibility_audit",
-      "command_output",
-      "log",
-      "metric_trace",
-      "screenshot",
-      "ui_tree"
+      "resume-fixture",
+      "accessibility_audit"
     ],
     "product_cluster": "playback",
     "provider_mode": "none",
@@ -1911,7 +1902,7 @@
     ],
     "title": "Playback starts, mini-player appears, and elapsed time advances",
     "url": "scenarios/play-001/",
-    "verdict": "incomplete"
+    "verdict": "pass_with_issues"
   },
   {
     "category": "Playback",
@@ -6899,11 +6890,9 @@
     "group_coherence": "incomplete",
     "id": "SET-001",
     "missing_evidence": [
-      "accessibility_audit",
-      "command_output",
-      "log",
-      "screenshot",
-      "ui_tree"
+      "picker-change-coverage",
+      "relaunch-persistence",
+      "accessibility_audit"
     ],
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
@@ -7013,16 +7002,12 @@
     "group_coherence": "incomplete",
     "id": "SET-005",
     "missing_evidence": [
-      "accessibility_audit",
-      "command_output",
-      "log",
-      "metric_trace",
-      "screenshot",
-      "ui_tree"
+      "clear-all-data-teardown",
+      "accessibility_audit"
     ],
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
-    "readiness": "incomplete",
+    "readiness": "blocked",
     "slug": "set-005",
     "tags": [
       "catalog-scaffold",
@@ -7034,7 +7019,7 @@
     ],
     "title": "Storage breakdown shows audio, transcripts, cache, and total values",
     "url": "scenarios/set-005/",
-    "verdict": "incomplete"
+    "verdict": "fail"
   },
   {
     "category": "Settings And Storage",
