@@ -88,7 +88,8 @@ def review_grounding_for() -> dict[str, Any]:
         "all_considered": SKILL_GROUNDING,
         "template_impact": [
             "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, GlassEffect composition, semantic foreground styles, and Reduce Motion/Transparency requirements.",
-            "Mobile App Interface drives safe-area, SF typography, Dynamic Type, semantic color, native navigation, accessibility, 44 pt touch-target, state-resilience, and performance-as-UX checks.",
+            "Web Interface Guidelines drive generated-site accessibility, semantic HTML, focus, image metadata, safe-area, touch, reduced-motion, content-overflow, localization, and frontend performance checks.",
+            "Playwright CLI is the expected local verification path for generated GitHub Pages screenshots, snapshots, responsive viewports, and interaction smoke tests.",
             "The generated page separates scenario facts, evidence, individual dimensions, grouped product judgment, risk, and confidence so isolated passes cannot hide a weak product flow.",
         ],
     }

@@ -38,10 +38,10 @@ The page shows dimension scores and five grouped scores:
 | Group | Dimensions |
 | --- | --- |
 | Functional correctness | Flow, attempted test, setup, expected behavior, actual result, error/recovery behavior, regression risk. |
-| Evidence and reproducibility | Artifacts, review skill grounding, replayability/cassette provenance, device/OS matrix, evidence confidence, defects/issues filed. |
-| Product experience | UI polish, UX polish, Liquid Glass/iOS primitive integration, cross-screen continuity, empty/loading/offline states, touch ergonomics, motion/haptics, information architecture, content hierarchy, product coherence. |
+| Evidence and reproducibility | Artifacts, evidence provenance, review skill grounding, replayability/cassette provenance, device/OS matrix, evidence confidence, defects/issues filed. |
+| Product experience | UI polish, UX polish, Liquid Glass/iOS primitive integration, cross-screen continuity, before/after deltas, empty/loading/offline states, touch ergonomics, motion/haptics, information architecture, content hierarchy, product coherence. |
 | Engineering quality | Performance metrics, accessibility/dynamic type, privacy/security, NMP architecture/cohesiveness, observability, analytics/privacy boundaries. |
-| Follow-through | Defects/issues filed, verdict, next actions, issue/PR back-links, revalidation status. |
+| Follow-through | Defects/issues filed, revalidation status, verdict, next actions, issue/PR back-links, owner/status. |
 
 Overall verdict is one of:
 
@@ -84,19 +84,25 @@ hundreds of pages without prose scraping:
 - `coherence`: both individual scenario judgment and related-scenario
   group-level product coherence judgment.
 - `readiness`: release gates and blockers.
-- `evidence.missing`, `instrumentation_gaps`, and `risks`: explicit blockers,
-  affected dimensions, owners, and mitigations.
+- `evidence.missing`, `evidence_provenance`, `before_after_deltas`,
+  `revalidation_status`, `owner_status`, `instrumentation_gaps`, and `risks`:
+  explicit blockers, affected dimensions, owners, mitigations, freshness, and
+  follow-through.
 
-The selected grounding for this template is:
+The required search command for this template is
+`npx skills search "liquid glass iOS mobile frontend design UI polish"`. The
+selected grounding is:
 
 - `vabole/apple-skills@ios-liquid-glass`, loaded after `npx skills search`, for
   Liquid Glass hierarchy/harmony/consistency, control-layer restraint,
   GlassEffect composition, semantic foreground styles, and Reduce
   Motion/Transparency behavior.
-- `qodex-ai/ai-agent-skills@mobile-app-interface`, loaded after `npx skills search`,
-  for safe areas, SF typography, Dynamic Type, semantic color, 44 pt touch
-  targets, native navigation, accessibility roles, state resilience, and
-  performance-as-UX budgets.
+- `local web-design-guidelines`, loaded with the latest Vercel Web Interface
+  Guidelines, for semantic HTML, focus, image metadata, safe-area, touch,
+  reduced-motion, content-overflow, localization, accessibility, and frontend
+  performance gates.
+- `local playwright-cli`, loaded for generated-site screenshots, snapshots,
+  responsive viewport checks, and interaction smoke validation.
 
 The generated HTML must front-load the deep-review areas a reviewer expects:
 what was attempted/test intent, flow, data/control-plane setup, result, evidence,
@@ -116,6 +122,7 @@ severity, and validation confidence.
 | Expected behavior | What should a correct Pod0 implementation do? | Given/When/Then text and acceptance criteria. | `3+` requires user-visible and architecture expectations. |
 | Actual result | What happened step by step? | Screenshot/UI tree/log per meaningful step. | Any unobserved critical step caps at `2`. |
 | Artifacts/screenshots/video | What visual and raw evidence supports the result? | Screenshot gallery, videos, UI trees, logs, metric traces, SHA/path/URL. | Missing required screenshot forces `incomplete`. |
+| Evidence provenance | Where did each artifact come from, and can it be trusted? | Capture command/tool, source commit, branch, device/OS, SHA/path, redaction state, freshness, live/replay/generated/copied marker. | Unknown provenance caps affected evidence dimensions at `2`. |
 | Review skill grounding | Which external review skills, platform rubrics, or design doctrines grounded the page's observations? | `npx skills search` terms, loaded skill names/versions, rubric notes, and reviewer coverage. | Missing skill grounding forces `incomplete`; UI/UX scores above `2` require relevant product/design/iOS skills. |
 | UI polish report | Does the screen look finished and platform-native? | Annotated screenshots for layout, spacing, typography, color, symbols, control states. | `3+` requires critique, not just a screenshot. |
 | UX polish report | Does the flow feel clear, focused, and recoverable? | Notes on task clarity, user effort, feedback, interruption/resume, cognitive load. | `3+` requires analysis of the user's goal, not component-by-component notes only. |
@@ -127,9 +134,11 @@ severity, and validation confidence.
 | NMP architecture/cohesiveness | Does behavior respect Rust-core/thin-shell ownership? | D0-D10 notes, FFI snapshot/projection evidence, capability-report evidence, source links when inspected. | Native policy, duplicate state, unbounded FFI, polling, or privacy fallback is `1`. |
 | Product coherence in context | Does this scenario fit Pod0's product promise and adjacent flows? | Cross-links to related scenarios, before/after screenshots, comparison to expected Pod0 mental model. | `3+` requires continuity with surrounding product surfaces. |
 | Product cluster coherence | Do related scenarios agree as a product group? | Cluster rollup, related scenario links, shared theme/defect notes. | Individual UI/UX scores cannot pass if group-level coherence is contradictory. |
+| Before/after deltas | What user-visible state changed, and what should not have changed? | Before screenshot/state, action, after screenshot/state, expected delta, unexpected regression notes. | Missing delta evidence caps product-experience scores at `2`. |
 | Reliability/flakiness | How stable is the behavior across reruns and retries? | Rerun count, flake notes, retry causes, stale build checks, deterministic replay evidence. | Flaky or stale evidence caps at `2`. |
 | Regression risk | What could this break, and what should be rerun? | Related scenarios, impacted modules, prior bugs, merge-gate references. | Missing risk notes cap at `2`. |
 | Defects/issues filed | Were all imperfections tracked? | GitHub issue links, severity, owner, fix PR link if available. | Any unfiled actionable defect forces `incomplete`. |
+| Revalidation status | Did fixes actually close the scenario risk? | Fix PR link, revalidation run ID, rerun commit, affected dimensions, still-open gaps. | Fixed issue without revalidation cannot count as resolved. |
 | Risks/follow-up | Which risks remain, who owns them, and what PR/issue/revalidation follows? | Risk records, priorities, issue/PR links, recommended mitigation. | Unowned blocker or major risk prevents pass. |
 | Instrumentation gaps | Which evidence is missing and which dimensions are blocked by it? | Missing-evidence inventory, gap severity, owner, affected dimensions. | Hidden gaps force `incomplete`. |
 | Localization/content quality | Does content survive locale, long text, transcript, and empty/error copy cases? | Locale screenshots, copy review, truncation notes, transcript/metadata checks. | Broken critical content caps at `2`. |
@@ -138,6 +147,7 @@ severity, and validation confidence.
 | Readiness gates | Which release gates are open, blocked, or done? | Gate table, blockers, owners, linked evidence. | Any blocked release gate keeps verdict below pass. |
 | Verdict | What is the scenario's status and why? | Grouped score summary and concise rationale. | Must match score gates mechanically. |
 | Next actions | What should happen next? | Ordered action list with owners/links. | Blocking follow-up without owner/link caps at `2`. |
+| Owner/status | Who owns the page, defects, blockers, gates, and revalidation? | Owner/status on blockers, gates, risks, issues, and next actions. | Unowned blocker prevents pass. |
 
 ## 2026 Product-Quality Sections
 
