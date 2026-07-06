@@ -50,7 +50,9 @@ def render_scenario_page(record: dict[str, Any], depth: int) -> str:
         hero(f"{scenario['id']} - {scenario['title']}", f"{scenario['category']} - {badge(record['verdict']['overall'])}"),
         section("Scenario Identity And Links", key_values(identity_for(record))),
         section("Product Intent And Acceptance Criteria", product_context_block(record["product_context"])),
+        section("What Was Attempted And Test Intent", test_intent_block(record)),
         section("Flow Overview And Steps", bdd_block(scenario["bdd"]) + flow_step_table(record["flow_steps"])),
+        section("Data And Control-Plane Setup", control_plane_block(record)),
         section("Preconditions, Fixtures, Cassettes, And Runtime Metadata", key_values(metadata_for(record)) + device_table(record["run"]["device_matrix"]) + cassette_table(record["run"].get("cassettes", []))),
         section("Execution Attempts, Retries, And Branches", attempts_block(record["execution"])),
         section("Results And Verdict", p(record["verdict"]["summary"]) + key_values({"Overall": record["verdict"]["overall"], "Gate explanation": record["verdict"]["score_gate_explanation"]})),
@@ -66,6 +68,7 @@ def render_scenario_page(record: dict[str, Any], depth: int) -> str:
         section("Product-Level Assessment", product_assessment_block(record)),
         section("Readiness Gates", readiness_block(record["readiness"])),
         section("Instrumentation Gaps And Missing Evidence", gap_table(record["instrumentation_gaps"])),
+        section("Risk Severity And Validation Confidence", risk_confidence_block(record)),
         section("Risks, Defects, Issue Links, And Follow-Up", risk_table(record["risks"]) + issue_table(record["issues"]) + action_list(record["next_actions"])),
         section("Grouped Scores And Coherent Product Judgment", score_table(record["group_scores"])),
         section("Individual Dimension Judgments", score_table(record["dimension_scores"])),
@@ -112,6 +115,36 @@ def product_context_block(context: dict[str, Any]) -> str:
     return key_values({"Persona": context["persona"], "Job": context["job_to_be_done"], "User value": context["user_value"], "Cluster": f"{cluster['title']} ({cluster['id']})", "Related scenarios": ", ".join(cluster["related_scenarios"])}) + f"<h3>Acceptance Criteria</h3><ul>{criteria}</ul><h3>Platform Expectations</h3><ul>{expectations}</ul>"
 
 
+def test_intent_block(record: dict[str, Any]) -> str:
+    scenario = record["scenario"]
+    execution = record["execution"]
+    return key_values(
+        {
+            "Intent": record["sections"]["attempted_test"]["summary"],
+            "Acceptance target": "; ".join(scenario["bdd"]["then"]),
+            "Attempt status": execution["status"],
+            "Attempt count": str(len(execution["attempts"])),
+            "Branch count": str(len(execution["branch_coverage"])),
+            "Evidence confidence": record["dimension_scores"]["evidence_confidence"]["status"],
+        }
+    )
+
+
+def control_plane_block(record: dict[str, Any]) -> str:
+    run = record["run"]
+    environment = run["environment"]
+    values = {
+        "Seed state / fixtures": ", ".join(run.get("fixtures", [])) or "none declared",
+        "Provider mode": run["provider_mode"],
+        "Live dependency rationale": run.get("live_dependency_rationale", ""),
+        "Locale": environment["locale"],
+        "Appearance": environment["appearance"],
+        "Network": environment["network_condition"],
+        "Launch arguments": ", ".join(environment.get("launch_arguments", [])) or "none",
+    }
+    return key_values(values) + p(record["sections"]["scenario_setup"]["summary"])
+
+
 def flow_step_table(steps: list[dict[str, Any]]) -> str:
     rows = "".join(f"<tr><td>{e(step['id'])}</td><td>{e(step['phase'])}</td><td>{e(step['action'])}</td><td>{e(step['expected'])}</td><td>{badge(step['status'])}</td><td>{e(', '.join(step['evidence_required']))}</td></tr>" for step in steps)
     return f"<table><caption>Step-by-step flow</caption><thead><tr><th>Step</th><th>Phase</th><th>Action</th><th>Expected</th><th>Status</th><th>Evidence Needed</th></tr></thead><tbody>{rows}</tbody></table>"
@@ -143,6 +176,63 @@ def missing_evidence_table(evidence: dict[str, Any]) -> str:
 def quality_table(quality: dict[str, Any]) -> str:
     rows = "".join(f"<tr><td>{e(name)}</td><td>{badge(item['status'])}</td><td>{e(item['summary'])}</td><td>{e(', '.join(item['checks']))}</td><td>{e(', '.join(item['gaps']))}</td></tr>" for name, item in quality.items())
     return f"<table><caption>UI, UX, accessibility, performance, reliability, content, and observability review</caption><thead><tr><th>Area</th><th>Status</th><th>Summary</th><th>Checks</th><th>Gaps</th></tr></thead><tbody>{rows}</tbody></table>"
+
+
+def review_area_block(record: dict[str, Any], area_key: str, section_key: str) -> str:
+    area = record["quality_review"][area_key]
+    detail = record["sections"][section_key]
+    dimension_key = {"ui_polish_report": "ui_polish", "ux_polish_report": "ux_polish"}[section_key]
+    return key_values(
+        {
+            "Status": area["status"],
+            "Score": str(record["dimension_scores"][dimension_key]["score"]),
+            "Summary": detail["summary"],
+            "Evidence refs": ", ".join(detail.get("evidence_refs", [])) or "none",
+        }
+    ) + list_block("Checks", area["checks"]) + list_block("Gaps", area["gaps"])
+
+
+def metrics_block(record: dict[str, Any]) -> str:
+    rows = "".join(
+        f"<tr><td>{e(item['name'])}</td><td>{e(str(item['value']))} {e(item['unit'])}</td><td>{e(item['budget'])}</td><td>{badge(item['status'])}</td><td>{e(item['method'])}</td></tr>"
+        for item in record["metrics"]
+    )
+    metrics = "<p>No metric traces are attached yet.</p>" if not rows else f"<table><caption>Measured performance</caption><thead><tr><th>Metric</th><th>Value</th><th>Budget</th><th>Status</th><th>Method</th></tr></thead><tbody>{rows}</tbody></table>"
+    return metrics + p(record["sections"]["performance_metrics"]["summary"]) + list_block("Required latency checks", record["quality_review"]["performance"]["checks"])
+
+
+def navigation_orientation_block(record: dict[str, Any]) -> str:
+    sections = record["sections"]
+    return p(sections["information_architecture"]["summary"]) + p(sections["cross_screen_continuity"]["summary"]) + p(sections["content_hierarchy"]["summary"]) + list_block("Evidence refs", record["dimension_scores"]["information_architecture"]["evidence_refs"])
+
+
+def motion_block(record: dict[str, Any]) -> str:
+    return p(record["sections"]["motion_haptics"]["summary"]) + p(record["sections"]["controls_gestures_audio"]["summary"]) + list_block("Mobile interaction checks", record["quality_review"]["controls_gestures"]["checks"])
+
+
+def product_assessment_block(record: dict[str, Any]) -> str:
+    readiness = record["readiness"]
+    coherence = record["coherence"]
+    values = {
+        "Product-level status": readiness["ship_gate"],
+        "Individual coherence": coherence["individual_judgment"]["status"],
+        "Cluster coherence": coherence["group_judgment"]["status"],
+        "Validation confidence": record["dimension_scores"]["evidence_confidence"]["status"],
+        "Highest risk severity": highest_severity(record["risks"]),
+        "Release decision": "blocked until evidence, scores, and linked defects support the grouped assessment",
+    }
+    return key_values(values) + score_table(record["group_scores"]) + list_block("Product cohesion themes", coherence["themes"])
+
+
+def risk_confidence_block(record: dict[str, Any]) -> str:
+    values = {
+        "Highest risk severity": highest_severity(record["risks"]),
+        "Open risk count": str(len(record["risks"])),
+        "Missing evidence": ", ".join(missing_evidence_for(record)) or "none",
+        "Readiness": record["readiness"]["ship_gate"],
+        "Evidence confidence": record["sections"]["evidence_confidence"]["summary"],
+    }
+    return key_values(values) + gap_table(record["instrumentation_gaps"])
 
 
 def coherence_block(coherence: dict[str, Any]) -> str:
@@ -249,7 +339,7 @@ def hero(title: str, subtitle: str) -> str:
 
 
 def section(title: str, body: str) -> str:
-    return f"<section><h2>{e(title)}</h2>{body}</section>"
+    return f"<section id=\"{slugify(title)}\"><h2>{e(title)}</h2>{body}</section>"
 
 
 def p(text: str) -> str:
@@ -336,6 +426,16 @@ def media_size_attrs(item: dict[str, Any]) -> str:
 def action_list(actions: list[dict[str, str]]) -> str:
     items = "".join(f"<li><strong>{e(a['title'])}</strong><br><span class=\"muted\">{e(a.get('status', ''))} - {e(a.get('owner', ''))}</span></li>" for a in actions)
     return f"<ol>{items}</ol>"
+
+
+def list_block(title: str, items: list[str]) -> str:
+    body = "".join(f"<li>{e(item)}</li>" for item in items)
+    return f"<h3>{e(title)}</h3><ul>{body}</ul>"
+
+
+def highest_severity(risks: list[dict[str, Any]]) -> str:
+    order = {"blocker": 4, "major": 3, "minor": 2, "polish": 1}
+    return max((risk["severity"] for risk in risks), key=lambda value: order.get(value, 0), default="none")
 
 
 def badge(value: str) -> str:
