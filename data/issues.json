@@ -2,7 +2,7 @@
   "counts": {
     "closed_revalidation_pending": 2,
     "open": 2,
-    "open_fix_pr_pending": 0
+    "open_fix_pr_pending": 1
   },
   "issues": [
     {
@@ -31,13 +31,13 @@
         "reliability_flakiness"
       ],
       "id": "#728",
-      "linked_pr": "#723",
+      "linked_pr": "#729",
       "owner": "unassigned",
       "revalidation": "not_started",
       "scenario_id": "QD-011",
       "scenario_slug": "qd-011",
       "severity": "major",
-      "status": "open",
+      "status": "open_fix_pr_pending",
       "title": "Auto-download settings sheet does not reliably expose Auto-download controls",
       "url": "https://github.com/pablof7z/podcast-player/issues/728"
     },

@@ -24,8 +24,8 @@
     </header>
 
     <section class="stats" aria-label="Workstream totals">
-      <div><strong>3</strong><span>open PRs</span></div>
-      <div><strong>3</strong><span>required iOS lanes running or queued</span></div>
+      <div><strong>4</strong><span>open PRs</span></div>
+      <div><strong>4</strong><span>required iOS lanes running or queued</span></div>
       <div><strong>0</strong><span>red required builds in current runs</span></div>
       <div><strong>3</strong><span>merged today</span></div>
     </section>
@@ -43,6 +43,12 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/729">#729</a><br><span class="muted">Auto-download settings controls</span></td>
+            <td data-label="Status"><span class="badge badge-running">fresh checks running</span></td>
+            <td data-label="Why It Is Not Merged Yet">Migration Lints passed on the fresh run. Shorter Test gates are still running and Build and Test is queued behind the shared iOS lane.</td>
+            <td data-label="Next Action">Let the fresh Test checks finish; inspect the new log immediately if any required gate turns red.</td>
+          </tr>
           <tr>
             <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/722">#722</a><br><span class="muted">Scenario report generator</span></td>
             <td data-label="Status"><span class="badge badge-running">required checks running</span></td>

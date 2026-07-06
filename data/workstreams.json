@@ -1,14 +1,29 @@
 {
-  "generated_at": "2026-07-06T00:33:38Z",
+  "generated_at": "2026-07-06T00:44:20Z",
   "counts": {
-    "open_prs": 3,
-    "required_builds_running_or_queued": 3,
-    "blocked_by_required_checks": 3,
+    "open_prs": 4,
+    "required_builds_running_or_queued": 4,
+    "blocked_by_required_checks": 4,
     "red_required_builds": 0,
     "merged_today": 3,
     "closed_superseded": 1
   },
   "items": [
+    {
+      "id": "#729",
+      "title": "Stabilize auto-download settings controls",
+      "url": "https://github.com/pablof7z/podcast-player/pull/729",
+      "branch": "codex/fix-auto-download-settings-sheet",
+      "status": "required_checks_running",
+      "current_gate": "Migration Lints passed on the fresh run; shorter Test gates are still running and Build and Test is queued",
+      "why_not_merged": "The branch cannot merge until the remaining Test gates and required Build and Test lane finish green.",
+      "progress": [
+        "Fixes #728 by making the Show settings sheet expose stable Auto-download identifiers and opening it at the large detent.",
+        "Adds targeted UI test waits around the tagged settings sheet and picker.",
+        "Adds a user-facing changelog entry for the settings reliability improvement."
+      ],
+      "next_action": "Let the fresh Test checks finish; if a required gate fails, inspect the new run log before touching code."
+    },
     {
       "id": "#722",
       "title": "[codex] Deepen scenario report page generator",
