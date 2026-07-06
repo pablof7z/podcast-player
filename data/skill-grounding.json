@@ -1,6 +1,12 @@
 {
-  "generated_by": "scenario-report-generator/0.3.2",
+  "generated_by": "scenario-report-generator/0.3.3",
   "skills": [
+    {
+      "coverage": "Mobile-first user goals, thumb-zone controls, 44 pt targets, visual hierarchy, 8-point spacing, empty/loading/error/success states, and peak-end product moments.",
+      "name": "ceorkm/mobile-app-ui-design@mobile-app-ui-design",
+      "search_terms": "mobile ux design",
+      "selected": true
+    },
     {
       "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
       "name": "vabole/apple-skills@ios-liquid-glass",
@@ -18,6 +24,18 @@
       "name": "local playwright-cli",
       "search_terms": "local browser validation skill",
       "selected": true
+    },
+    {
+      "coverage": "Search result considered for additional iOS UI review; selected mobile and Liquid Glass skills cover the needed app-screen and iOS-material gates.",
+      "name": "charleswiltgen/axiom@axiom-ios-ui",
+      "search_terms": "liquid glass iOS mobile frontend design UI polish",
+      "selected": false
+    },
+    {
+      "coverage": "Search result considered for mobile UX critique; ceorkm/mobile-app-ui-design was loaded for the primary mobile UI/UX rubric.",
+      "name": "phazurlabs/ux-ui-mastery@mobile ux design",
+      "search_terms": "liquid glass iOS mobile frontend design UI polish",
+      "selected": false
     },
     {
       "coverage": "Search result considered as an alternate glass-design critic; vabole/apple-skills@ios-liquid-glass was loaded as the primary Liquid Glass reference.",

@@ -141,6 +141,14 @@
       "score": 0,
       "status": "incomplete"
     },
+    "data_integrity_state_sync": {
+      "evidence_refs": [
+        "catalog:lib-001"
+      ],
+      "rationale": "Data Integrity And State Sync has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "defects_issues_filed": {
       "evidence_refs": [
         "catalog:lib-001"
@@ -154,6 +162,14 @@
         "catalog:lib-001"
       ],
       "rationale": "Device And OS Matrix has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "device_viewport_coverage": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Device, Viewport, And Generated-Page Coverage has not been validated with current run evidence.",
       "score": 0,
       "status": "incomplete"
     },
@@ -239,11 +255,28 @@
       "score": 0,
       "status": "incomplete"
     },
+    "media_session_background_continuity": {
+      "evidence_refs": [
+        "catalog:lib-001"
+      ],
+      "rationale": "Media Session And Background Audio Continuity has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
     "motion_haptics": {
       "evidence_refs": [
         "rubric:review-skill-grounding"
       ],
       "rationale": "Motion And Haptics has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "navigation_state_restoration": {
+      "evidence_refs": [
+        "catalog:lib-001",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Navigation State And Restoration has not been validated with current run evidence.",
       "score": 0,
       "status": "incomplete"
     },
@@ -780,7 +813,7 @@
   "page": {
     "assets_base": "assets/scenarios/lib-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/lib-001/",
-    "generated_at": "2026-07-05T22:24:39Z",
+    "generated_at": "2026-07-06T04:12:59Z",
     "navigation": {
       "category_url": "../library-and-episode-management/",
       "next_url": "../lib-002/",
@@ -799,9 +832,10 @@
     "job_to_be_done": "Complete LIB-001 with confidence: the show appears with artwork, title, author, and episode count.",
     "persona": "A new or returning podcast listener completing a core Pod0 job on iPhone.",
     "platform_expectations": [
-      "iPhone-first flow uses system navigation/chrome, safe areas, SF typography, semantic color, and reachable primary controls.",
+      "iPhone-first flow uses system navigation/chrome, safe areas, SF typography, semantic color, 44 pt tap targets, and reachable primary controls.",
       "Accessibility evidence covers VoiceOver, Dynamic Type, contrast, motion/transparency settings, and touch target behavior before UI scores can pass.",
-      "Provider, relay, transcript, audio, or LLM dependencies are deterministic through fixtures/cassettes or explicitly marked live-only."
+      "Provider, relay, transcript, audio, or LLM dependencies are deterministic through fixtures/cassettes or explicitly marked live-only.",
+      "State, navigation, queue, playback, and generated report pages are checked across device, viewport, and resume contexts."
     ],
     "scenario_cluster": {
       "id": "library-and-episode-management",
@@ -1068,6 +1102,12 @@
   "review_grounding": {
     "all_considered": [
       {
+        "coverage": "Mobile-first user goals, thumb-zone controls, 44 pt targets, visual hierarchy, 8-point spacing, empty/loading/error/success states, and peak-end product moments.",
+        "name": "ceorkm/mobile-app-ui-design@mobile-app-ui-design",
+        "search_terms": "mobile ux design",
+        "selected": true
+      },
+      {
         "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
         "name": "vabole/apple-skills@ios-liquid-glass",
         "search_terms": "liquid glass iOS mobile frontend design UI polish",
@@ -1084,6 +1124,18 @@
         "name": "local playwright-cli",
         "search_terms": "local browser validation skill",
         "selected": true
+      },
+      {
+        "coverage": "Search result considered for additional iOS UI review; selected mobile and Liquid Glass skills cover the needed app-screen and iOS-material gates.",
+        "name": "charleswiltgen/axiom@axiom-ios-ui",
+        "search_terms": "liquid glass iOS mobile frontend design UI polish",
+        "selected": false
+      },
+      {
+        "coverage": "Search result considered for mobile UX critique; ceorkm/mobile-app-ui-design was loaded for the primary mobile UI/UX rubric.",
+        "name": "phazurlabs/ux-ui-mastery@mobile ux design",
+        "search_terms": "liquid glass iOS mobile frontend design UI polish",
+        "selected": false
       },
       {
         "coverage": "Search result considered as an alternate glass-design critic; vabole/apple-skills@ios-liquid-glass was loaded as the primary Liquid Glass reference.",
@@ -1119,6 +1171,12 @@
     "search_command": "npx skills search \"liquid glass iOS mobile frontend design UI polish\"",
     "selected_skills": [
       {
+        "coverage": "Mobile-first user goals, thumb-zone controls, 44 pt targets, visual hierarchy, 8-point spacing, empty/loading/error/success states, and peak-end product moments.",
+        "name": "ceorkm/mobile-app-ui-design@mobile-app-ui-design",
+        "search_terms": "mobile ux design",
+        "selected": true
+      },
+      {
         "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
         "name": "vabole/apple-skills@ios-liquid-glass",
         "search_terms": "liquid glass iOS mobile frontend design UI polish",
@@ -1138,6 +1196,7 @@
       }
     ],
     "template_impact": [
+      "Mobile App UI/UX Design drives user-goal framing, thumb-zone/reachability checks, visual hierarchy, 8-point spacing, empty/loading/error/success state coverage, and peak-end flow judgment.",
       "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, GlassEffect composition, semantic foreground styles, and Reduce Motion/Transparency requirements.",
       "Web Interface Guidelines drive generated-site accessibility, semantic HTML, focus, image metadata, safe-area, touch, reduced-motion, content-overflow, localization, and frontend performance checks.",
       "Playwright CLI is the expected local verification path for generated GitHub Pages screenshots, snapshots, responsive viewports, and interaction smoke tests.",
@@ -1311,6 +1370,13 @@
       "notes": [],
       "summary": "Not assessed. Capture before/after navigation state for adjacent surfaces and ensure mini-player, queue, transcript, agent, and settings remain coherent."
     },
+    "data_integrity_state_sync": {
+      "evidence_refs": [
+        "catalog:lib-001"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Verify persisted state, Rust projections, Swift render state, queue/download/transcript/index data, and exported/imported records agree before and after the user-visible action."
+    },
     "defects_issues_filed": {
       "evidence_refs": [
         "catalog:lib-001"
@@ -1324,6 +1390,13 @@
       ],
       "notes": [],
       "summary": "No device/OS matrix has run. The first validation should record simulator/device, OS, locale, appearance, Dynamic Type, and network state."
+    },
+    "device_viewport_coverage": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Record iPhone size class, Dynamic Type, orientation when relevant, and generated GitHub Pages desktop/mobile viewport checks for the published report page."
     },
     "error_recovery_behavior": {
       "evidence_refs": [
@@ -1402,12 +1475,27 @@
       "notes": [],
       "summary": "Not assessed. Review must check locale-sensitive strings, podcast metadata, transcript/agent content, truncation, empty/error copy, and translation safety."
     },
+    "media_session_background_continuity": {
+      "evidence_refs": [
+        "catalog:lib-001"
+      ],
+      "notes": [],
+      "summary": "Not assessed. For podcast-facing flows, verify audio session route, mini-player/full-player continuity, queue state, lock-screen/background behavior, interruptions, and remote commands or mark them N/A with rationale."
+    },
     "motion_haptics": {
       "evidence_refs": [
         "rubric:review-skill-grounding"
       ],
       "notes": [],
       "summary": "Not assessed. Record transition, haptic, and Reduce Motion behavior when motion is part of the flow."
+    },
+    "navigation_state_restoration": {
+      "evidence_refs": [
+        "catalog:lib-001",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Capture tab, sheet, detail path, back stack, deep-link, and relaunch restoration state so navigation success cannot hide stale or contradictory product state."
     },
     "next_actions": {
       "evidence_refs": [
@@ -1551,7 +1639,7 @@
         "c1-ui-tree"
       ],
       "notes": [
-        "Selected skills: vabole/apple-skills@ios-liquid-glass, local web-design-guidelines, local playwright-cli."
+        "Selected skills: ceorkm/mobile-app-ui-design@mobile-app-ui-design, vabole/apple-skills@ios-liquid-glass, local web-design-guidelines, local playwright-cli."
       ],
       "summary": "Critique uses npx-selected ui-ux-specialist criteria: clear hierarchy, target size, predictable navigation, visible state, and evidence-backed accessibility/performance notes."
     },

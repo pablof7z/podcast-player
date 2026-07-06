@@ -9,8 +9,10 @@
     "content_hierarchy": 0.0,
     "controls_gestures_audio": 0.0,
     "cross_screen_continuity": 0.0,
+    "data_integrity_state_sync": 0.0,
     "defects_issues_filed": 0.03,
     "device_os_matrix": 0.0,
+    "device_viewport_coverage": 0.0,
     "error_recovery": 0.0,
     "evidence_confidence": 0.02,
     "evidence_provenance": 0.0,
@@ -21,7 +23,9 @@
     "instrumentation_gaps": 0.0,
     "liquid_glass_ios_primitives": 0.0,
     "localization_content_quality": 0.0,
+    "media_session_background_continuity": 0.0,
     "motion_haptics": 0.0,
+    "navigation_state_restoration": 0.0,
     "next_actions": 0.0,
     "nmp_architecture": 0.0,
     "observability": 0.0,
@@ -183,7 +187,9 @@
     "logs": 260,
     "performance-metrics": 156,
     "screenshots": 260,
-    "ui-tree": 260
+    "state-integrity": 260,
+    "ui-tree": 260,
+    "viewport-coverage": 260
   },
   "issues_by_severity": {
     "major": 2
