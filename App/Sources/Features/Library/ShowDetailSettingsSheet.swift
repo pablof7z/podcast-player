@@ -14,6 +14,7 @@ struct ShowDetailSettingsSheet: View {
     @State private var autoDownloadChoice: AutoDownloadChoice
     @State private var latestNCount: Int
     @State private var wifiOnly: Bool
+    @State private var settingsDetent: PresentationDetent = .large
 
     /// Picker-friendly enum that flattens `AutoDownloadPolicy.Mode`'s
     /// associated value into a stepper-driven count. `latestN` covers the
@@ -32,6 +33,14 @@ struct ShowDetailSettingsSheet: View {
             case .off:     return "Off"
             case .latestN: return "Latest"
             case .allNew:  return "All new"
+            }
+        }
+
+        var accessibilityIdentifier: String {
+            switch self {
+            case .off:     return "show-settings-auto-download-off"
+            case .latestN: return "show-settings-auto-download-latest"
+            case .allNew:  return "show-settings-auto-download-all-new"
             }
         }
     }
@@ -78,11 +87,13 @@ struct ShowDetailSettingsSheet: View {
                             )
                         }
                 }
-                Section("Auto-download") {
+                Section {
                     LiquidGlassSegmentedPicker(
                         "New episodes",
                         selection: $autoDownloadChoice,
-                        segments: AutoDownloadChoice.allCases.map { ($0, $0.label) }
+                        segments: AutoDownloadChoice.allCases.map { ($0, $0.label) },
+                        accessibilityIdentifier: "show-settings-auto-download-policy-picker",
+                        segmentAccessibilityIdentifier: { $0.accessibilityIdentifier }
                     )
                     .listRowBackground(Color.clear)
                     .listRowInsets(AppTheme.Layout.cardRowInsetsSM)
@@ -109,6 +120,10 @@ struct ShowDetailSettingsSheet: View {
                         Toggle("Wi-Fi only", isOn: $wifiOnly)
                             .onChange(of: wifiOnly) { _, _ in persistPolicy() }
                     }
+                } header: {
+                    Text("Auto-download")
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("show-settings-auto-download-header")
                 }
                 Section("Feed") {
                     if let feedURL = podcast.feedURL {
@@ -146,9 +161,10 @@ struct ShowDetailSettingsSheet: View {
                     Button("Done") { onDismiss() }
                 }
             }
+            .accessibilityIdentifier("show-settings-form")
         }
         .presentationBackground(.thinMaterial)
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.medium, .large], selection: $settingsDetent)
         .presentationDragIndicator(.visible)
     }
 

@@ -62,6 +62,24 @@ final class LiquidGlassSegmentedPickerTests: XCTestCase {
         XCTAssertEqual(picker.accessibilityLabel(.opml), "OPML")
     }
 
+    func testConvenienceInitPreservesAutomationIdentifiers() {
+        let binding = Binding<Fixture>.constant(.search)
+        let picker = LiquidGlassSegmentedPicker(
+            "Add show source",
+            selection: binding,
+            segments: [
+                (.search, "Search"),
+                (.url, "From URL"),
+            ],
+            accessibilityIdentifier: "add-show-source-picker",
+            segmentAccessibilityIdentifier: { "add-show-source-\($0.rawValue)" }
+        )
+
+        XCTAssertEqual(picker.pickerAccessibilityIdentifier, "add-show-source-picker")
+        XCTAssertEqual(picker.segmentAccessibilityIdentifier(.search), "add-show-source-Search")
+        XCTAssertEqual(picker.segmentAccessibilityIdentifier(.url), "add-show-source-From URL")
+    }
+
     func testConvenienceInitFallsBackToEmptyStringForUnknownValue() {
         // If a caller passes a subset of segments but the bound selection
         // can hold a value outside that set, the lookup should degrade to
