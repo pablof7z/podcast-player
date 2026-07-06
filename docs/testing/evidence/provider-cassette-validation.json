@@ -1,5 +1,5 @@
 {
-  "verified_at": "2026-07-05T22:21:54Z",
+  "verified_at": "2026-07-06T05:36:32Z",
   "verified_by": "Codex",
   "commands": [
     {
@@ -11,10 +11,26 @@
       "command": "POD0_PROVIDER_CASSETTE_DIR=tests/fixtures/provider_cassettes cargo test -p nmp-app-podcast provider_replay --lib",
       "status": "pass",
       "summary": "2 provider_replay tests passed; 0 failed"
+    },
+    {
+      "command": "cargo test -p nmp-app-podcast provider_cassette --lib",
+      "status": "pass",
+      "summary": "3 provider_cassette tests passed; 0 failed"
+    },
+    {
+      "command": "python3 -m unittest docs/testing/report-generator/tests/test_generator_contract.py",
+      "status": "pass",
+      "summary": "4 report-generator contract tests passed; 0 failed"
+    },
+    {
+      "command": "python3 docs/testing/report-generator/generate_scenario_report.py --out build/pod0-scenario-report-provider-cassettes",
+      "status": "pass",
+      "summary": "Generated 320 scenario pages with 7 cassettes, 11 mapped scenario refs, and 0 unmapped refs"
     }
   ],
   "notes": [
     "Replay mode fails closed on cassette misses instead of falling through to live provider calls.",
-    "Fixture metadata includes recorded latency, replay latency, 2026 premium-app budget, scenario references, and redaction markers."
+    "Fixture metadata includes recorded latency, replay latency, 2026 premium-app budget, scenario references, and redaction markers.",
+    "Cassette scenario references now use generated BDD catalog IDs and the report links them to scenario pages."
   ]
 }

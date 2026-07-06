@@ -4,7 +4,7 @@
   "title": "ElevenLabs Scribe transcript",
   "provider": "elevenlabs",
   "operation": "stt_transcription",
-  "scenario_refs": ["E2", "M3"],
+  "scenario_refs": ["TR-007", "LLM-012", "OFFLINE-008"],
   "nmp_rules": ["D6", "D7", "D8"],
   "request": {
     "method": "POST",

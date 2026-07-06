@@ -4,7 +4,7 @@
   "title": "Perplexity web search answer with sources",
   "provider": "perplexity",
   "operation": "web_search",
-  "scenario_refs": ["G2", "L7"],
+  "scenario_refs": ["DISC-011", "LLM-007", "LLM-012", "OFFLINE-008"],
   "nmp_rules": ["D6", "D7", "D8"],
   "request": {
     "method": "POST",

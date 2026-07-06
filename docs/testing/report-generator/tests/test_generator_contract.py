@@ -14,6 +14,7 @@ sys.path.insert(0, str(GENERATOR_DIR))
 from catalog import parse_catalog  # noqa: E402
 from contract import SKILL_GROUNDING  # noqa: E402
 from generate_scenario_report import write_site  # noqa: E402
+from provider_cassettes_report import provider_cassette_data, render_provider_cassette_page  # noqa: E402
 from records import build_report, validate_schema_contract  # noqa: E402
 
 
@@ -295,6 +296,45 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertIn('width="368" height="800"', home)
             self.assertIn("Evidence-Backed Scenarios", home)
             self.assertIn("old-shot.jpg", home)
+
+    def test_provider_cassette_refs_are_checked_against_catalog_pages(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            catalog = write_catalog(root / "catalog")
+            cassette_dir = root / "tests" / "fixtures" / "provider_cassettes"
+            cassette_dir.mkdir(parents=True)
+            (cassette_dir / "smoke-provider.json").write_text(
+                json.dumps(
+                    {
+                        "id": "smoke-provider",
+                        "provider": "openrouter",
+                        "operation": "chat_completion",
+                        "scenario_refs": ["SMOKE-001", "E2"],
+                        "nmp_rules": ["D7"],
+                        "metrics": {
+                            "recorded_latency_ms": 100,
+                            "replay_latency_ms": 2,
+                            "budget_ms": 500,
+                            "acceptable_for_2026_premium": True,
+                        },
+                    }
+                )
+            )
+
+            data = provider_cassette_data(root, root / "evidence", catalog)
+            self.assertEqual(data["catalog_scenario_count"], 2)
+            self.assertEqual(data["mapped_scenario_refs"], ["SMOKE-001"])
+            self.assertEqual(data["unmapped_scenario_refs"], ["E2"])
+            self.assertFalse(data["all_refs_current_catalog_ids"])
+            self.assertEqual(data["cassettes"][0]["nmp_rules"], ["D7"])
+            links = {item["id"]: item for item in data["cassettes"][0]["scenario_ref_links"]}
+            self.assertEqual(links["SMOKE-001"]["slug"], "smoke-001")
+            self.assertTrue(links["SMOKE-001"]["mapped"])
+            self.assertFalse(links["E2"]["mapped"])
+
+            page = render_provider_cassette_page(data, 1)
+            self.assertIn("../scenarios/smoke-001/", page)
+            self.assertIn("E2 unmapped", page)
 
     def test_schema_requires_quality_coherence_and_screenshot_evidence(self) -> None:
         schema = json.loads((DOCS_TESTING_DIR / "scenario-report.schema.json").read_text())

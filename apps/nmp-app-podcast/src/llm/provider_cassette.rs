@@ -229,6 +229,13 @@ fn validate_one(
         !cassette.scenario_refs.is_empty(),
         "scenario_refs are required",
     );
+    check(
+        cassette
+            .scenario_refs
+            .iter()
+            .all(|scenario_ref| scenario_ref_has_catalog_shape(scenario_ref)),
+        "scenario_refs must use generated catalog ids such as TR-005 or OFFLINE-008",
+    );
     check(!cassette.nmp_rules.is_empty(), "nmp_rules are required");
     check(
         cassette.nmp_rules.iter().all(|rule| rule.starts_with('D')),
@@ -326,6 +333,18 @@ fn contains_secret(raw: &str) -> bool {
         || lower.contains("perplexity_api_key")
 }
 
+fn scenario_ref_has_catalog_shape(scenario_ref: &str) -> bool {
+    let Some((prefix, number)) = scenario_ref.split_once('-') else {
+        return false;
+    };
+    !prefix.is_empty()
+        && prefix
+            .chars()
+            .all(|character| character.is_ascii_uppercase() || character.is_ascii_digit())
+        && number.len() == 3
+        && number.chars().all(|character| character.is_ascii_digit())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -362,5 +381,14 @@ mod tests {
             .expect("replay response");
         assert_eq!(response.status, 200);
         assert_eq!(response.cassette_id, "openrouter-agent-answer-success");
+    }
+
+    #[test]
+    fn scenario_refs_use_generated_catalog_shape() {
+        assert!(scenario_ref_has_catalog_shape("TR-005"));
+        assert!(scenario_ref_has_catalog_shape("OFFLINE-008"));
+        assert!(!scenario_ref_has_catalog_shape("E2"));
+        assert!(!scenario_ref_has_catalog_shape("tr-005"));
+        assert!(!scenario_ref_has_catalog_shape("TR-5"));
     }
 }
