@@ -1,0 +1,86 @@
+{
+  "captured_at": "2026-07-05T19:37:00Z",
+  "tool": "mcp__xcode.snapshot_ui",
+  "simulator_id": "B4E1F31A-044B-4860-860B-C325BE5CC36E",
+  "device": "iPhone 17",
+  "os_version": "iOS 26.2",
+  "screens": [
+    {
+      "step_id": "step-01-episode-detail",
+      "screen_hash": "0azhhax",
+      "sequence": 6,
+      "node_count": 95,
+      "targets": [
+        "button: Play",
+        "button: Queue",
+        "button: 00:00, Introduction",
+        "button: 01:00, Main Story",
+        "button: 03:00, Conclusion"
+      ],
+      "texts": [
+        "137: The Book That Changed Your Life",
+        "This American Life",
+        "May 1, 2026 - 5m",
+        "Downloaded",
+        "Summary"
+      ]
+    },
+    {
+      "step_id": "step-02-mini-player-playing",
+      "screen_hash": "15bdp4w",
+      "sequence": 7,
+      "node_count": 135,
+      "targets": [
+        "other: mini-player-bar",
+        "text: 137: The Book That Changed Your Life",
+        "button: Pause",
+        "button: Skip forward 30 seconds",
+        "button: Dismiss"
+      ],
+      "texts": [
+        "137: The Book That Changed Your Life",
+        "Introduction",
+        "0:06"
+      ]
+    },
+    {
+      "step_id": "step-03-elapsed-advance",
+      "screen_hash": "0t1movg",
+      "sequence": 8,
+      "node_count": 135,
+      "targets": [
+        "button: Pause",
+        "button: Skip forward 30 seconds"
+      ],
+      "texts": [
+        "137: The Book That Changed Your Life",
+        "Introduction",
+        "0:23"
+      ]
+    },
+    {
+      "step_id": "step-04-full-player-end-state",
+      "screen_hash": "04rkfzu",
+      "sequence": 11,
+      "node_count": 183,
+      "targets": [
+        "button: Play, mini-player-play-pause",
+        "button: Play, player-play-pause",
+        "button: Skip back 15 seconds",
+        "button: Skip forward 30 seconds",
+        "button: Chapters",
+        "button: Transcript",
+        "button: Notes"
+      ],
+      "texts": [
+        "137: The Book That Changed Your Life",
+        "Main Story",
+        "1:00",
+        "-0:00"
+      ]
+    }
+  ],
+  "redaction": {
+    "status": "not_needed"
+  }
+}

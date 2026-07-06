@@ -1,0 +1,398 @@
+{
+  "scenario_id": "PLAY-001",
+  "artifacts": [
+    {
+      "id": "d1-screenshot-episode-detail",
+      "type": "screenshot",
+      "path": "assets/scenarios/d1-play-pause-resume/20260705T193520Z-episode-detail.jpg",
+      "description": "Episode detail before playback with Play and downloaded state.",
+      "step_id": "step-01-preconditions",
+      "captured_at": "2026-07-05T19:35:20Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "9462029a00431093d729004150e6b00199cd897fc85d6da55109d773bb73a332",
+      "alt": "Episode detail for 137: The Book That Changed Your Life with Play button.",
+      "caption": "Seeded episode detail before starting playback.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "d1-screenshot-mini-player-playing",
+      "type": "screenshot",
+      "path": "assets/scenarios/d1-play-pause-resume/20260705T193600Z-mini-player-playing.jpg",
+      "description": "Mini-player after Play with title, elapsed time, Pause, and skip-forward controls.",
+      "step_id": "step-02-action",
+      "captured_at": "2026-07-05T19:36:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "7e3f4392420a79144db2899beb20744e3d9980e508fad6d7de7908ef07f9e167",
+      "alt": "Mini-player showing current episode, Introduction, elapsed time, Pause, and skip-forward.",
+      "caption": "Playback started and mini-player state is visible.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "d1-screenshot-full-player-paused",
+      "type": "screenshot",
+      "path": "assets/scenarios/d1-play-pause-resume/20260705T193700Z-full-player-paused.jpg",
+      "description": "Expanded player at apparent one-minute end state with Play controls.",
+      "step_id": "step-03-result",
+      "captured_at": "2026-07-05T19:37:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "sha256": "ff5c5b91d475b3d78593d65dac35f62c62816e7466425c9fb5d85a81a2735099",
+      "alt": "Full player showing 1:00 and -0:00 with Play controls.",
+      "caption": "The seed reached an apparent end state, blocking resume validation.",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "d1-ui-tree",
+      "type": "ui_tree",
+      "path": "assets/scenarios/d1-play-pause-resume/20260705T193700Z-ui-tree-excerpt.json",
+      "description": "XcodeBuildMCP semantic UI-tree excerpts for D1 playback states.",
+      "captured_at": "2026-07-05T19:37:00Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    },
+    {
+      "id": "pod0-local-run-log",
+      "type": "log",
+      "path": "assets/scenarios/shared/20260705T193205Z-run-log-references.json",
+      "description": "Shared build, runtime, simulator, and command log references for the local evidence run.",
+      "captured_at": "2026-07-05T19:32:05Z",
+      "device": "iPhone 17",
+      "os_version": "iOS 26.2",
+      "required": true,
+      "redaction": { "status": "not_needed" }
+    }
+  ],
+  "merge": {
+    "run": {
+      "run_id": "pod0-local-20260705T193520Z-play-001",
+      "app_build": "Pod0 1.0.0 build 202606011109",
+      "started_at": "2026-07-05T19:35:20Z",
+      "completed_at": "2026-07-05T19:37:00Z",
+      "executor": "Codex via XcodeBuildMCP",
+      "provider_mode": "none",
+      "device_matrix": [
+        {
+          "name": "iPhone 17",
+          "os_version": "iOS 26.2",
+          "form_factor": "iphone",
+          "udid": "B4E1F31A-044B-4860-860B-C325BE5CC36E"
+        }
+      ],
+      "environment": {
+        "locale": "en_US",
+        "appearance": "light",
+        "dynamic_type": "unspecified",
+        "reduce_motion": false,
+        "reduce_transparency": false,
+        "network_condition": "local simulator default",
+        "launch_arguments": ["--UITestSeed"]
+      },
+      "fixtures": ["UITestSeed downloaded This American Life episode"],
+      "cassettes": [],
+      "live_dependency_rationale": "No paid provider or live LLM dependency is used by the seeded playback path."
+    },
+    "execution": {
+      "status": "pass_with_issues",
+      "attempts": [
+        {
+          "id": "attempt-001",
+          "status": "pass_with_issues",
+          "started_at": "2026-07-05T19:35:20Z",
+          "completed_at": "2026-07-05T19:37:00Z",
+          "executor": "Codex via XcodeBuildMCP",
+          "tools": ["mcp__xcode.tap", "mcp__xcode.snapshot_ui", "mcp__xcode.screenshot", "mcp__peekaboo.sleep"],
+          "commands": ["build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=--UITestSeed"],
+          "branches": [
+            {
+              "id": "start-and-progress",
+              "status": "pass",
+              "trigger": "Tap Play on episode detail and observe mini-player elapsed time.",
+              "expected": "Mini-player appears and elapsed time advances."
+            },
+            {
+              "id": "adjacent-pause-resume",
+              "status": "blocked",
+              "trigger": "Pause and resume from a held mid-episode position.",
+              "expected": "Covered by adjacent PLAY-002/PLAY-003 rows; blocked by #718 in this run."
+            }
+          ],
+          "notes": "PLAY-001 is proven: playback started, mini-player appeared, and elapsed advanced from 0:06 to 0:23. Adjacent pause/resume validation is blocked by #718.",
+          "evidence_refs": ["d1-screenshot-episode-detail", "d1-screenshot-mini-player-playing", "d1-screenshot-full-player-paused", "d1-ui-tree", "pod0-local-run-log"]
+        }
+      ],
+      "retry_policy": "Re-run adjacent PLAY-002/PLAY-003 after #718; PLAY-001 can remain pass_with_issues from current start/progress evidence.",
+      "branch_coverage": [
+        {
+          "id": "start-and-progress",
+          "status": "pass",
+          "trigger": "Tap Play and wait for elapsed label.",
+          "expected": "Playback starts and position advances."
+        },
+        {
+          "id": "adjacent-pause-resume",
+          "status": "blocked",
+          "trigger": "Pause/resume from held position.",
+          "expected": "Adjacent PLAY-002/PLAY-003 validation resumes from held position."
+        }
+      ]
+    },
+    "verdict": {
+      "overall": "pass_with_issues",
+      "summary": "PLAY-001 is evidence-backed: tapping Play starts playback, the mini-player appears, and elapsed time advances. Adjacent pause/resume rows remain blocked by #718.",
+      "score_gate_explanation": "The current evidence satisfies PLAY-001 while carrying #718 as an adjacent playback fixture risk.",
+      "reviewer": "Codex",
+      "reviewed_at": "2026-07-05T19:37:00Z"
+    },
+    "sections": {
+      "attempted_test": {
+        "summary": "Executed PLAY-001 locally with XcodeBuildMCP using --UITestSeed. Captured episode detail, mini-player playback, elapsed advance, and full-player end state.",
+        "evidence_refs": ["d1-screenshot-episode-detail", "d1-screenshot-mini-player-playing", "d1-screenshot-full-player-paused", "d1-ui-tree", "pod0-local-run-log"]
+      },
+      "actual_result": {
+        "summary": "Playback started, mini-player appeared, and elapsed advanced from 0:06 to 0:23. The full player later showed 1:00 and -0:00 with Play controls, which is tracked as adjacent pause/resume blocker #718.",
+        "evidence_refs": ["d1-ui-tree", "d1-screenshot-full-player-paused"],
+        "notes": ["Filed https://github.com/pablof7z/podcast-player/issues/718."]
+      },
+      "artifacts": {
+        "summary": "Attached three current screenshots, a semantic UI-tree excerpt, and shared log references.",
+        "evidence_refs": ["d1-screenshot-episode-detail", "d1-screenshot-mini-player-playing", "d1-screenshot-full-player-paused", "d1-ui-tree", "pod0-local-run-log"]
+      },
+      "ui_polish_report": {
+        "summary": "Episode detail, mini-player, and full player expose clear native controls and identifiers, including player-play-pause and mini-player-play-pause.",
+        "evidence_refs": ["d1-screenshot-episode-detail", "d1-screenshot-mini-player-playing", "d1-screenshot-full-player-paused"]
+      },
+      "ux_polish_report": {
+        "summary": "Start feedback is clear for PLAY-001. The fixture end state prevents adjacent pause/resume validation.",
+        "evidence_refs": ["d1-ui-tree"]
+      },
+      "performance_metrics": {
+        "summary": "Elapsed label advanced from 0:06 to 0:23 after a 4.5s wait, proving playback progress. The mismatch between visible 5m metadata and 1:00 end state is tracked as a blocker.",
+        "evidence_refs": ["d1-ui-tree"]
+      },
+      "defects_issues_filed": {
+        "summary": "Filed #718 for the seeded playback duration/resume validation blocker affecting adjacent PLAY-002/PLAY-003 coverage.",
+        "evidence_refs": ["d1-ui-tree"],
+        "notes": ["https://github.com/pablof7z/podcast-player/issues/718"]
+      },
+      "verdict": {
+        "summary": "Evidence-backed pass with issues for PLAY-001. Playback start is proven; adjacent pause/resume remains blocked by fixture/player state.",
+        "evidence_refs": ["d1-ui-tree", "d1-screenshot-full-player-paused"]
+      }
+    },
+    "dimension_scores": {
+      "attempted_test": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "A current simulator run captured the playback path through full player, but the resume branch is blocked.",
+        "evidence_refs": ["d1-ui-tree", "pod0-local-run-log"],
+        "issue_refs": ["#718"]
+      },
+      "actual_result": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "PLAY-001 start/progress behavior is validated; adjacent pause/resume coverage is blocked by #718.",
+        "evidence_refs": ["d1-ui-tree"],
+        "issue_refs": ["#718"]
+      },
+      "artifacts": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Screenshots, UI tree, and log references are attached; no audio/video recording is attached.",
+        "evidence_refs": ["d1-screenshot-episode-detail", "d1-screenshot-mini-player-playing", "d1-screenshot-full-player-paused", "d1-ui-tree"]
+      },
+      "performance": {
+        "score": 2,
+        "status": "pass_with_issues",
+        "rationale": "Playback progress was measured by elapsed labels, but the fixture duration mismatch blocks stronger performance claims.",
+        "evidence_refs": ["d1-ui-tree"],
+        "issue_refs": ["#718"]
+      },
+      "reliability_flakiness": {
+        "score": 1,
+        "status": "blocked",
+        "rationale": "The local fixture/player state prevents deterministic pause/resume validation.",
+        "evidence_refs": ["d1-ui-tree"],
+        "issue_refs": ["#718"]
+      },
+      "defects_issues_filed": {
+        "score": 4,
+        "status": "pass",
+        "rationale": "The blocker is filed as #718 with evidence paths.",
+        "evidence_refs": ["d1-ui-tree"],
+        "issue_refs": ["#718"]
+      },
+      "verdict": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "PLAY-001 passes with issues because adjacent playback fixture coverage is blocked.",
+        "evidence_refs": ["d1-ui-tree"],
+        "issue_refs": ["#718"]
+      }
+    },
+    "group_scores": {
+      "functional_correctness": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "PLAY-001 start/progress passes; adjacent pause/resume cannot be validated.",
+        "dimension_refs": ["actual_result", "expected_behavior", "reliability_flakiness"]
+      },
+      "evidence_reproducibility": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "Current screenshots, UI tree, metrics, and issue link are attached.",
+        "dimension_refs": ["artifacts", "evidence_confidence", "defects_issues_filed"]
+      },
+      "product_experience": {
+        "score": 2,
+        "status": "pass_with_issues",
+        "rationale": "Player controls render clearly, but the end-state mismatch hurts trust.",
+        "dimension_refs": ["ui_polish", "ux_polish", "controls_gestures_audio"]
+      },
+      "engineering_quality": {
+        "score": 2,
+        "status": "pass_with_issues",
+        "rationale": "PLAY-001 has elapsed-label evidence, but the fixture duration mismatch blocks adjacent validation.",
+        "dimension_refs": ["performance", "reliability_flakiness", "observability"]
+      },
+      "follow_through": {
+        "score": 3,
+        "status": "pass_with_issues",
+        "rationale": "A GitHub issue is filed; revalidation remains open.",
+        "dimension_refs": ["defects_issues_filed", "next_actions", "verdict"]
+      }
+    },
+    "quality_review": {
+      "ui": {
+        "status": "pass_with_issues",
+        "summary": "Player surfaces have clear controls and stable accessibility identifiers.",
+        "checks": ["transport controls", "visual hierarchy", "state labels"],
+        "evidence_refs": ["d1-screenshot-mini-player-playing", "d1-screenshot-full-player-paused"],
+        "gaps": ["Capture post-fix resume state."]
+      },
+      "ux": {
+        "status": "pass_with_issues",
+        "summary": "Start feedback and mini-player state are clear; the fixture end state prevents adjacent pause/resume confidence.",
+        "checks": ["feedback", "resume mental model", "predictable controls"],
+        "evidence_refs": ["d1-ui-tree"],
+        "gaps": ["Issue #718 blocks resume validation."]
+      },
+      "performance": {
+        "status": "pass_with_issues",
+        "summary": "Elapsed labels advanced during playback; no Instruments/audio trace is attached.",
+        "checks": ["elapsed advance", "tap result", "screen settle"],
+        "evidence_refs": ["d1-ui-tree"],
+        "gaps": ["No audio trace; fixture duration mismatch."]
+      },
+      "accessibility": {
+        "status": "incomplete",
+        "summary": "Controls expose semantic labels, but VoiceOver/Dynamic Type/contrast were not audited.",
+        "checks": ["semantic labels", "target size", "Dynamic Type"],
+        "evidence_refs": ["d1-ui-tree"],
+        "gaps": ["Formal accessibility audit missing."]
+      }
+    },
+    "evidence": {
+      "required_kinds": ["source_doc", "screenshot", "ui_tree", "log", "metric_trace", "accessibility_audit"],
+      "missing": [
+        {
+          "kind": "resume-fixture",
+          "reason": "Seeded playback reaches an apparent end state before adjacent pause/resume rows can be validated.",
+          "blocks_dimensions": ["reliability_flakiness", "regression_risk"],
+          "required": true
+        },
+        {
+          "kind": "accessibility_audit",
+          "reason": "VoiceOver, Dynamic Type, and contrast were not audited.",
+          "blocks_dimensions": ["accessibility_dynamic_type", "touch_ergonomics"],
+          "required": true
+        }
+      ],
+      "redaction_summary": "Screenshots and UI-tree excerpts contain seeded public podcast data only. No secrets are exposed."
+    },
+    "metrics": [
+      {
+        "id": "d1-elapsed-advance",
+        "name": "Mini-player elapsed-label advance",
+        "value": 17,
+        "unit": "seconds label delta",
+        "budget": "Position must advance after playback starts",
+        "status": "pass",
+        "method": "XcodeBuildMCP snapshots before and after 4.5s wait",
+        "evidence_refs": ["d1-ui-tree"]
+      },
+      {
+        "id": "d1-visible-duration-mismatch",
+        "name": "Visible metadata duration minus player end-state duration",
+        "value": 240,
+        "unit": "seconds",
+        "budget": "Expected zero mismatch for deterministic seed",
+        "status": "fail",
+        "method": "Episode metadata 5m versus full-player 1:00/-0:00 labels",
+        "evidence_refs": ["d1-ui-tree"]
+      }
+    ],
+    "instrumentation_gaps": [
+      {
+        "id": "d1-resume-fixture-blocked",
+        "severity": "major",
+        "summary": "Seeded audio/metadata mismatch blocks pause/resume validation.",
+        "affected_dimensions": ["reliability_flakiness", "regression_risk"],
+        "owner": "validation-agent",
+        "status": "open"
+      },
+      {
+        "id": "d1-accessibility-audit-missing",
+        "severity": "major",
+        "summary": "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or target-size audit was run.",
+        "affected_dimensions": ["accessibility_dynamic_type", "touch_ergonomics"],
+        "owner": "validation-agent",
+        "status": "open"
+      }
+    ],
+    "risks": [
+      {
+        "id": "risk-d1-false-pass",
+        "severity": "major",
+        "priority": "p0",
+        "status": "open",
+        "title": "D1 could be misread as validating resume despite fixture end-state blocker.",
+        "affected_dimensions": ["regression_risk", "product_cluster_coherence"],
+        "mitigation": "Keep adjacent PLAY-002/PLAY-003 blocked until #718 is fixed and those rows are re-run."
+      }
+    ],
+    "issues": [
+      {
+        "id": "#718",
+        "url": "https://github.com/pablof7z/podcast-player/issues/718",
+        "severity": "major",
+        "title": "D1: Seeded playback reaches end at 1:00 despite 5m episode metadata, blocking resume validation",
+        "affected_dimensions": ["performance", "reliability_flakiness", "regression_risk"],
+        "status": "open",
+        "owner": "unowned"
+      }
+    ],
+    "next_actions": [
+      {
+        "id": "fix-seeded-playback-duration",
+        "title": "Fix or replace the local playback seed so D1 can validate pause/resume mid-episode.",
+        "status": "open",
+        "owner": "app-team",
+        "url": "https://github.com/pablof7z/podcast-player/issues/718"
+      },
+      {
+        "id": "rerun-d1-after-fix",
+        "title": "Re-run D1 and capture pause, held position, resume, and mini-player toggle evidence.",
+        "status": "blocked",
+        "owner": "validation-agent",
+        "url": "https://github.com/pablof7z/podcast-player/issues/718"
+      }
+    ]
+  }
+}
