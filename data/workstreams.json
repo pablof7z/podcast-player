@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-06T00:25:35Z",
+  "generated_at": "2026-07-06T00:33:38Z",
   "counts": {
     "open_prs": 3,
-    "required_builds_running_or_queued": 2,
+    "required_builds_running_or_queued": 3,
     "blocked_by_required_checks": 3,
-    "red_required_builds": 1,
+    "red_required_builds": 0,
     "merged_today": 3,
     "closed_superseded": 1
   },
@@ -43,15 +43,15 @@
       "title": "Fix xcodebuild false-red CI chunks",
       "url": "https://github.com/pablof7z/podcast-player/pull/723",
       "branch": "codex/ci-xcodebuild-success-exit65",
-      "status": "red_required_build",
-      "current_gate": "GitHub Actions Test / Build and Test failed",
-      "why_not_merged": "The required job saw real UI test failures before a later chunk printed TEST SUCCEEDED; merging would put a red required check on main.",
+      "status": "required_checks_rerunning",
+      "current_gate": "GitHub Actions Test rerunning after merging current main; Build and Test queued",
+      "why_not_merged": "The branch was updated to include current main's show-options reliability fixes. The previous required job failed, but the current run has not completed yet.",
       "progress": [
-        "The wrapper-fix intent is still valid, but the current run exposed UI instability outside the wrapper change.",
-        "StressUITests.testFFIRapidSubscribeUnsubscribe failed because the Show options flow could not find Follow after unsubscribe; tracked as issue #727.",
+        "The net branch diff against current main remains limited to ci_scripts/run_tests.sh.",
+        "StressUITests.testFFIRapidSubscribeUnsubscribe previously failed because the Show options flow could not find Follow after unsubscribe; current main already includes the show-options sheet and follow-state wait fix, tracked for revalidation as issue #727.",
         "AutoDownloadUITests.testAutoDownloadPolicyUIPath failed once because the show settings sheet did not expose the Auto-download section/header and All new segment before retry; tracked as issue #728."
       ],
-      "next_action": "Investigate issues #727 and #728 on main or in a dedicated fix branch, then rerun #723 after the UI reliability failures are either fixed or proven unrelated."
+      "next_action": "Wait for the new #723 required checks; if Build and Test passes, close or mark #727 revalidated and continue #728 separately."
     },
     {
       "id": "#726",

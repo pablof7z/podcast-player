@@ -25,8 +25,8 @@
 
     <section class="stats" aria-label="Workstream totals">
       <div><strong>3</strong><span>open PRs</span></div>
-      <div><strong>2</strong><span>required iOS lanes running or queued</span></div>
-      <div><strong>1</strong><span>red required build</span></div>
+      <div><strong>3</strong><span>required iOS lanes running or queued</span></div>
+      <div><strong>0</strong><span>red required builds in current runs</span></div>
       <div><strong>3</strong><span>merged today</span></div>
     </section>
 
@@ -57,9 +57,9 @@
           </tr>
           <tr>
             <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/723">#723</a><br><span class="muted">CI wrapper false-red fix</span></td>
-            <td data-label="Status"><span class="badge badge-fail">red required build</span></td>
-            <td data-label="Why It Is Not Merged Yet">The run hit real UI failures before a later chunk printed <code>TEST SUCCEEDED</code>: follow/unfollow stress could not find Follow after unsubscribe (<a href="https://github.com/pablof7z/podcast-player/issues/727">#727</a>), and the auto-download sheet did not expose the expected section/segment on one attempt (<a href="https://github.com/pablof7z/podcast-player/issues/728">#728</a>).</td>
-            <td data-label="Next Action">Investigate <a href="https://github.com/pablof7z/podcast-player/issues/727">#727</a> and <a href="https://github.com/pablof7z/podcast-player/issues/728">#728</a> on main or in a dedicated fix branch, then rerun #723 after the UI reliability failures are either fixed or proven unrelated.</td>
+            <td data-label="Status"><span class="badge badge-running">checks rerunning</span></td>
+            <td data-label="Why It Is Not Merged Yet">The branch was updated to include current main's show-options reliability fixes. The previous required job failed on <a href="https://github.com/pablof7z/podcast-player/issues/727">#727</a> and <a href="https://github.com/pablof7z/podcast-player/issues/728">#728</a>, but the current run has not completed yet.</td>
+            <td data-label="Next Action">Wait for the new #723 required checks; if Build and Test passes, close or mark #727 revalidated and continue <a href="https://github.com/pablof7z/podcast-player/issues/728">#728</a> separately.</td>
           </tr>
         </tbody>
       </table>
