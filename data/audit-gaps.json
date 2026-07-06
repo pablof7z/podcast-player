@@ -62,5 +62,27 @@
     "Normalize provider cassette IDs from old E/G/M refs to the current scenario catalog IDs.",
     "Add OS integration catalog coverage for Spotlight, Handoff, AppIntents, AirPlay/Bluetooth routes, notification tap-through, widgets, and Live Activities.",
     "Add real accessibility, Dynamic Type, VoiceOver, contrast, Reduce Motion, and Reduce Transparency artifacts for every scenario cluster."
+  ],
+  "tracking_issues": [
+    {
+      "id": "#730",
+      "title": "Add accessibility audit evidence for every scenario cluster",
+      "url": "https://github.com/pablof7z/podcast-player/issues/730"
+    },
+    {
+      "id": "#731",
+      "title": "Normalize provider cassette IDs and fill cassette evidence gaps",
+      "url": "https://github.com/pablof7z/podcast-player/issues/731"
+    },
+    {
+      "id": "#732",
+      "title": "Expand BDD catalog for OS integration scenarios",
+      "url": "https://github.com/pablof7z/podcast-player/issues/732"
+    },
+    {
+      "id": "#733",
+      "title": "Automate xcresult evidence ingestion into scenario report overlays",
+      "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    }
   ]
 }
