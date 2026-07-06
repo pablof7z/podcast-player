@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pod0 Workstreams</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <main id="content">
+    <nav>
+      <a href="../">Report Home</a>
+      <a href="../scenarios/">All Scenarios</a>
+      <a href="../screenshots/">Screenshots</a>
+      <a href="../revalidation/">Revalidation</a>
+      <a href="../issues/">Issues</a>
+      <a href="../provider-cassettes/">Provider Cassettes</a>
+    </nav>
+    <header class="hero">
+      <p class="eyebrow">Pod0 Validation</p>
+      <h1>Active Workstreams</h1>
+      <p>This page answers what is actively happening: which PRs are open, which required checks are still running, what is red, and what remains before the report can promote scenarios as validated.</p>
+    </header>
+
+    <section class="stats" aria-label="Workstream totals">
+      <div><strong>3</strong><span>open PRs</span></div>
+      <div><strong>2</strong><span>required iOS lanes running or queued</span></div>
+      <div><strong>1</strong><span>red required build</span></div>
+      <div><strong>3</strong><span>merged today</span></div>
+    </section>
+
+    <section id="active-prs">
+      <h2>Open Pull Requests</h2>
+      <table>
+        <caption>Merge status as of 2026-07-06T00:15:21Z</caption>
+        <thead>
+          <tr>
+            <th>PR</th>
+            <th>Status</th>
+            <th>Why It Is Not Merged Yet</th>
+            <th>Next Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="https://github.com/pablof7z/podcast-player/pull/722">#722</a><br><span class="muted">Scenario report generator</span></td>
+            <td><span class="badge badge-running">required checks running</span></td>
+            <td>Build and Test is queued and Android Kotlin compile + unit tests is still running; the other short gates are green. This branch owns the hundreds-of-pages scenario template and includes #726's taxonomy additions.</td>
+            <td>Merge when required checks pass; inspect the failing log first if any gate turns red.</td>
+          </tr>
+          <tr>
+            <td><a href="https://github.com/pablof7z/podcast-player/pull/710">#710</a><br><span class="muted">NMP/Chirp sync audit</span></td>
+            <td><span class="badge badge-running">required checks running</span></td>
+            <td>Build and Test is in progress. The branch is otherwise mergeable and records how Pod0's NMP pin compares with NMP master and Chirp.</td>
+            <td>Merge after the required lane finishes green, then refresh this report's NMP status.</td>
+          </tr>
+          <tr>
+            <td><a href="https://github.com/pablof7z/podcast-player/pull/723">#723</a><br><span class="muted">CI wrapper false-red fix</span></td>
+            <td><span class="badge badge-fail">red required build</span></td>
+            <td>The run hit real UI failures before a later chunk printed <code>TEST SUCCEEDED</code>: follow/unfollow stress could not find Follow after unsubscribe, and the auto-download sheet did not expose the expected section/segment on one attempt.</td>
+            <td>Investigate whether the UI failures reproduce on main or are branch-specific, then rerun or split a reliability fix.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><a href="../data/workstreams.json">Raw workstream JSON</a></p>
+    </section>
+
+    <section id="folded-and-merged">
+      <h2>Recently Resolved</h2>
+      <table>
+        <caption>Merged or closed work affecting the validation report</caption>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Status</th>
+            <th>Follow-Up</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="https://github.com/pablof7z/podcast-player/pull/726">#726</a> Scenario report taxonomy gaps</td>
+            <td><span class="badge badge-pass">merged into #722</span></td>
+            <td>Now part of the report-generator branch waiting for #722 checks.</td>
+          </tr>
+          <tr>
+            <td><a href="https://github.com/pablof7z/podcast-player/pull/721">#721</a> Downloads &amp; Disk storage accounting</td>
+            <td><span class="badge badge-pass">merged to main</span></td>
+            <td><a href="../scenarios/set-005/">SET-005</a> still needs fresh screenshots, metrics, logs, and UI tree evidence before promotion.</td>
+          </tr>
+          <tr>
+            <td><a href="https://github.com/pablof7z/podcast-player/pull/720">#720</a> Seeded playback fixture duration</td>
+            <td><span class="badge badge-pass">merged to main</span></td>
+            <td><a href="../scenarios/play-001/">PLAY-001</a> still needs fresh playback screenshots, duration metrics, logs, and UI tree evidence before promotion.</td>
+          </tr>
+          <tr>
+            <td><a href="https://github.com/pablof7z/podcast-player/pull/706">#706</a> Validation report hub</td>
+            <td><span class="badge badge-incomplete">closed superseded</span></td>
+            <td>Superseded by the live gh-pages branch and the deeper per-scenario generator work.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="site-evidence">
+      <h2>Published Evidence Status</h2>
+      <p>The live site now exposes hundreds of per-scenario pages and a screenshot gallery, but the evidence count remains intentionally strict: 4 of 264 scenario records currently have screenshot evidence. The remaining 260 scenarios stay incomplete until real runs attach screenshots, logs, metrics, UI trees, accessibility checks, and skill-grounded UI/UX critique.</p>
+    </section>
+  </main>
+</body>
+</html>

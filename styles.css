@@ -37,6 +37,7 @@ figcaption { padding: 8px 10px 10px; }
 .badge-incomplete { color: var(--warn); border-color: #d98f32; background: #fff7eb; }
 .badge-pass { color: var(--ok); border-color: #71b894; background: #effaf4; }
 .badge-fail { color: #9d2727; border-color: #d78585; background: #fff0f0; }
+.badge-running { color: #0c5d84; border-color: #73b4d3; background: #eef8fc; }
 .link-list { columns: 2 280px; }
 @media (max-width: 720px) { main { padding: 18px 12px 48px; } table { display: block; overflow-x: auto; } dl { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }

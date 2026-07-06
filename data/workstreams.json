@@ -1,0 +1,96 @@
+{
+  "generated_at": "2026-07-06T00:15:21Z",
+  "counts": {
+    "open_prs": 3,
+    "required_builds_running_or_queued": 2,
+    "blocked_by_required_checks": 3,
+    "red_required_builds": 1,
+    "merged_today": 3,
+    "closed_superseded": 1
+  },
+  "items": [
+    {
+      "id": "#722",
+      "title": "[codex] Deepen scenario report page generator",
+      "url": "https://github.com/pablof7z/podcast-player/pull/722",
+      "branch": "codex/scenario-page-template-deep-dive",
+      "status": "required_checks_running",
+      "current_gate": "GitHub Actions Test / Build and Test queued; Android Kotlin compile + unit tests still running; other short gates passed",
+      "why_not_merged": "Main requires the iOS Build and Test lane to finish green before this report-generator work can merge.",
+      "progress": [
+        "Generates 264 per-scenario pages instead of one giant page.",
+        "Includes structured flow, attempted test, results, UI/UX polish, performance, product cohesion, skill grounding, and evidence gaps.",
+        "#726 was merged into this branch to add data integrity, navigation restoration, viewport coverage, and media session/background continuity dimensions."
+      ],
+      "next_action": "Merge when all required checks pass; if a required check fails, inspect the log before changing code."
+    },
+    {
+      "id": "#710",
+      "title": "[codex] Add NMP and Chirp sync audit",
+      "url": "https://github.com/pablof7z/podcast-player/pull/710",
+      "branch": "codex/nmp-chirp-sync-audit",
+      "status": "required_checks_running",
+      "current_gate": "GitHub Actions Test / Build and Test in progress",
+      "why_not_merged": "The audit branch is mergeable, but the required iOS Build and Test lane has not completed.",
+      "progress": [
+        "Documents Pod0's NMP pin against NMP master and Chirp's current NMP dependency.",
+        "Captures the expected follow-up risk that Pod0 is behind the NMP revision used by Chirp."
+      ],
+      "next_action": "Merge after required checks pass, then refresh the live report's NMP status."
+    },
+    {
+      "id": "#723",
+      "title": "Fix xcodebuild false-red CI chunks",
+      "url": "https://github.com/pablof7z/podcast-player/pull/723",
+      "branch": "codex/ci-xcodebuild-success-exit65",
+      "status": "red_required_build",
+      "current_gate": "GitHub Actions Test / Build and Test failed",
+      "why_not_merged": "The required job saw real UI test failures before a later chunk printed TEST SUCCEEDED; merging would put a red required check on main.",
+      "progress": [
+        "The wrapper-fix intent is still valid, but the current run exposed UI instability outside the wrapper change.",
+        "StressUITests.testFFIRapidSubscribeUnsubscribe failed because the Show options flow could not find Follow after unsubscribe.",
+        "AutoDownloadUITests.testAutoDownloadPolicyUIPath failed once because the show settings sheet did not expose the Auto-download section/header and All new segment before retry."
+      ],
+      "next_action": "Investigate whether those failures reproduce on main or only on the branch, then either rerun with evidence or split a UI reliability fix."
+    },
+    {
+      "id": "#726",
+      "title": "[codex] Add scenario report taxonomy gaps",
+      "url": "https://github.com/pablof7z/podcast-player/pull/726",
+      "branch": "codex/scenario-report-taxonomy",
+      "status": "merged_into_stacked_base",
+      "current_gate": "Merged into #722 at 3ca0eaf1",
+      "why_not_merged": "This was intentionally stacked on #722, so it was folded into the template branch rather than merged directly to main.",
+      "progress": [
+        "Grounded the page contract in npx skills search results for mobile app UI design and iOS Liquid Glass.",
+        "Added scenario dimensions for data integrity/state sync, navigation restoration, device/viewport coverage, and media session/background continuity."
+      ],
+      "next_action": "Let #722's combined branch finish required checks."
+    }
+  ],
+  "recently_resolved": [
+    {
+      "id": "#721",
+      "title": "Fix Downloads & Disk storage accounting",
+      "url": "https://github.com/pablof7z/podcast-player/pull/721",
+      "status": "merged_to_main",
+      "merge_commit": "886a90532266912527ca27d9546c9a14446809e4",
+      "follow_up": "SET-005 remains pending revalidation with fresh screenshots, metrics, logs, and UI tree evidence."
+    },
+    {
+      "id": "#720",
+      "title": "Fix seeded playback fixture duration",
+      "url": "https://github.com/pablof7z/podcast-player/pull/720",
+      "status": "merged_to_main",
+      "merge_commit": "e456e9c3fc82432a8b060bd8adebc2e4afb0c5e6",
+      "follow_up": "PLAY-001 remains pending revalidation with fresh playback evidence."
+    },
+    {
+      "id": "#706",
+      "title": "[codex] Publish validation report hub",
+      "url": "https://github.com/pablof7z/podcast-player/pull/706",
+      "status": "closed_superseded",
+      "follow_up": "Superseded by the live gh-pages branch and the deeper report-generator work in #722."
+    }
+  ]
+}
