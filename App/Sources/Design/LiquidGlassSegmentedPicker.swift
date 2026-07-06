@@ -54,6 +54,12 @@ struct LiquidGlassSegmentedPicker<Value: Hashable, Label: View>: View {
     /// segment controls *must* announce their option name.
     let accessibilityLabel: (Value) -> String
 
+    /// Optional stable identifier for UI automation on the whole control.
+    let pickerAccessibilityIdentifier: String?
+
+    /// Optional stable identifier for each segment button.
+    let segmentAccessibilityIdentifier: (Value) -> String?
+
     // MARK: - Internal state
 
     @Namespace private var namespace
@@ -77,6 +83,7 @@ struct LiquidGlassSegmentedPicker<Value: Hashable, Label: View>: View {
         .clipShape(Capsule(style: .continuous))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(accessibilityTitle)
+        .accessibilityIdentifierIfPresent(pickerAccessibilityIdentifier)
     }
 
     // MARK: - Segment
@@ -104,6 +111,7 @@ struct LiquidGlassSegmentedPicker<Value: Hashable, Label: View>: View {
         .modifier(SegmentGlassModifier(isSelected: isSelected, namespace: namespace))
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         .accessibilityLabel(accessibilityLabel(value))
+        .accessibilityIdentifierIfPresent(segmentAccessibilityIdentifier(value))
     }
 }
 
@@ -137,7 +145,9 @@ extension LiquidGlassSegmentedPicker where Label == Text {
     init(
         _ accessibilityTitle: String,
         selection: Binding<Value>,
-        segments: [(value: Value, label: String)]
+        segments: [(value: Value, label: String)],
+        accessibilityIdentifier: String? = nil,
+        segmentAccessibilityIdentifier: @escaping (Value) -> String? = { _ in nil }
     ) {
         self.accessibilityTitle = accessibilityTitle
         self._selection = selection
@@ -145,6 +155,8 @@ extension LiquidGlassSegmentedPicker where Label == Text {
         let lookup = Dictionary(uniqueKeysWithValues: segments.map { ($0.value, $0.label) })
         self.label = { value, _ in Text(lookup[value] ?? "") }
         self.accessibilityLabel = { value in lookup[value] ?? "" }
+        self.pickerAccessibilityIdentifier = accessibilityIdentifier
+        self.segmentAccessibilityIdentifier = segmentAccessibilityIdentifier
     }
 }
 
@@ -158,6 +170,8 @@ extension LiquidGlassSegmentedPicker {
         selection: Binding<Value>,
         values: [Value],
         accessibilityLabel: @escaping (Value) -> String,
+        accessibilityIdentifier: String? = nil,
+        segmentAccessibilityIdentifier: @escaping (Value) -> String? = { _ in nil },
         @ViewBuilder label: @escaping (Value, Bool) -> Label
     ) {
         self.accessibilityTitle = accessibilityTitle
@@ -165,6 +179,19 @@ extension LiquidGlassSegmentedPicker {
         self.values = values
         self.label = label
         self.accessibilityLabel = accessibilityLabel
+        self.pickerAccessibilityIdentifier = accessibilityIdentifier
+        self.segmentAccessibilityIdentifier = segmentAccessibilityIdentifier
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func accessibilityIdentifierIfPresent(_ identifier: String?) -> some View {
+        if let identifier {
+            self.accessibilityIdentifier(identifier)
+        } else {
+            self
+        }
     }
 }
 

@@ -55,7 +55,13 @@ final class AutoDownloadUITests: XCTestCase {
             XCTFail("auto-download: 'Settings for this show' not found in Show options menu")
             return
         }
-        settingsItem.tap(); sleep(1)
+        settingsItem.tap()
+        guard waitForShowSettingsSheet(app) else {
+            snap(app, "autdl-NOSETTINGS-SHEET")
+            dumpTree(app, "autdl-NOSETTINGS-SHEET-tree")
+            XCTFail("auto-download: show settings sheet did not expose its tagged root")
+            return
+        }
         snap(app, "autdl-03-settings-sheet")
         dumpTree(app, "autdl-03-tree")
 
@@ -63,9 +69,11 @@ final class AutoDownloadUITests: XCTestCase {
         // ShowDetailSettingsSheet renders a Form with a "Auto-download" section
         // header. The section contains a LiquidGlassSegmentedPicker with
         // segments "Off", "Latest", "All new".
-        let autoDownloadHeader = app.staticTexts.matching(
+        let autoDownloadHeader = app.staticTexts["show-settings-auto-download-header"]
+        let fallbackAutoDownloadHeader = app.staticTexts.matching(
             NSPredicate(format: "label == 'Auto-download'")).firstMatch
         let hasAutoDownloadSection = autoDownloadHeader.waitForExistence(timeout: 5)
+            || fallbackAutoDownloadHeader.waitForExistence(timeout: 2)
         XCTAssertTrue(
             hasAutoDownloadSection,
             "FAIL auto-download-new-episodes: 'Auto-download' section header not found in show settings sheet"
@@ -74,8 +82,10 @@ final class AutoDownloadUITests: XCTestCase {
 
         // Step 5 — Change from "Off" to "All new".
         // The LiquidGlassSegmentedPicker exposes segment buttons by their label.
-        let allNewBtn = app.buttons["All new"]
-        if allNewBtn.waitForExistence(timeout: 4) {
+        let allNewByID = app.buttons["show-settings-auto-download-all-new"]
+        let allNewByLabel = app.buttons["All new"]
+        if allNewByID.waitForExistence(timeout: 6) || allNewByLabel.waitForExistence(timeout: 2) {
+            let allNewBtn = allNewByID.exists ? allNewByID : allNewByLabel
             allNewBtn.tap(); sleep(1)
             snap(app, "autdl-05-after-all-new")
 
@@ -89,7 +99,9 @@ final class AutoDownloadUITests: XCTestCase {
             )
 
             // Step 6 — Change back to "Off" to restore clean state for subsequent tests.
-            let offBtn = app.buttons["Off"]
+            let offByID = app.buttons["show-settings-auto-download-off"]
+            let offByLabel = app.buttons["Off"]
+            let offBtn = offByID.exists ? offByID : offByLabel
             if offBtn.waitForExistence(timeout: 3) {
                 offBtn.tap(); sleep(1)
                 snap(app, "autdl-06-restored-off")
@@ -115,5 +127,21 @@ final class AutoDownloadUITests: XCTestCase {
             app.state, .runningForeground,
             "FAIL auto-download-new-episodes: app crashed or was killed during auto-download policy change"
         )
+    }
+
+    private func waitForShowSettingsSheet(_ app: XCUIApplication, timeout: TimeInterval = 10) -> Bool {
+        let root = app.descendants(matching: .any)["show-settings-form"]
+        let picker = app.descendants(matching: .any)["show-settings-auto-download-policy-picker"]
+        let allNew = app.buttons["show-settings-auto-download-all-new"]
+        let deadline = Date().addingTimeInterval(timeout)
+
+        while Date() < deadline {
+            if root.exists && (picker.exists || allNew.exists) {
+                return true
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+
+        return root.exists && (picker.exists || allNew.exists)
     }
 }
