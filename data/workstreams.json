@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-06T00:21:09Z",
+  "generated_at": "2026-07-06T00:25:35Z",
   "counts": {
     "open_prs": 3,
     "required_builds_running_or_queued": 2,
@@ -15,7 +15,7 @@
       "url": "https://github.com/pablof7z/podcast-player/pull/722",
       "branch": "codex/scenario-page-template-deep-dive",
       "status": "required_checks_running",
-      "current_gate": "GitHub Actions Test / Build and Test queued; Android Kotlin compile + unit tests still running; other short gates passed",
+      "current_gate": "GitHub Actions Test / Build and Test queued; all shorter gates passed",
       "why_not_merged": "Main requires the iOS Build and Test lane to finish green before this report-generator work can merge.",
       "progress": [
         "Generates 264 per-scenario pages instead of one giant page.",
