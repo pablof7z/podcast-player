@@ -26,8 +26,8 @@
 
     <section class="stats" aria-label="Workstream totals">
       <div><strong>4</strong><span>open PRs</span></div>
-      <div><strong>4</strong><span>required iOS lanes running or queued</span></div>
-      <div><strong>0</strong><span>red required builds in current runs</span></div>
+      <div><strong>3</strong><span>required iOS lanes running or queued</span></div>
+      <div><strong>1</strong><span>red required build in current runs</span></div>
       <div><strong>3</strong><span>merged today</span></div>
     </section>
 
@@ -46,9 +46,9 @@
         <tbody>
           <tr>
             <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/729">#729</a><br><span class="muted">Auto-download settings controls</span></td>
-            <td data-label="Status"><span class="badge badge-running">fresh checks running</span></td>
-            <td data-label="Why It Is Not Merged Yet">Migration Lints passed on the fresh run. Shorter Test gates are still running and Build and Test is queued behind the shared iOS lane.</td>
-            <td data-label="Next Action">Let the fresh Test checks finish; inspect the new log immediately if any required gate turns red.</td>
+            <td data-label="Status"><span class="badge badge-running">Build and Test running</span></td>
+            <td data-label="Why It Is Not Merged Yet">All shorter gates are green. The required Build and Test lane is now running and must finish green before merge.</td>
+            <td data-label="Next Action">Merge if Build and Test passes; inspect the new log immediately if it turns red.</td>
           </tr>
           <tr>
             <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/722">#722</a><br><span class="muted">Scenario report generator</span></td>
@@ -58,9 +58,9 @@
           </tr>
           <tr>
             <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/710">#710</a><br><span class="muted">NMP/Chirp sync audit</span></td>
-            <td data-label="Status"><span class="badge badge-running">required checks running</span></td>
-            <td data-label="Why It Is Not Merged Yet">Build and Test is in progress. The branch is otherwise mergeable and records how Pod0's NMP pin compares with NMP master and Chirp.</td>
-            <td data-label="Next Action">Merge after the required lane finishes green, then refresh this report's NMP status.</td>
+            <td data-label="Status"><span class="badge badge-fail">false-red failure</span></td>
+            <td data-label="Why It Is Not Merged Yet">Build and Test failed after logging <code>** TEST SUCCEEDED **</code> and then exiting 65. This matches the CI wrapper bug being fixed by <a href="https://github.com/pablof7z/podcast-player/pull/723">#723</a>.</td>
+            <td data-label="Next Action">Do not merge while red. Let #723 clear the wrapper bug, then rerun or refresh #710 and merge only after required checks pass.</td>
           </tr>
           <tr>
             <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/723">#723</a><br><span class="muted">CI wrapper false-red fix</span></td>
@@ -112,6 +112,7 @@
     <section id="site-evidence">
       <h2>Published Evidence Status</h2>
       <p>The live site now exposes hundreds of per-scenario pages and a screenshot gallery, but the evidence count remains intentionally strict: 4 of 264 scenario records currently have screenshot evidence. The remaining 260 scenarios stay incomplete until real runs attach screenshots, logs, metrics, UI trees, accessibility checks, and skill-grounded UI/UX critique.</p>
+      <p>Latest audit: 264/264 scenario pages still lack accessibility audit artifacts, 156 lack metric traces, and 74 lack cassette evidence. See <a href="../data/audit-gaps.json">raw audit gap JSON</a>.</p>
     </section>
   </main>
 </body>

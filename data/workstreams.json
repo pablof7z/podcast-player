@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-07-06T00:44:20Z",
+  "generated_at": "2026-07-06T00:59:14Z",
   "counts": {
     "open_prs": 4,
-    "required_builds_running_or_queued": 4,
+    "required_builds_running_or_queued": 3,
     "blocked_by_required_checks": 4,
-    "red_required_builds": 0,
+    "red_required_builds": 1,
     "merged_today": 3,
     "closed_superseded": 1
   },
@@ -15,14 +15,14 @@
       "url": "https://github.com/pablof7z/podcast-player/pull/729",
       "branch": "codex/fix-auto-download-settings-sheet",
       "status": "required_checks_running",
-      "current_gate": "Migration Lints passed on the fresh run; shorter Test gates are still running and Build and Test is queued",
-      "why_not_merged": "The branch cannot merge until the remaining Test gates and required Build and Test lane finish green.",
+      "current_gate": "All shorter gates passed; GitHub Actions Test / Build and Test is in progress",
+      "why_not_merged": "The branch cannot merge until the required Build and Test lane finishes green.",
       "progress": [
         "Fixes #728 by making the Show settings sheet expose stable Auto-download identifiers and opening it at the large detent.",
         "Adds targeted UI test waits around the tagged settings sheet and picker.",
         "Adds a user-facing changelog entry for the settings reliability improvement."
       ],
-      "next_action": "Let the fresh Test checks finish; if a required gate fails, inspect the new run log before touching code."
+      "next_action": "Merge if Build and Test passes; inspect the new log immediately if it turns red."
     },
     {
       "id": "#722",
@@ -44,14 +44,14 @@
       "title": "[codex] Add NMP and Chirp sync audit",
       "url": "https://github.com/pablof7z/podcast-player/pull/710",
       "branch": "codex/nmp-chirp-sync-audit",
-      "status": "required_checks_running",
-      "current_gate": "GitHub Actions Test / Build and Test in progress",
-      "why_not_merged": "The audit branch is mergeable, but the required iOS Build and Test lane has not completed.",
+      "status": "required_check_failed_false_red",
+      "current_gate": "GitHub Actions Test / Build and Test failed after logging ** TEST SUCCEEDED ** and then exiting 65",
+      "why_not_merged": "The required check is red. The failure matches the xcodebuild false-red wrapper bug fixed by #723, so #710 must be rerun after the wrapper fix lands or after the branch includes that wrapper fix.",
       "progress": [
         "Documents Pod0's NMP pin against NMP master and Chirp's current NMP dependency.",
         "Captures the expected follow-up risk that Pod0 is behind the NMP revision used by Chirp."
       ],
-      "next_action": "Merge after required checks pass, then refresh the live report's NMP status."
+      "next_action": "Do not merge while red. Let #723 clear the wrapper bug, then rerun or refresh #710 and merge only after required checks pass."
     },
     {
       "id": "#723",

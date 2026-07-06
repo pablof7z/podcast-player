@@ -1,0 +1,66 @@
+{
+  "generated_at": "2026-07-06T00:59:14Z",
+  "auditor": "Halley",
+  "summary": {
+    "published_index_pages": 354,
+    "scenario_records": 264,
+    "scenario_cluster_pages": 16,
+    "tag_records": 50,
+    "rollup_pages": 16,
+    "evidence_backed_scenarios": 4,
+    "published_image_assets": 39,
+    "scenario_run_screenshots": 13,
+    "legacy_attachment_screenshots": 10,
+    "product_survey_screenshots": 14,
+    "live_report_verification_screenshots": 2
+  },
+  "verdicts": {
+    "incomplete": 261,
+    "pass_with_issues": 2,
+    "fail": 1
+  },
+  "evidence_gaps": {
+    "accessibility_audit_missing": 264,
+    "screenshot_ui_tree_log_command_output_missing": 260,
+    "metric_trace_missing": 156,
+    "cassette_missing": 74
+  },
+  "skill_grounding": {
+    "mobile_ui_product_craft": [
+      "vabole/apple-skills@ios-ui-craft",
+      "johnrogers/claude-swift-engineering@ios-hig",
+      "ceorkm/mobile-app-ui-design@mobile-app-ui-design"
+    ],
+    "ios_primitives_liquid_glass": [
+      "vabole/apple-skills@ios-liquid-glass",
+      "openai/plugins@swiftui-liquid-glass"
+    ],
+    "performance": [
+      "dpearson2699/swift-ios-skills@swiftui-performance",
+      "local nmp-app-architecture D8 gates"
+    ],
+    "accessibility": [
+      "rgmez/apple-accessibility-skills@swiftui-accessibility-auditor",
+      "community-access/accessibility-agents@mobile-accessibility",
+      "voiceover"
+    ],
+    "screenshot_report_qa": [
+      "local playwright-cli",
+      "nexu-io/open-design@full-page-screenshot",
+      "manutej/playwright-visual-testing",
+      "local web-design-guidelines"
+    ],
+    "architecture_nmp_chirp": [
+      "local nmp-app-architecture",
+      "#710 NMP/Chirp sync audit"
+    ]
+  },
+  "highest_priority_gaps": [
+    "Publish #722 generator output so gh-pages includes the four new taxonomy dimensions.",
+    "Add automated xcresult attachment ingestion into scenario evidence overlays.",
+    "Revalidate PLAY-001 and SET-005 with fresh evidence after #720 and #721.",
+    "Normalize provider cassette IDs from old E/G/M refs to the current scenario catalog IDs.",
+    "Add OS integration catalog coverage for Spotlight, Handoff, AppIntents, AirPlay/Bluetooth routes, notification tap-through, widgets, and Live Activities.",
+    "Add real accessibility, Dynamic Type, VoiceOver, contrast, Reduce Motion, and Reduce Transparency artifacts for every scenario cluster."
+  ]
+}
