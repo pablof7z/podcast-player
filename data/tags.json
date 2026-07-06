@@ -12,12 +12,20 @@
     "tag": "all-doctrine"
   },
   {
-    "count": 70,
+    "count": 73,
     "tag": "cassette-required"
   },
   {
-    "count": 264,
+    "count": 320,
     "tag": "catalog-scaffold"
+  },
+  {
+    "count": 8,
+    "tag": "chirp"
+  },
+  {
+    "count": 8,
+    "tag": "chirp-fix-parity"
   },
   {
     "count": 16,
@@ -28,39 +36,43 @@
     "tag": "clips-highlights-and-sharing"
   },
   {
-    "count": 4,
+    "count": 2,
+    "tag": "d0"
+  },
+  {
+    "count": 7,
     "tag": "d1"
   },
   {
-    "count": 38,
+    "count": 42,
     "tag": "d10"
   },
   {
-    "count": 13,
+    "count": 19,
     "tag": "d3"
   },
   {
-    "count": 114,
+    "count": 131,
     "tag": "d4"
   },
   {
-    "count": 60,
+    "count": 75,
     "tag": "d5"
   },
   {
-    "count": 51,
+    "count": 68,
     "tag": "d6"
   },
   {
-    "count": 126,
+    "count": 142,
     "tag": "d7"
   },
   {
-    "count": 32,
+    "count": 54,
     "tag": "d8"
   },
   {
-    "count": 18,
+    "count": 19,
     "tag": "d9"
   },
   {
@@ -104,15 +116,31 @@
     "tag": "llm-provider-and-replay"
   },
   {
-    "count": 7,
+    "count": 14,
     "tag": "native-render"
+  },
+  {
+    "count": 8,
+    "tag": "nip-05-and-discovery-state"
+  },
+  {
+    "count": 8,
+    "tag": "nip05"
+  },
+  {
+    "count": 8,
+    "tag": "nmp-master-pin-and-runtime-lifecycle"
+  },
+  {
+    "count": 8,
+    "tag": "nmpm"
   },
   {
     "count": 16,
     "tag": "nostr"
   },
   {
-    "count": 25,
+    "count": 34,
     "tag": "nostr-or-relay"
   },
   {
@@ -120,7 +148,19 @@
     "tag": "nostr-publishing-and-protocol"
   },
   {
-    "count": 159,
+    "count": 8,
+    "tag": "offline"
+  },
+  {
+    "count": 8,
+    "tag": "offline-relay-and-replay-honesty"
+  },
+  {
+    "count": 8,
+    "tag": "performance-and-d8-no-polling-gates"
+  },
+  {
+    "count": 194,
     "tag": "performance-required"
   },
   {
@@ -136,8 +176,16 @@
     "tag": "playback"
   },
   {
-    "count": 1,
+    "count": 4,
     "tag": "process"
+  },
+  {
+    "count": 8,
+    "tag": "proj"
+  },
+  {
+    "count": 8,
+    "tag": "projection-cache-and-stale-state-guards"
   },
   {
     "count": 16,
@@ -176,7 +224,15 @@
     "tag": "transcripts"
   },
   {
-    "count": 264,
+    "count": 8,
+    "tag": "vis"
+  },
+  {
+    "count": 8,
+    "tag": "visual-accessibility-and-liquid-glass-parity"
+  },
+  {
+    "count": 320,
     "tag": "visual-evidence-required"
   },
   {

@@ -7800,5 +7800,1651 @@
     "title": "D4/D5/D6/D7/D8/D9/D10 risks map to catalog rows",
     "url": "scenarios/xplat-016/",
     "verdict": "incomplete"
+  },
+  {
+    "category": "Chirp Fix Parity",
+    "data_url": "scenarios/chirp-001/data.json",
+    "group_coherence": "incomplete",
+    "id": "CHIRP-001",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "chirp-fix-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "chirp-001",
+    "tags": [
+      "catalog-scaffold",
+      "chirp",
+      "chirp-fix-parity",
+      "d4",
+      "d7",
+      "d8",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Every tap dispatches exactly one observable Rust action or native capability result",
+    "url": "scenarios/chirp-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Chirp Fix Parity",
+    "data_url": "scenarios/chirp-002/data.json",
+    "group_coherence": "incomplete",
+    "id": "CHIRP-002",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "chirp-fix-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "chirp-002",
+    "tags": [
+      "catalog-scaffold",
+      "chirp",
+      "chirp-fix-parity",
+      "d6",
+      "d7",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The UI shows the rejection state instead of staying optimistic or silent",
+    "url": "scenarios/chirp-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Chirp Fix Parity",
+    "data_url": "scenarios/chirp-003/data.json",
+    "group_coherence": "incomplete",
+    "id": "CHIRP-003",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "chirp-fix-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "chirp-003",
+    "tags": [
+      "catalog-scaffold",
+      "chirp",
+      "chirp-fix-parity",
+      "d1",
+      "d6",
+      "d8",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Progress and cancel affordances remain visible and fresh",
+    "url": "scenarios/chirp-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Chirp Fix Parity",
+    "data_url": "scenarios/chirp-004/data.json",
+    "group_coherence": "incomplete",
+    "id": "CHIRP-004",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "chirp-fix-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "chirp-004",
+    "tags": [
+      "catalog-scaffold",
+      "chirp",
+      "chirp-fix-parity",
+      "d6",
+      "d8",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Busy flags clear and retry is available without relaunch",
+    "url": "scenarios/chirp-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Chirp Fix Parity",
+    "data_url": "scenarios/chirp-005/data.json",
+    "group_coherence": "incomplete",
+    "id": "CHIRP-005",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "chirp-fix-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "chirp-005",
+    "tags": [
+      "catalog-scaffold",
+      "chirp",
+      "chirp-fix-parity",
+      "d3",
+      "d6",
+      "d8",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Queued, accepted, and published states are visible in order",
+    "url": "scenarios/chirp-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Chirp Fix Parity",
+    "data_url": "scenarios/chirp-006/data.json",
+    "group_coherence": "incomplete",
+    "id": "CHIRP-006",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "chirp-fix-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "chirp-006",
+    "tags": [
+      "catalog-scaffold",
+      "chirp",
+      "chirp-fix-parity",
+      "d6",
+      "d7",
+      "visual-evidence-required"
+    ],
+    "title": "Failure remains visible until user acknowledges or retries",
+    "url": "scenarios/chirp-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Chirp Fix Parity",
+    "data_url": "scenarios/chirp-007/data.json",
+    "group_coherence": "incomplete",
+    "id": "CHIRP-007",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "chirp-fix-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "chirp-007",
+    "tags": [
+      "catalog-scaffold",
+      "chirp",
+      "chirp-fix-parity",
+      "d4",
+      "d5",
+      "visual-evidence-required"
+    ],
+    "title": "The final verdict is still visible and not evicted prematurely",
+    "url": "scenarios/chirp-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Chirp Fix Parity",
+    "data_url": "scenarios/chirp-008/data.json",
+    "group_coherence": "incomplete",
+    "id": "CHIRP-008",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "chirp-fix-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "chirp-008",
+    "tags": [
+      "catalog-scaffold",
+      "chirp",
+      "chirp-fix-parity",
+      "d4",
+      "d8",
+      "d9",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The canceled flow does not mutate current UI",
+    "url": "scenarios/chirp-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NMP Master Pin And Runtime Lifecycle",
+    "data_url": "scenarios/nmpm-001/data.json",
+    "group_coherence": "incomplete",
+    "id": "NMPM-001",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nmpm-001",
+    "tags": [
+      "catalog-scaffold",
+      "d0",
+      "d4",
+      "nmp-master-pin-and-runtime-lifecycle",
+      "nmpm",
+      "visual-evidence-required"
+    ],
+    "title": "All NMP crates use one coherent rev",
+    "url": "scenarios/nmpm-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NMP Master Pin And Runtime Lifecycle",
+    "data_url": "scenarios/nmpm-002/data.json",
+    "group_coherence": "incomplete",
+    "id": "NMPM-002",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nmpm-002",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d4",
+      "d7",
+      "nmp-master-pin-and-runtime-lifecycle",
+      "nmpm",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Relay config loads without relying on builder-only setup",
+    "url": "scenarios/nmpm-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NMP Master Pin And Runtime Lifecycle",
+    "data_url": "scenarios/nmpm-003/data.json",
+    "group_coherence": "incomplete",
+    "id": "NMPM-003",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nmpm-003",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d8",
+      "nmp-master-pin-and-runtime-lifecycle",
+      "nmpm",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Emitted state is rate-limited and remains readable",
+    "url": "scenarios/nmpm-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NMP Master Pin And Runtime Lifecycle",
+    "data_url": "scenarios/nmpm-004/data.json",
+    "group_coherence": "incomplete",
+    "id": "NMPM-004",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nmpm-004",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d8",
+      "nmp-master-pin-and-runtime-lifecycle",
+      "nmpm",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "UI coalesces updates without dropped terminal states",
+    "url": "scenarios/nmpm-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NMP Master Pin And Runtime Lifecycle",
+    "data_url": "scenarios/nmpm-005/data.json",
+    "group_coherence": "incomplete",
+    "id": "NMPM-005",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nmpm-005",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "nmp-master-pin-and-runtime-lifecycle",
+      "nmpm",
+      "visual-evidence-required"
+    ],
+    "title": "The UI receives a Rust-owned failure state instead of hardcoded queued success",
+    "url": "scenarios/nmpm-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NMP Master Pin And Runtime Lifecycle",
+    "data_url": "scenarios/nmpm-006/data.json",
+    "group_coherence": "incomplete",
+    "id": "NMPM-006",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nmpm-006",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d7",
+      "nmp-master-pin-and-runtime-lifecycle",
+      "nmpm",
+      "nostr-or-relay",
+      "visual-evidence-required"
+    ],
+    "title": "No app-facing UI accepts or persists a manual relay URL",
+    "url": "scenarios/nmpm-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NMP Master Pin And Runtime Lifecycle",
+    "data_url": "scenarios/nmpm-007/data.json",
+    "group_coherence": "incomplete",
+    "id": "NMPM-007",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nmpm-007",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d4",
+      "nmp-master-pin-and-runtime-lifecycle",
+      "nmpm",
+      "nostr-or-relay",
+      "visual-evidence-required"
+    ],
+    "title": "Old relay rows do not reappear from stale native state",
+    "url": "scenarios/nmpm-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NMP Master Pin And Runtime Lifecycle",
+    "data_url": "scenarios/nmpm-008/data.json",
+    "group_coherence": "incomplete",
+    "id": "NMPM-008",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nmpm-008",
+    "tags": [
+      "catalog-scaffold",
+      "d0",
+      "d5",
+      "nmp-master-pin-and-runtime-lifecycle",
+      "nmpm",
+      "visual-evidence-required"
+    ],
+    "title": "Action-builder and projection generated files are checked for drift",
+    "url": "scenarios/nmpm-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NIP-05 And Discovery State",
+    "data_url": "scenarios/nip05-001/data.json",
+    "group_coherence": "incomplete",
+    "id": "NIP05-001",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nip-05-and-discovery-state",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nip05-001",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "nip-05-and-discovery-state",
+      "nip05",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Result is scoped to that exact identifier and session",
+    "url": "scenarios/nip05-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NIP-05 And Discovery State",
+    "data_url": "scenarios/nip05-002/data.json",
+    "group_coherence": "incomplete",
+    "id": "NIP05-002",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nip-05-and-discovery-state",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nip05-002",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "nip-05-and-discovery-state",
+      "nip05",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Only the requested friend pubkey is selected",
+    "url": "scenarios/nip05-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NIP-05 And Discovery State",
+    "data_url": "scenarios/nip05-003/data.json",
+    "group_coherence": "incomplete",
+    "id": "NIP05-003",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nip-05-and-discovery-state",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nip05-003",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d8",
+      "nip-05-and-discovery-state",
+      "nip05",
+      "visual-evidence-required"
+    ],
+    "title": "The unrelated profile cannot satisfy the request",
+    "url": "scenarios/nip05-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NIP-05 And Discovery State",
+    "data_url": "scenarios/nip05-004/data.json",
+    "group_coherence": "incomplete",
+    "id": "NIP05-004",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nip-05-and-discovery-state",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nip05-004",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "nip-05-and-discovery-state",
+      "nip05",
+      "nostr-or-relay",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Pod0 shows immediate failure copy and never waits for a local timeout only",
+    "url": "scenarios/nip05-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NIP-05 And Discovery State",
+    "data_url": "scenarios/nip05-005/data.json",
+    "group_coherence": "incomplete",
+    "id": "NIP05-005",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nip-05-and-discovery-state",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nip05-005",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d8",
+      "nip-05-and-discovery-state",
+      "nip05",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The UI shows honest offline state without permanent spinner",
+    "url": "scenarios/nip05-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NIP-05 And Discovery State",
+    "data_url": "scenarios/nip05-006/data.json",
+    "group_coherence": "incomplete",
+    "id": "NIP05-006",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nip-05-and-discovery-state",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nip05-006",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "nip-05-and-discovery-state",
+      "nip05",
+      "visual-evidence-required"
+    ],
+    "title": "Validation blocks locally and no relay or HTTP request is made",
+    "url": "scenarios/nip05-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NIP-05 And Discovery State",
+    "data_url": "scenarios/nip05-007/data.json",
+    "group_coherence": "incomplete",
+    "id": "NIP05-007",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nip-05-and-discovery-state",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nip05-007",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d6",
+      "nip-05-and-discovery-state",
+      "nip05",
+      "visual-evidence-required"
+    ],
+    "title": "Prior terminal failure is replaced only by the new scoped result",
+    "url": "scenarios/nip05-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "NIP-05 And Discovery State",
+    "data_url": "scenarios/nip05-008/data.json",
+    "group_coherence": "incomplete",
+    "id": "NIP05-008",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "nip-05-and-discovery-state",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "nip05-008",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "nip-05-and-discovery-state",
+      "nip05",
+      "visual-evidence-required"
+    ],
+    "title": "Logs include redacted correlation IDs and no private keys or bearer tokens",
+    "url": "scenarios/nip05-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Projection Cache And Stale-State Guards",
+    "data_url": "scenarios/proj-001/data.json",
+    "group_coherence": "incomplete",
+    "id": "PROJ-001",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "projection-cache-and-stale-state-guards",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "proj-001",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "proj",
+      "projection-cache-and-stale-state-guards",
+      "visual-evidence-required"
+    ],
+    "title": "Prior newer UI state remains intact",
+    "url": "scenarios/proj-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Projection Cache And Stale-State Guards",
+    "data_url": "scenarios/proj-002/data.json",
+    "group_coherence": "incomplete",
+    "id": "PROJ-002",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "projection-cache-and-stale-state-guards",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "proj-002",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "proj",
+      "projection-cache-and-stale-state-guards",
+      "visual-evidence-required"
+    ],
+    "title": "Stale rows from the prior session are removed before new rows render",
+    "url": "scenarios/proj-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Projection Cache And Stale-State Guards",
+    "data_url": "scenarios/proj-003/data.json",
+    "group_coherence": "incomplete",
+    "id": "PROJ-003",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "projection-cache-and-stale-state-guards",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "proj-003",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d6",
+      "performance-required",
+      "proj",
+      "projection-cache-and-stale-state-guards",
+      "visual-evidence-required"
+    ],
+    "title": "The visible UI uses empty/error state and latches resync rather than crashing",
+    "url": "scenarios/proj-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Projection Cache And Stale-State Guards",
+    "data_url": "scenarios/proj-004/data.json",
+    "group_coherence": "incomplete",
+    "id": "PROJ-004",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "projection-cache-and-stale-state-guards",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "proj-004",
+    "tags": [
+      "catalog-scaffold",
+      "d10",
+      "d4",
+      "d5",
+      "performance-required",
+      "proj",
+      "projection-cache-and-stale-state-guards",
+      "visual-evidence-required"
+    ],
+    "title": "Stale prior-account data is not visible on any tab",
+    "url": "scenarios/proj-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Projection Cache And Stale-State Guards",
+    "data_url": "scenarios/proj-005/data.json",
+    "group_coherence": "incomplete",
+    "id": "PROJ-005",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "projection-cache-and-stale-state-guards",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "proj-005",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "proj",
+      "projection-cache-and-stale-state-guards",
+      "visual-evidence-required"
+    ],
+    "title": "The library row updates without app-side cache policy",
+    "url": "scenarios/proj-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Projection Cache And Stale-State Guards",
+    "data_url": "scenarios/proj-006/data.json",
+    "group_coherence": "incomplete",
+    "id": "PROJ-006",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "projection-cache-and-stale-state-guards",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "proj-006",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "proj",
+      "projection-cache-and-stale-state-guards",
+      "visual-evidence-required"
+    ],
+    "title": "Stale results do not flash on the next open",
+    "url": "scenarios/proj-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Projection Cache And Stale-State Guards",
+    "data_url": "scenarios/proj-007/data.json",
+    "group_coherence": "incomplete",
+    "id": "PROJ-007",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "projection-cache-and-stale-state-guards",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "proj-007",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "proj",
+      "projection-cache-and-stale-state-guards",
+      "visual-evidence-required"
+    ],
+    "title": "Rust unregisters the read and no stale event log remains visible",
+    "url": "scenarios/proj-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Projection Cache And Stale-State Guards",
+    "data_url": "scenarios/proj-008/data.json",
+    "group_coherence": "incomplete",
+    "id": "PROJ-008",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "projection-cache-and-stale-state-guards",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "proj-008",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d5",
+      "performance-required",
+      "proj",
+      "projection-cache-and-stale-state-guards",
+      "visual-evidence-required"
+    ],
+    "title": "Swift and Rust semantic fields match exactly",
+    "url": "scenarios/proj-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Offline, Relay, And Replay Honesty",
+    "data_url": "scenarios/offline-001/data.json",
+    "group_coherence": "incomplete",
+    "id": "OFFLINE-001",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "offline-relay-and-replay-honesty",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "offline-001",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "nostr-or-relay",
+      "offline",
+      "offline-relay-and-replay-honesty",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Pending state is visible and no false sent state appears",
+    "url": "scenarios/offline-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Offline, Relay, And Replay Honesty",
+    "data_url": "scenarios/offline-002/data.json",
+    "group_coherence": "incomplete",
+    "id": "OFFLINE-002",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "offline-relay-and-replay-honesty",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "offline-002",
+    "tags": [
+      "catalog-scaffold",
+      "d3",
+      "d6",
+      "d8",
+      "nostr-or-relay",
+      "offline",
+      "offline-relay-and-replay-honesty",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The outbox flushes and pending indicator disappears only after relay ACK",
+    "url": "scenarios/offline-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Offline, Relay, And Replay Honesty",
+    "data_url": "scenarios/offline-003/data.json",
+    "group_coherence": "incomplete",
+    "id": "OFFLINE-003",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "offline-relay-and-replay-honesty",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "offline-003",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d7",
+      "offline",
+      "offline-relay-and-replay-honesty",
+      "visual-evidence-required"
+    ],
+    "title": "Backoff state is explicit and does not look like success",
+    "url": "scenarios/offline-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Offline, Relay, And Replay Honesty",
+    "data_url": "scenarios/offline-004/data.json",
+    "group_coherence": "incomplete",
+    "id": "OFFLINE-004",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "offline-relay-and-replay-honesty",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "offline-004",
+    "tags": [
+      "catalog-scaffold",
+      "d6",
+      "d8",
+      "offline",
+      "offline-relay-and-replay-honesty",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "An honest unavailable state replaces permanent loading",
+    "url": "scenarios/offline-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Offline, Relay, And Replay Honesty",
+    "data_url": "scenarios/offline-005/data.json",
+    "group_coherence": "incomplete",
+    "id": "OFFLINE-005",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "offline-relay-and-replay-honesty",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "offline-005",
+    "tags": [
+      "catalog-scaffold",
+      "d1",
+      "d6",
+      "offline",
+      "offline-relay-and-replay-honesty",
+      "visual-evidence-required"
+    ],
+    "title": "Cached episode context remains usable and missing data is labeled",
+    "url": "scenarios/offline-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Offline, Relay, And Replay Honesty",
+    "data_url": "scenarios/offline-006/data.json",
+    "group_coherence": "incomplete",
+    "id": "OFFLINE-006",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "offline-relay-and-replay-honesty",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "offline-006",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "offline",
+      "offline-relay-and-replay-honesty",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Player uses local audio and no provider network dependency blocks the flow",
+    "url": "scenarios/offline-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Offline, Relay, And Replay Honesty",
+    "data_url": "scenarios/offline-007/data.json",
+    "group_coherence": "incomplete",
+    "id": "OFFLINE-007",
+    "missing_evidence": [
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "offline-relay-and-replay-honesty",
+    "provider_mode": "blocked",
+    "readiness": "incomplete",
+    "slug": "offline-007",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d7",
+      "offline",
+      "offline-relay-and-replay-honesty",
+      "visual-evidence-required"
+    ],
+    "title": "Validation fails closed instead of calling live network",
+    "url": "scenarios/offline-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Offline, Relay, And Replay Honesty",
+    "data_url": "scenarios/offline-008/data.json",
+    "group_coherence": "incomplete",
+    "id": "OFFLINE-008",
+    "missing_evidence": [
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "offline-relay-and-replay-honesty",
+    "provider_mode": "blocked",
+    "readiness": "incomplete",
+    "slug": "offline-008",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d10",
+      "d7",
+      "d8",
+      "offline",
+      "offline-relay-and-replay-honesty",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Every provider-backed UI can be explored without live credentials",
+    "url": "scenarios/offline-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Visual, Accessibility, And Liquid Glass Parity",
+    "data_url": "scenarios/vis-001/data.json",
+    "group_coherence": "incomplete",
+    "id": "VIS-001",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "visual-accessibility-and-liquid-glass-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "vis-001",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "native-render",
+      "performance-required",
+      "vis",
+      "visual-accessibility-and-liquid-glass-parity",
+      "visual-evidence-required"
+    ],
+    "title": "Visual hierarchy and tap targets remain coherent",
+    "url": "scenarios/vis-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Visual, Accessibility, And Liquid Glass Parity",
+    "data_url": "scenarios/vis-002/data.json",
+    "group_coherence": "incomplete",
+    "id": "VIS-002",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "visual-accessibility-and-liquid-glass-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "vis-002",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "native-render",
+      "vis",
+      "visual-accessibility-and-liquid-glass-parity",
+      "visual-evidence-required"
+    ],
+    "title": "Contrast, materials, icons, and state colors remain readable",
+    "url": "scenarios/vis-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Visual, Accessibility, And Liquid Glass Parity",
+    "data_url": "scenarios/vis-003/data.json",
+    "group_coherence": "incomplete",
+    "id": "VIS-003",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "visual-accessibility-and-liquid-glass-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "vis-003",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "native-render",
+      "performance-required",
+      "vis",
+      "visual-accessibility-and-liquid-glass-parity",
+      "visual-evidence-required"
+    ],
+    "title": "No labels overlap and primary actions remain reachable",
+    "url": "scenarios/vis-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Visual, Accessibility, And Liquid Glass Parity",
+    "data_url": "scenarios/vis-004/data.json",
+    "group_coherence": "incomplete",
+    "id": "VIS-004",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "visual-accessibility-and-liquid-glass-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "vis-004",
+    "tags": [
+      "catalog-scaffold",
+      "d8",
+      "native-render",
+      "vis",
+      "visual-accessibility-and-liquid-glass-parity",
+      "visual-evidence-required"
+    ],
+    "title": "Motion is reduced without removing state feedback",
+    "url": "scenarios/vis-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Visual, Accessibility, And Liquid Glass Parity",
+    "data_url": "scenarios/vis-005/data.json",
+    "group_coherence": "incomplete",
+    "id": "VIS-005",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "visual-accessibility-and-liquid-glass-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "vis-005",
+    "tags": [
+      "catalog-scaffold",
+      "native-render",
+      "vis",
+      "visual-accessibility-and-liquid-glass-parity",
+      "visual-evidence-required"
+    ],
+    "title": "Semantic foreground and fallback surfaces maintain legibility",
+    "url": "scenarios/vis-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Visual, Accessibility, And Liquid Glass Parity",
+    "data_url": "scenarios/vis-006/data.json",
+    "group_coherence": "incomplete",
+    "id": "VIS-006",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "visual-accessibility-and-liquid-glass-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "vis-006",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "native-render",
+      "vis",
+      "visual-accessibility-and-liquid-glass-parity",
+      "visual-evidence-required"
+    ],
+    "title": "Text truncates deliberately and never overlaps controls",
+    "url": "scenarios/vis-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Visual, Accessibility, And Liquid Glass Parity",
+    "data_url": "scenarios/vis-007/data.json",
+    "group_coherence": "incomplete",
+    "id": "VIS-007",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "visual-accessibility-and-liquid-glass-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "vis-007",
+    "tags": [
+      "catalog-scaffold",
+      "native-render",
+      "vis",
+      "visual-accessibility-and-liquid-glass-parity",
+      "visual-evidence-required"
+    ],
+    "title": "Content does not ghost through bars or tab regions",
+    "url": "scenarios/vis-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Visual, Accessibility, And Liquid Glass Parity",
+    "data_url": "scenarios/vis-008/data.json",
+    "group_coherence": "incomplete",
+    "id": "VIS-008",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "visual-accessibility-and-liquid-glass-parity",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "vis-008",
+    "tags": [
+      "catalog-scaffold",
+      "performance-required",
+      "process",
+      "vis",
+      "visual-accessibility-and-liquid-glass-parity",
+      "visual-evidence-required"
+    ],
+    "title": "Every screenshot has alt text, dimensions, UI critique, UX critique, and issue links for defects",
+    "url": "scenarios/vis-008/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Performance And D8 No-Polling Gates",
+    "data_url": "scenarios/d8-001/data.json",
+    "group_coherence": "incomplete",
+    "id": "D8-001",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "performance-and-d8-no-polling-gates",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "d8-001",
+    "tags": [
+      "catalog-scaffold",
+      "d8",
+      "performance-and-d8-no-polling-gates",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "No Task.sleep polling path is used",
+    "url": "scenarios/d8-001/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Performance And D8 No-Polling Gates",
+    "data_url": "scenarios/d8-002/data.json",
+    "group_coherence": "incomplete",
+    "id": "D8-002",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "performance-and-d8-no-polling-gates",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "d8-002",
+    "tags": [
+      "catalog-scaffold",
+      "d8",
+      "performance-and-d8-no-polling-gates",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "It uses event-driven state rather than sleeping before mutation",
+    "url": "scenarios/d8-002/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Performance And D8 No-Polling Gates",
+    "data_url": "scenarios/d8-003/data.json",
+    "group_coherence": "incomplete",
+    "id": "D8-003",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "performance-and-d8-no-polling-gates",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "d8-003",
+    "tags": [
+      "catalog-scaffold",
+      "d7",
+      "d8",
+      "performance-and-d8-no-polling-gates",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "CarPlay updates via callback/state instead of fixed sleep",
+    "url": "scenarios/d8-003/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Performance And D8 No-Polling Gates",
+    "data_url": "scenarios/d8-004/data.json",
+    "group_coherence": "incomplete",
+    "id": "D8-004",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "performance-and-d8-no-polling-gates",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "d8-004",
+    "tags": [
+      "catalog-scaffold",
+      "d5",
+      "d8",
+      "performance-and-d8-no-polling-gates",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Decode, commit, and render stay off the main hot path",
+    "url": "scenarios/d8-004/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Performance And D8 No-Polling Gates",
+    "data_url": "scenarios/d8-005/data.json",
+    "group_coherence": "incomplete",
+    "id": "D8-005",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "performance-and-d8-no-polling-gates",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "d8-005",
+    "tags": [
+      "catalog-scaffold",
+      "d8",
+      "performance-and-d8-no-polling-gates",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "Player UI cadence is coalesced and never exceeds 60 Hz",
+    "url": "scenarios/d8-005/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Performance And D8 No-Polling Gates",
+    "data_url": "scenarios/d8-006/data.json",
+    "group_coherence": "incomplete",
+    "id": "D8-006",
+    "missing_evidence": [
+      "accessibility_audit",
+      "cassette",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "performance-and-d8-no-polling-gates",
+    "provider_mode": "blocked",
+    "readiness": "incomplete",
+    "slug": "d8-006",
+    "tags": [
+      "cassette-required",
+      "catalog-scaffold",
+      "d1",
+      "d8",
+      "performance-and-d8-no-polling-gates",
+      "performance-required",
+      "visual-evidence-required"
+    ],
+    "title": "The app still shows useful progress and avoids layout thrash",
+    "url": "scenarios/d8-006/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Performance And D8 No-Polling Gates",
+    "data_url": "scenarios/d8-007/data.json",
+    "group_coherence": "incomplete",
+    "id": "D8-007",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "performance-and-d8-no-polling-gates",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "d8-007",
+    "tags": [
+      "catalog-scaffold",
+      "d8",
+      "performance-and-d8-no-polling-gates",
+      "performance-required",
+      "process",
+      "visual-evidence-required"
+    ],
+    "title": "Images render without layout shift or text overlap",
+    "url": "scenarios/d8-007/",
+    "verdict": "incomplete"
+  },
+  {
+    "category": "Performance And D8 No-Polling Gates",
+    "data_url": "scenarios/d8-008/data.json",
+    "group_coherence": "incomplete",
+    "id": "D8-008",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_cluster": "performance-and-d8-no-polling-gates",
+    "provider_mode": "none",
+    "readiness": "incomplete",
+    "slug": "d8-008",
+    "tags": [
+      "catalog-scaffold",
+      "d8",
+      "performance-and-d8-no-polling-gates",
+      "process",
+      "visual-evidence-required"
+    ],
+    "title": "Each finding maps to an issue, scenario page, and validation owner before release",
+    "url": "scenarios/d8-008/",
+    "verdict": "incomplete"
   }
 ]

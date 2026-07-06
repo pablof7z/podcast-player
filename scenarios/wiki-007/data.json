@@ -568,14 +568,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-06T04:12:59Z",
+        "completed_at": "2026-07-06T04:31:58Z",
         "evidence_refs": [
           "catalog:wiki-007"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-06T04:12:59Z",
+        "started_at": "2026-07-06T04:31:58Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -867,7 +867,7 @@
   "page": {
     "assets_base": "assets/scenarios/wiki-007/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/wiki-007/",
-    "generated_at": "2026-07-06T04:12:59Z",
+    "generated_at": "2026-07-06T04:31:58Z",
     "navigation": {
       "category_url": "../wiki-rag-knowledge-and-briefings/",
       "next_url": "../wiki-008/",
@@ -1285,9 +1285,9 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "",
+    "branch": "codex/chirp-nmp-validation-pack",
     "cassettes": [],
-    "completed_at": "2026-07-06T04:12:59Z",
+    "completed_at": "2026-07-06T04:31:58Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1308,9 +1308,9 @@
     "generator_version": "scenario-report-generator/0.3.3",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260706T041259Z-wiki-007",
-    "source_commit": "2b29560702ad754cec80d0ea9bf5bb67cb5e7612",
-    "started_at": "2026-07-06T04:12:59Z"
+    "run_id": "catalog-scaffold-20260706T043158Z-wiki-007",
+    "source_commit": "92ff6a77a2529cf9969379c017338f5dc433eca5",
+    "started_at": "2026-07-06T04:31:58Z"
   },
   "scenario": {
     "bdd": {
