@@ -8,11 +8,11 @@
     "tag_records": 64,
     "rollup_pages": 17,
     "evidence_backed_scenarios": 4,
-    "published_image_assets": 39,
+    "published_image_assets": 41,
     "scenario_run_screenshots": 13,
     "legacy_attachment_screenshots": 10,
     "product_survey_screenshots": 14,
-    "live_report_verification_screenshots": 2
+    "live_report_verification_screenshots": 4
   },
   "verdicts": {
     "incomplete": 317,
