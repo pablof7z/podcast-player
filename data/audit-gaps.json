@@ -2,11 +2,11 @@
   "generated_at": "2026-07-06T00:59:14Z",
   "auditor": "Halley",
   "summary": {
-    "published_index_pages": 354,
-    "scenario_records": 264,
-    "scenario_cluster_pages": 16,
-    "tag_records": 50,
-    "rollup_pages": 16,
+    "published_index_pages": 425,
+    "scenario_records": 320,
+    "scenario_cluster_pages": 23,
+    "tag_records": 64,
+    "rollup_pages": 17,
     "evidence_backed_scenarios": 4,
     "published_image_assets": 39,
     "scenario_run_screenshots": 13,
@@ -15,15 +15,15 @@
     "live_report_verification_screenshots": 2
   },
   "verdicts": {
-    "incomplete": 261,
+    "incomplete": 317,
     "pass_with_issues": 2,
     "fail": 1
   },
   "evidence_gaps": {
-    "accessibility_audit_missing": 264,
-    "screenshot_ui_tree_log_command_output_missing": 260,
-    "metric_trace_missing": 156,
-    "cassette_missing": 74
+    "accessibility_audit_missing": 320,
+    "screenshot_ui_tree_log_command_output_missing": 316,
+    "metric_trace_missing": 191,
+    "cassette_missing": 77
   },
   "skill_grounding": {
     "mobile_ui_product_craft": [
