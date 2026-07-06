@@ -1,10 +1,46 @@
 {
   "counts": {
     "closed_revalidation_pending": 2,
-    "open": 0,
+    "open": 2,
     "open_fix_pr_pending": 0
   },
   "issues": [
+    {
+      "affected_dimensions": [
+        "flow",
+        "actual_result",
+        "reliability_flakiness",
+        "navigation_state_restoration"
+      ],
+      "id": "#727",
+      "linked_pr": "#723",
+      "owner": "unassigned",
+      "revalidation": "not_started",
+      "scenario_id": "LIB-008",
+      "scenario_slug": "lib-008",
+      "severity": "major",
+      "status": "open",
+      "title": "UI stress: Show options does not reliably expose Follow after unsubscribe",
+      "url": "https://github.com/pablof7z/podcast-player/issues/727"
+    },
+    {
+      "affected_dimensions": [
+        "flow",
+        "ui_polish",
+        "accessibility_dynamic_type",
+        "reliability_flakiness"
+      ],
+      "id": "#728",
+      "linked_pr": "#723",
+      "owner": "unassigned",
+      "revalidation": "not_started",
+      "scenario_id": "QD-011",
+      "scenario_slug": "qd-011",
+      "severity": "major",
+      "status": "open",
+      "title": "Auto-download settings sheet does not reliably expose Auto-download controls",
+      "url": "https://github.com/pablof7z/podcast-player/issues/728"
+    },
     {
       "affected_dimensions": [
         "performance",

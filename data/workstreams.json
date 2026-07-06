@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-06T00:15:21Z",
+  "generated_at": "2026-07-06T00:21:09Z",
   "counts": {
     "open_prs": 3,
     "required_builds_running_or_queued": 2,
@@ -48,10 +48,10 @@
       "why_not_merged": "The required job saw real UI test failures before a later chunk printed TEST SUCCEEDED; merging would put a red required check on main.",
       "progress": [
         "The wrapper-fix intent is still valid, but the current run exposed UI instability outside the wrapper change.",
-        "StressUITests.testFFIRapidSubscribeUnsubscribe failed because the Show options flow could not find Follow after unsubscribe.",
-        "AutoDownloadUITests.testAutoDownloadPolicyUIPath failed once because the show settings sheet did not expose the Auto-download section/header and All new segment before retry."
+        "StressUITests.testFFIRapidSubscribeUnsubscribe failed because the Show options flow could not find Follow after unsubscribe; tracked as issue #727.",
+        "AutoDownloadUITests.testAutoDownloadPolicyUIPath failed once because the show settings sheet did not expose the Auto-download section/header and All new segment before retry; tracked as issue #728."
       ],
-      "next_action": "Investigate whether those failures reproduce on main or only on the branch, then either rerun with evidence or split a UI reliability fix."
+      "next_action": "Investigate issues #727 and #728 on main or in a dedicated fix branch, then rerun #723 after the UI reliability failures are either fixed or proven unrelated."
     },
     {
       "id": "#726",

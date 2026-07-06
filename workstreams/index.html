@@ -58,8 +58,8 @@
           <tr>
             <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/723">#723</a><br><span class="muted">CI wrapper false-red fix</span></td>
             <td data-label="Status"><span class="badge badge-fail">red required build</span></td>
-            <td data-label="Why It Is Not Merged Yet">The run hit real UI failures before a later chunk printed <code>TEST SUCCEEDED</code>: follow/unfollow stress could not find Follow after unsubscribe, and the auto-download sheet did not expose the expected section/segment on one attempt.</td>
-            <td data-label="Next Action">Investigate whether the UI failures reproduce on main or are branch-specific, then rerun or split a reliability fix.</td>
+            <td data-label="Why It Is Not Merged Yet">The run hit real UI failures before a later chunk printed <code>TEST SUCCEEDED</code>: follow/unfollow stress could not find Follow after unsubscribe (<a href="https://github.com/pablof7z/podcast-player/issues/727">#727</a>), and the auto-download sheet did not expose the expected section/segment on one attempt (<a href="https://github.com/pablof7z/podcast-player/issues/728">#728</a>).</td>
+            <td data-label="Next Action">Investigate <a href="https://github.com/pablof7z/podcast-player/issues/727">#727</a> and <a href="https://github.com/pablof7z/podcast-player/issues/728">#728</a> on main or in a dedicated fix branch, then rerun #723 after the UI reliability failures are either fixed or proven unrelated.</td>
           </tr>
         </tbody>
       </table>
