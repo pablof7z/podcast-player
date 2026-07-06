@@ -32,8 +32,8 @@
 
     <section id="active-prs">
       <h2>Open Pull Requests</h2>
-      <table>
-        <caption>Merge status as of 2026-07-06T00:15:21Z</caption>
+      <table class="responsive-table">
+        <caption>Open PR status</caption>
         <thead>
           <tr>
             <th>PR</th>
@@ -44,22 +44,22 @@
         </thead>
         <tbody>
           <tr>
-            <td><a href="https://github.com/pablof7z/podcast-player/pull/722">#722</a><br><span class="muted">Scenario report generator</span></td>
-            <td><span class="badge badge-running">required checks running</span></td>
-            <td>Build and Test is queued and Android Kotlin compile + unit tests is still running; the other short gates are green. This branch owns the hundreds-of-pages scenario template and includes #726's taxonomy additions.</td>
-            <td>Merge when required checks pass; inspect the failing log first if any gate turns red.</td>
+            <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/722">#722</a><br><span class="muted">Scenario report generator</span></td>
+            <td data-label="Status"><span class="badge badge-running">required checks running</span></td>
+            <td data-label="Why It Is Not Merged Yet">Build and Test is queued and Android Kotlin compile + unit tests is still running; the other short gates are green. This branch owns the hundreds-of-pages scenario template and includes #726's taxonomy additions.</td>
+            <td data-label="Next Action">Merge when required checks pass; inspect the failing log first if any gate turns red.</td>
           </tr>
           <tr>
-            <td><a href="https://github.com/pablof7z/podcast-player/pull/710">#710</a><br><span class="muted">NMP/Chirp sync audit</span></td>
-            <td><span class="badge badge-running">required checks running</span></td>
-            <td>Build and Test is in progress. The branch is otherwise mergeable and records how Pod0's NMP pin compares with NMP master and Chirp.</td>
-            <td>Merge after the required lane finishes green, then refresh this report's NMP status.</td>
+            <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/710">#710</a><br><span class="muted">NMP/Chirp sync audit</span></td>
+            <td data-label="Status"><span class="badge badge-running">required checks running</span></td>
+            <td data-label="Why It Is Not Merged Yet">Build and Test is in progress. The branch is otherwise mergeable and records how Pod0's NMP pin compares with NMP master and Chirp.</td>
+            <td data-label="Next Action">Merge after the required lane finishes green, then refresh this report's NMP status.</td>
           </tr>
           <tr>
-            <td><a href="https://github.com/pablof7z/podcast-player/pull/723">#723</a><br><span class="muted">CI wrapper false-red fix</span></td>
-            <td><span class="badge badge-fail">red required build</span></td>
-            <td>The run hit real UI failures before a later chunk printed <code>TEST SUCCEEDED</code>: follow/unfollow stress could not find Follow after unsubscribe, and the auto-download sheet did not expose the expected section/segment on one attempt.</td>
-            <td>Investigate whether the UI failures reproduce on main or are branch-specific, then rerun or split a reliability fix.</td>
+            <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/723">#723</a><br><span class="muted">CI wrapper false-red fix</span></td>
+            <td data-label="Status"><span class="badge badge-fail">red required build</span></td>
+            <td data-label="Why It Is Not Merged Yet">The run hit real UI failures before a later chunk printed <code>TEST SUCCEEDED</code>: follow/unfollow stress could not find Follow after unsubscribe, and the auto-download sheet did not expose the expected section/segment on one attempt.</td>
+            <td data-label="Next Action">Investigate whether the UI failures reproduce on main or are branch-specific, then rerun or split a reliability fix.</td>
           </tr>
         </tbody>
       </table>
@@ -68,8 +68,8 @@
 
     <section id="folded-and-merged">
       <h2>Recently Resolved</h2>
-      <table>
-        <caption>Merged or closed work affecting the validation report</caption>
+      <table class="responsive-table">
+        <caption>Resolved work</caption>
         <thead>
           <tr>
             <th>Item</th>
@@ -79,24 +79,24 @@
         </thead>
         <tbody>
           <tr>
-            <td><a href="https://github.com/pablof7z/podcast-player/pull/726">#726</a> Scenario report taxonomy gaps</td>
-            <td><span class="badge badge-pass">merged into #722</span></td>
-            <td>Now part of the report-generator branch waiting for #722 checks.</td>
+            <td data-label="Item"><a href="https://github.com/pablof7z/podcast-player/pull/726">#726</a> Scenario report taxonomy gaps</td>
+            <td data-label="Status"><span class="badge badge-pass">merged into #722</span></td>
+            <td data-label="Follow-Up">Now part of the report-generator branch waiting for #722 checks.</td>
           </tr>
           <tr>
-            <td><a href="https://github.com/pablof7z/podcast-player/pull/721">#721</a> Downloads &amp; Disk storage accounting</td>
-            <td><span class="badge badge-pass">merged to main</span></td>
-            <td><a href="../scenarios/set-005/">SET-005</a> still needs fresh screenshots, metrics, logs, and UI tree evidence before promotion.</td>
+            <td data-label="Item"><a href="https://github.com/pablof7z/podcast-player/pull/721">#721</a> Downloads &amp; Disk storage accounting</td>
+            <td data-label="Status"><span class="badge badge-pass">merged to main</span></td>
+            <td data-label="Follow-Up"><a href="../scenarios/set-005/">SET-005</a> still needs fresh screenshots, metrics, logs, and UI tree evidence before promotion.</td>
           </tr>
           <tr>
-            <td><a href="https://github.com/pablof7z/podcast-player/pull/720">#720</a> Seeded playback fixture duration</td>
-            <td><span class="badge badge-pass">merged to main</span></td>
-            <td><a href="../scenarios/play-001/">PLAY-001</a> still needs fresh playback screenshots, duration metrics, logs, and UI tree evidence before promotion.</td>
+            <td data-label="Item"><a href="https://github.com/pablof7z/podcast-player/pull/720">#720</a> Seeded playback fixture duration</td>
+            <td data-label="Status"><span class="badge badge-pass">merged to main</span></td>
+            <td data-label="Follow-Up"><a href="../scenarios/play-001/">PLAY-001</a> still needs fresh playback screenshots, duration metrics, logs, and UI tree evidence before promotion.</td>
           </tr>
           <tr>
-            <td><a href="https://github.com/pablof7z/podcast-player/pull/706">#706</a> Validation report hub</td>
-            <td><span class="badge badge-incomplete">closed superseded</span></td>
-            <td>Superseded by the live gh-pages branch and the deeper per-scenario generator work.</td>
+            <td data-label="Item"><a href="https://github.com/pablof7z/podcast-player/pull/706">#706</a> Validation report hub</td>
+            <td data-label="Status"><span class="badge badge-incomplete">closed superseded</span></td>
+            <td data-label="Follow-Up">Superseded by the live gh-pages branch and the deeper per-scenario generator work.</td>
           </tr>
         </tbody>
       </table>

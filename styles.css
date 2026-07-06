@@ -39,5 +39,20 @@ figcaption { padding: 8px 10px 10px; }
 .badge-fail { color: #9d2727; border-color: #d78585; background: #fff0f0; }
 .badge-running { color: #0c5d84; border-color: #73b4d3; background: #eef8fc; }
 .link-list { columns: 2 280px; }
-@media (max-width: 720px) { main { padding: 18px 12px 48px; } table { display: block; overflow-x: auto; } dl { grid-template-columns: 1fr; } }
+@media (max-width: 720px) {
+  main { padding: 18px 12px 48px; }
+  table { display: block; overflow-x: auto; }
+  .responsive-table,
+  .responsive-table tbody,
+  .responsive-table tr,
+  .responsive-table td { display: block; width: 100%; }
+  .responsive-table { border: 0; overflow: visible; table-layout: auto; }
+  .responsive-table caption { display: none; }
+  .responsive-table thead { display: none; }
+  .responsive-table tr { border: 1px solid var(--line); margin: 12px 0; background: #ffffff; }
+  .responsive-table td { border-bottom: 1px solid var(--line); padding: 10px 12px; }
+  .responsive-table td:last-child { border-bottom: 0; }
+  .responsive-table td::before { content: attr(data-label); display: block; margin-bottom: 4px; color: var(--muted); font-size: 0.82rem; font-weight: 700; }
+  dl { grid-template-columns: 1fr; }
+}
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
