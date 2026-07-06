@@ -40,6 +40,10 @@ REQUIRED_SCENARIO_SECTIONS = [
     "Before/After Deltas",
     "Revalidation Status",
     "Owner And Status",
+    "Data Integrity And State Sync",
+    "Navigation State And Restoration",
+    "Device, Viewport, And Generated-Page Coverage",
+    "Media Session And Background Audio Continuity",
 ]
 
 
@@ -76,7 +80,12 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertEqual(data["review_grounding"]["search_command"], 'npx skills search "liquid glass iOS mobile frontend design UI polish"')
             self.assertEqual(
                 [skill["name"] for skill in SKILL_GROUNDING if skill["selected"]],
-                ["vabole/apple-skills@ios-liquid-glass", "local web-design-guidelines", "local playwright-cli"],
+                [
+                    "ceorkm/mobile-app-ui-design@mobile-app-ui-design",
+                    "vabole/apple-skills@ios-liquid-glass",
+                    "local web-design-guidelines",
+                    "local playwright-cli",
+                ],
             )
 
     def test_preserves_existing_pages_assets_and_issue_index(self) -> None:
@@ -252,7 +261,12 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertIn("artifact:old-shot", {artifact["id"] for artifact in merged["evidence"]["artifacts"]})
             self.assertEqual(
                 [skill["name"] for skill in merged["review_grounding"]["selected_skills"]],
-                ["vabole/apple-skills@ios-liquid-glass", "local web-design-guidelines", "local playwright-cli"],
+                [
+                    "ceorkm/mobile-app-ui-design@mobile-app-ui-design",
+                    "vabole/apple-skills@ios-liquid-glass",
+                    "local web-design-guidelines",
+                    "local playwright-cli",
+                ],
             )
             self.assertNotIn("obsolete/old-skill", json.dumps(merged["sections"]["review_skill_grounding"]))
             self.assertIn("local web-design-guidelines", merged["sections"]["review_skill_grounding"]["notes"][0])
@@ -300,6 +314,14 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             },
         )
         self.assertEqual(schema["$defs"]["coherence"]["properties"]["cluster"]["$ref"], "#/$defs/coherence_cluster")
+        self.assertTrue(
+            {
+                "data_integrity_state_sync",
+                "navigation_state_restoration",
+                "device_viewport_coverage",
+                "media_session_background_continuity",
+            }.issubset(set(schema["$defs"]["dimension_scores"]["required"]))
+        )
         screenshot_rule = schema["$defs"]["artifact"]["allOf"][0]["then"]["required"]
         self.assertTrue({"alt", "caption", "step_id", "captured_at", "device", "os_version", "sha256", "width", "height"}.issubset(screenshot_rule))
 

@@ -18,9 +18,10 @@ def product_context_for(scenario: Scenario, scenarios: list[Scenario]) -> dict[s
             f"Architecture boundary remains within {', '.join(scenario.boundaries) or 'the declared product surface'}.",
         ],
         "platform_expectations": [
-            "iPhone-first flow uses system navigation/chrome, safe areas, SF typography, semantic color, and reachable primary controls.",
+            "iPhone-first flow uses system navigation/chrome, safe areas, SF typography, semantic color, 44 pt tap targets, and reachable primary controls.",
             "Accessibility evidence covers VoiceOver, Dynamic Type, contrast, motion/transparency settings, and touch target behavior before UI scores can pass.",
             "Provider, relay, transcript, audio, or LLM dependencies are deterministic through fixtures/cassettes or explicitly marked live-only.",
+            "State, navigation, queue, playback, and generated report pages are checked across device, viewport, and resume contexts.",
         ],
         "scenario_cluster": {
             "id": scenario.category_slug,
@@ -87,6 +88,7 @@ def review_grounding_for() -> dict[str, Any]:
         "selected_skills": selected,
         "all_considered": SKILL_GROUNDING,
         "template_impact": [
+            "Mobile App UI/UX Design drives user-goal framing, thumb-zone/reachability checks, visual hierarchy, 8-point spacing, empty/loading/error/success state coverage, and peak-end flow judgment.",
             "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, GlassEffect composition, semantic foreground styles, and Reduce Motion/Transparency requirements.",
             "Web Interface Guidelines drive generated-site accessibility, semantic HTML, focus, image metadata, safe-area, touch, reduced-motion, content-overflow, localization, and frontend performance checks.",
             "Playwright CLI is the expected local verification path for generated GitHub Pages screenshots, snapshots, responsive viewports, and interaction smoke tests.",
@@ -160,6 +162,8 @@ def instrumentation_gaps_for(scenario: Scenario) -> list[dict[str, Any]]:
         gap("ui-tree", "major", "No accessibility/UI tree snapshot is attached.", ["accessibility_dynamic_type", "actual_result"]),
         gap("logs", "major", "No structured logs or command outputs are attached.", ["observability", "reliability_flakiness"]),
         gap("accessibility", "major", "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or Reduce Transparency evidence is attached.", ["accessibility_dynamic_type", "touch_ergonomics"]),
+        gap("state-integrity", "major", "No persistence, projection, or data-integrity evidence is attached.", ["data_integrity_state_sync", "actual_result"]),
+        gap("viewport-coverage", "minor", "No generated-page viewport or device coverage evidence is attached.", ["device_viewport_coverage", "device_os_matrix"]),
     ]
     if scenario.performance_required:
         gaps.append(gap("performance-metrics", "major", "Catalog requires performance evidence, but no trace or metric is attached.", ["performance", "reliability_flakiness"]))

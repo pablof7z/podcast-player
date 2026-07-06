@@ -104,6 +104,10 @@ selected grounding is:
   Guidelines, for semantic HTML, focus, image metadata, safe-area, touch,
   reduced-motion, content-overflow, localization, accessibility, and frontend
   performance gates.
+- `ceorkm/mobile-app-ui-design@mobile-app-ui-design`, loaded after
+  `npx skills search "mobile ux design"`, for mobile-first user goals,
+  thumb-zone reachability, 44 pt targets, 8-point spacing, visual hierarchy,
+  empty/loading/error/success states, and peak-end product moments.
 - `local playwright-cli`, loaded for generated-site screenshots, snapshots,
   responsive viewport checks, and interaction smoke validation.
 
@@ -151,6 +155,10 @@ severity, and validation confidence.
 | Verdict | What is the scenario's status and why? | Grouped score summary and concise rationale. | Must match score gates mechanically. |
 | Next actions | What should happen next? | Ordered action list with owners/links. | Blocking follow-up without owner/link caps at `2`. |
 | Owner/status | Who owns the page, defects, blockers, gates, and revalidation? | Owner/status on blockers, gates, risks, issues, and next actions. | Unowned blocker prevents pass. |
+| Data integrity/state sync | Did persisted data, Rust projections, native render state, and exported/imported records agree? | Projection snapshots, persistence/export/import checks, before/after state, logs. | Divergent user-visible or persisted state is `1`. |
+| Navigation state/restoration | Does tab, sheet, detail path, back stack, deep-link, and relaunch restoration state remain correct? | Navigation screenshots, UI tree, route/deep-link logs, relaunch evidence. | Stale or contradictory navigation state caps at `2`; lost critical state is `1`. |
+| Device/viewport coverage | Which app devices/settings and generated-site viewports prove the result? | iPhone/device matrix plus desktop/mobile report-page screenshots or Playwright checks. | Missing generated-page viewport smoke keeps report-page readiness incomplete. |
+| Media session/background continuity | For podcast-facing flows, do audio route, queue, mini-player/full-player, lock-screen/background, interruption, and remote command state remain coherent? | Audio/session logs, player screenshots, lock/background notes, remote-command evidence. | Broken background or contradictory player state is `1`. |
 
 ## 2026 Product-Quality Sections
 
