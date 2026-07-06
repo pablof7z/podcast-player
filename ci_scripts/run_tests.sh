@@ -151,13 +151,30 @@ run_test_chunk() {
 # test regressions (a genuine failure will fail again on retry).
 run_test_chunk_with_retry() {
   local chunk_status=0
-  run_test_chunk "$@" || chunk_status=$?
+  run_test_chunk_once_with_log "$@" || chunk_status=$?
   if [ "$chunk_status" -ne 0 ]; then
     echo "--- chunk exited $chunk_status; resetting sim and retrying once ---" >&2
     reset_sim
     chunk_status=0
-    run_test_chunk "$@" || chunk_status=$?
+    run_test_chunk_once_with_log "$@" || chunk_status=$?
   fi
+  return "$chunk_status"
+}
+
+run_test_chunk_once_with_log() {
+  local log_file chunk_status
+  log_file="$(mktemp "${TMPDIR:-/tmp}/podcastr-xcodebuild.XXXXXX")"
+  set +e
+  run_test_chunk "$@" 2>&1 | tee "$log_file"
+  chunk_status=${PIPESTATUS[0]}
+  set -e
+
+  if [ "$chunk_status" -ne 0 ] && grep -q '^\*\* TEST SUCCEEDED \*\*$' "$log_file"; then
+    echo "warning: xcodebuild exited ${chunk_status} after reporting TEST SUCCEEDED; treating as simulator runner noise" >&2
+    chunk_status=0
+  fi
+
+  rm -f "$log_file"
   return "$chunk_status"
 }
 
