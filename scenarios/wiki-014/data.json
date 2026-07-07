@@ -630,14 +630,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-07T22:12:32Z",
+        "completed_at": "2026-07-07T22:55:51Z",
         "evidence_refs": [
           "catalog:wiki-014"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-07T22:12:32Z",
+        "started_at": "2026-07-07T22:55:51Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -1018,7 +1018,7 @@
   "page": {
     "assets_base": "assets/scenarios/wiki-014/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/wiki-014/",
-    "generated_at": "2026-07-07T22:12:32Z",
+    "generated_at": "2026-07-07T22:55:51Z",
     "navigation": {
       "category_url": "../wiki-rag-knowledge-and-briefings/",
       "next_url": "../wiki-015/",
@@ -1306,45 +1306,45 @@
   "review_grounding": {
     "all_considered": [
       {
-        "coverage": "iOS-native hierarchy, restrained glass/material use, system typography, semantic foreground styles, safe areas, sheet/navigation conventions, and Reduce Transparency/Motion expectations.",
-        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
-        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, native chrome usage, interactive glass restraint, safe-area-sensitive controls, and Reduce Motion/Transparency expectations.",
+        "name": "vabole/apple-skills@ios-liquid-glass",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
         "selected": true
       },
       {
-        "coverage": "Mobile-first user goals, thumb-zone reachability, 44 pt/48 dp target checks, interruption/resume behavior, platform navigation conventions, and performance-as-UX budgets.",
-        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
-        "search_terms": "mobile ux design",
+        "coverage": "Apple HIG factual checks for safe areas, system typography, Dynamic Type, accessibility, color/contrast, materials, navigation, controls, and 44 pt touch targets.",
+        "name": "vabole/apple-skills@hig",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
         "selected": true
       },
       {
-        "coverage": "Search result considered for additional iOS UI review; loaded iOS glass and mobile UX skills cover the required page-template rubric.",
-        "name": "charleswiltgen/axiom@axiom-ios-ui",
-        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
-        "selected": false
+        "coverage": "Mobile app interface rules for safe areas, Dynamic Type, semantic colors, native navigation, haptics, accessibility labels, list performance, Liquid Glass overlays, and material fallbacks.",
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": true
       },
       {
-        "coverage": "Search result considered for Apple platform critique; ios-glass-ui-designer was closer to the requested Liquid Glass report focus.",
+        "coverage": "Search result considered; the exact skill was not loadable from the package, so the package HIG skill was loaded instead for factual native iOS checks.",
         "name": "vabole/apple-skills@ios-design-consultant",
-        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
         "selected": false
       },
       {
-        "coverage": "Search result considered for alternate Liquid Glass critique; not loaded because the selected iOS glass skill was more directly iOS-native.",
-        "name": "xu-xiang/everything-claude-code-zh@liquid-glass-design",
-        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
+        "coverage": "Search result considered for mobile UX critique; qodex mobile-app-interface and Apple HIG coverage were enough for this focused manifest.",
+        "name": "phazurlabs/ux-ui-mastery@mobile ux design",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
         "selected": false
       },
       {
-        "coverage": "Search result considered for additional glass-specific implementation review; selected skills already cover iOS material restraint and mobile interface gates.",
-        "name": "ravnhq/ai-toolkit@liquid-glass-ios",
-        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
+        "coverage": "Search result considered for SwiftUI Liquid Glass implementation detail; this pass plans evidence requirements rather than changing SwiftUI runtime code.",
+        "name": "openai/plugins@swiftui-liquid-glass",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
         "selected": false
       },
       {
-        "coverage": "Useful follow-up for generated-site review, but this pass grounds the report rubric in skills discovered and loaded through npx skills search/use.",
-        "name": "local web-design-guidelines",
-        "search_terms": "local generated-page accessibility/design guidance",
+        "coverage": "Search result considered for Swift app implementation workflow; not needed because this change is report-generator planning data and rendering only.",
+        "name": "petekp/claude-code-setup@swift-apps",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
         "selected": false
       },
       {
@@ -1354,25 +1354,31 @@
         "selected": false
       }
     ],
-    "search_command": "npx skills search \"Liquid Glass iOS mobile UI UX polish accessibility frontend design\"",
+    "search_command": "npx skills search \"iOS mobile UI UX liquid glass native polish validation\"",
     "selected_skills": [
       {
-        "coverage": "iOS-native hierarchy, restrained glass/material use, system typography, semantic foreground styles, safe areas, sheet/navigation conventions, and Reduce Transparency/Motion expectations.",
-        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
-        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, native chrome usage, interactive glass restraint, safe-area-sensitive controls, and Reduce Motion/Transparency expectations.",
+        "name": "vabole/apple-skills@ios-liquid-glass",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
         "selected": true
       },
       {
-        "coverage": "Mobile-first user goals, thumb-zone reachability, 44 pt/48 dp target checks, interruption/resume behavior, platform navigation conventions, and performance-as-UX budgets.",
-        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
-        "search_terms": "mobile ux design",
+        "coverage": "Apple HIG factual checks for safe areas, system typography, Dynamic Type, accessibility, color/contrast, materials, navigation, controls, and 44 pt touch targets.",
+        "name": "vabole/apple-skills@hig",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": true
+      },
+      {
+        "coverage": "Mobile app interface rules for safe areas, Dynamic Type, semantic colors, native navigation, haptics, accessibility labels, list performance, Liquid Glass overlays, and material fallbacks.",
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
         "selected": true
       }
     ],
     "template_impact": [
-      "iOS Glass UI Designer drives restrained material judgment: native chrome first, glass only for hierarchy/context, semantic foreground styles, safe areas, and accessibility fallbacks.",
-      "Mobile UX Design drives user-goal framing, thumb-zone reachability, touch-target sizing, interruption/resume checks, navigation convention review, and performance-as-UX budgets.",
-      "The Liquid Glass reference from Mobile UX Design adds explicit contrast, Reduce Transparency, Increase Contrast, Dynamic Type, and oldest-device performance checks.",
+      "iOS Liquid Glass grounding drives restrained material judgment: glass belongs on navigation/control chrome, not dense content, with accessibility fallbacks.",
+      "Apple HIG grounding drives factual checks for safe areas, system typography, Dynamic Type, semantic color, 44 pt touch targets, navigation conventions, and accessibility.",
+      "Mobile app interface grounding drives user-goal framing, thumb reach, native navigation, purposeful haptics, list performance, material fallback checks, and performance-as-UX budgets.",
       "The generated page front-loads launch readiness, risk class, evidence quality, accessibility status, regression coverage, and dependency posture before detailed scores.",
       "The report separates individual dimensions from whole-product cluster judgment so an isolated pass cannot hide a weak or inconsistent product flow."
     ]
@@ -1419,7 +1425,7 @@
     "app_build": "not-built-catalog-scaffold",
     "branch": "",
     "cassettes": [],
-    "completed_at": "2026-07-07T22:12:32Z",
+    "completed_at": "2026-07-07T22:55:51Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1440,9 +1446,9 @@
     "generator_version": "scenario-report-generator/0.4.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260707T221232Z-wiki-014",
-    "source_commit": "5b486b650692327e81460b77b6da0d6cadc0092c",
-    "started_at": "2026-07-07T22:12:32Z"
+    "run_id": "catalog-scaffold-20260707T225551Z-wiki-014",
+    "source_commit": "7098b7d9ec69f121fc3bd4024cd1813ef01a3eca",
+    "started_at": "2026-07-07T22:55:51Z"
   },
   "scenario": {
     "bdd": {
@@ -1782,9 +1788,9 @@
         "rubric:review-skill-grounding"
       ],
       "notes": [
-        "Selected skills: heyman333/atelier-ui@ios-glass-ui-designer, phazurlabs/ux-ui-mastery@Mobile UX Design."
+        "Selected skills: vabole/apple-skills@ios-liquid-glass, vabole/apple-skills@hig, qodex-ai/ai-agent-skills@mobile-app-interface."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers iOS-native glass/material restraint, mobile task flow, touch ergonomics, accessibility settings, and performance-as-UX review."
+      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass restraint, HIG factual checks, safe areas, Dynamic Type, touch targets, accessibility settings, native navigation, material fallbacks, and performance-as-UX review."
     },
     "risks_follow_up": {
       "evidence_refs": [

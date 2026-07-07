@@ -1,0 +1,836 @@
+{
+  "cluster": {
+    "id": "foundation-and-first-run",
+    "scope": "Fresh install, onboarding progression, provider skip, identity setup, starter subscription, error recovery, relaunch persistence, and accessibility gates.",
+    "title": "Foundation And First Run"
+  },
+  "common_capture_requirements": [
+    "Capture at least one step screenshot, one semantic UI tree, one command/log reference, and one generated report-page viewport check for every scenario.",
+    "Run light appearance first; add dark appearance when the flow includes persistent navigation chrome, sheet chrome, or visual state that could invert poorly.",
+    "Verify 44 pt minimum tap targets, safe-area reachability, Dynamic Type behavior, VoiceOver labels, contrast, Reduce Motion, and Reduce Transparency before scoring UI/UX above 2.",
+    "Record NMP/RMP boundary observations: Rust-owned state/projections, thin native rendering, replayable clocks, and fail-closed provider or network behavior."
+  ],
+  "created_at": "2026-07-07T20:28:27Z",
+  "execution_principles": [
+    "Do not mark a scenario executed from this manifest alone; attach simulator/device evidence first.",
+    "Every screenshot set must include source commit, app build, device/OS, appearance, Dynamic Type, Reduce Motion, Reduce Transparency, network mode, and redaction state.",
+    "Glass and material critique must focus on navigation or control chrome only; dense content surfaces need readable solid or semantic backgrounds.",
+    "Every actionable defect found during execution must be filed before a scenario can leave incomplete."
+  ],
+  "loaded_skills": [
+    "vabole/apple-skills@ios-liquid-glass",
+    "vabole/apple-skills@hig",
+    "qodex-ai/ai-agent-skills@mobile-app-interface"
+  ],
+  "mapped_count": 8,
+  "not_run_count": 8,
+  "scenarios": [
+    {
+      "catalog_status": "mapped",
+      "category": "Foundation And First Run",
+      "data_url": "scenarios/fnd-001/data.json",
+      "execution_status": "not_run",
+      "issue_filing_gates": [
+        {
+          "affected_dimensions": [
+            "flow",
+            "privacy_security",
+            "navigation_state_restoration"
+          ],
+          "file_issue_if": "Any main-tab, library, player, account, or seeded app state is reachable before onboarding completion.",
+          "id": "fnd001-main-state-bypass",
+          "severity": "blocker"
+        },
+        {
+          "affected_dimensions": [
+            "performance",
+            "ui_polish",
+            "accessibility_dynamic_type"
+          ],
+          "file_issue_if": "Cold launch shows a blank screen, spinner loop, clipped CTA, or inaccessible first action for more than the budget.",
+          "id": "fnd001-launch-blank-or-loop",
+          "severity": "major"
+        }
+      ],
+      "missing_evidence": [
+        "accessibility_audit",
+        "command_output",
+        "log",
+        "metric_trace",
+        "screenshot",
+        "ui_tree"
+      ],
+      "performance_metrics": [
+        {
+          "budget": "<= 1500 ms",
+          "id": "fnd001-cold-launch-first-onboarding-frame-ms",
+          "method": "XCTest launch metric or xcodebuild timestamp from process launch to first captured onboarding UI tree.",
+          "name": "Cold launch to first onboarding frame",
+          "required": true
+        }
+      ],
+      "priority": 1,
+      "readiness": "incomplete",
+      "runbook": "Erase simulator/app-group data, launch Pod0, and stop on the first onboarding page before tapping any primary action.",
+      "scenario_id": "FND-001",
+      "scenario_url": "scenarios/fnd-001/",
+      "screenshot_requirements": [
+        {
+          "description": "First onboarding page immediately after cold launch.",
+          "id": "fnd001-first-page",
+          "must_include": [
+            "primary headline",
+            "primary action",
+            "safe-area top and bottom chrome"
+          ],
+          "must_not_include": [
+            "main tab bar",
+            "library rows",
+            "mini-player",
+            "account details"
+          ],
+          "step_id": "step-02-action"
+        },
+        {
+          "description": "Semantic UI tree proving no main-tab controls are reachable behind onboarding.",
+          "id": "fnd001-ui-tree-gate",
+          "must_include": [
+            "onboarding controls with labels",
+            "primary button role"
+          ],
+          "must_not_include": [
+            "Home tab",
+            "Library tab",
+            "Bookmarks tab",
+            "Clippings tab"
+          ],
+          "step_id": "step-03-result"
+        }
+      ],
+      "title": "Onboarding page 1 appears and no main-tab state is reachable behind it",
+      "ui_ux_liquid_glass_checks": [
+        {
+          "area": "ux",
+          "check": "Onboarding behaves as a true first-run gate with no navigable app state behind it.",
+          "id": "fnd001-first-run-gate",
+          "skill_refs": [
+            "vabole/apple-skills@hig",
+            "qodex-ai/ai-agent-skills@mobile-app-interface"
+          ]
+        },
+        {
+          "area": "liquid_glass",
+          "check": "Any glass-like treatment is limited to chrome or controls and preserves contrast over the launch backdrop.",
+          "id": "fnd001-chrome-restraint",
+          "skill_refs": [
+            "vabole/apple-skills@ios-liquid-glass"
+          ]
+        }
+      ],
+      "verdict": "incomplete"
+    },
+    {
+      "catalog_status": "mapped",
+      "category": "Foundation And First Run",
+      "data_url": "scenarios/fnd-002/data.json",
+      "execution_status": "not_run",
+      "issue_filing_gates": [
+        {
+          "affected_dimensions": [
+            "flow",
+            "ux_polish",
+            "reliability_flakiness"
+          ],
+          "file_issue_if": "A primary action skips, repeats, or reorders pages without an explicit user choice.",
+          "id": "fnd002-page-order-drift",
+          "severity": "major"
+        },
+        {
+          "affected_dimensions": [
+            "accessibility_dynamic_type",
+            "touch_ergonomics",
+            "verdict"
+          ],
+          "file_issue_if": "The primary completion path is clipped, disabled without recovery, or unreachable by touch or VoiceOver.",
+          "id": "fnd002-unreachable-primary-action",
+          "severity": "blocker"
+        }
+      ],
+      "missing_evidence": [
+        "accessibility_audit",
+        "command_output",
+        "log",
+        "metric_trace",
+        "screenshot",
+        "ui_tree"
+      ],
+      "performance_metrics": [
+        {
+          "budget": "<= 250 ms per primary tap",
+          "id": "fnd002-page-transition-ms",
+          "method": "Timestamp primary tap to next stable UI tree for every page transition.",
+          "name": "Onboarding page transition latency",
+          "required": true
+        }
+      ],
+      "priority": 2,
+      "readiness": "incomplete",
+      "runbook": "Start from a fresh install and advance through every onboarding page using only visible primary controls.",
+      "scenario_id": "FND-002",
+      "scenario_url": "scenarios/fnd-002/",
+      "screenshot_requirements": [
+        {
+          "description": "One screenshot per onboarding page, named in visible order.",
+          "id": "fnd002-every-page",
+          "must_include": [
+            "page title",
+            "progress or step position",
+            "primary action",
+            "back or skip affordance when present"
+          ],
+          "must_not_include": [
+            "layout overlap",
+            "disabled primary path without explanation"
+          ],
+          "step_id": "step-02-action"
+        },
+        {
+          "description": "Final app-entry screen after the last onboarding action.",
+          "id": "fnd002-final-entry",
+          "must_include": [
+            "main shell or expected destination",
+            "stable selected tab or route"
+          ],
+          "must_not_include": [
+            "stale onboarding overlay",
+            "duplicate completion prompt"
+          ],
+          "step_id": "step-03-result"
+        }
+      ],
+      "title": "Page order, progress indicators, and final app entry are stable",
+      "ui_ux_liquid_glass_checks": [
+        {
+          "area": "ux",
+          "check": "Page order, progress, and back/skip behavior match the user's mental model and do not strand the user.",
+          "id": "fnd002-progress-honesty",
+          "skill_refs": [
+            "qodex-ai/ai-agent-skills@mobile-app-interface"
+          ]
+        },
+        {
+          "area": "ui",
+          "check": "Headlines, body copy, and buttons remain readable without truncating critical meaning.",
+          "id": "fnd002-dynamic-text-fit",
+          "skill_refs": [
+            "vabole/apple-skills@hig"
+          ]
+        }
+      ],
+      "verdict": "incomplete"
+    },
+    {
+      "catalog_status": "mapped",
+      "category": "Foundation And First Run",
+      "data_url": "scenarios/fnd-003/data.json",
+      "execution_status": "not_run",
+      "issue_filing_gates": [
+        {
+          "affected_dimensions": [
+            "flow",
+            "offline_resume_behavior",
+            "product_coherence"
+          ],
+          "file_issue_if": "Skipping AI blocks library, playback, or first-run completion.",
+          "id": "fnd003-skip-blocks-core-app",
+          "severity": "blocker"
+        },
+        {
+          "affected_dimensions": [
+            "privacy_security",
+            "replayability_cassette_provenance",
+            "nmp_architecture"
+          ],
+          "file_issue_if": "The skip path sends a live provider request, persists phantom credentials, or reports a connected provider.",
+          "id": "fnd003-live-provider-leak",
+          "severity": "major"
+        }
+      ],
+      "missing_evidence": [
+        "accessibility_audit",
+        "command_output",
+        "log",
+        "screenshot",
+        "ui_tree"
+      ],
+      "performance_metrics": [
+        {
+          "budget": "0 live provider calls",
+          "id": "fnd003-provider-call-count",
+          "method": "Inspect redacted logs or cassette registry for OpenRouter/Ollama/STT/TTS calls while skipping setup.",
+          "name": "Provider network calls during skip path",
+          "required": true
+        }
+      ],
+      "priority": 3,
+      "readiness": "incomplete",
+      "runbook": "Complete onboarding by choosing the visible AI/provider skip path, then open Library, playback, and Settings AI.",
+      "scenario_id": "FND-003",
+      "scenario_url": "scenarios/fnd-003/",
+      "screenshot_requirements": [
+        {
+          "description": "AI setup page with skip or not-now path before selection.",
+          "id": "fnd003-ai-skip",
+          "must_include": [
+            "skip/not-now action",
+            "provider setup state"
+          ],
+          "must_not_include": [
+            "forced credential entry",
+            "secret-bearing examples"
+          ],
+          "step_id": "step-02-action"
+        },
+        {
+          "description": "Settings AI after onboarding completes with providers disconnected.",
+          "id": "fnd003-disconnected-settings",
+          "must_include": [
+            "disconnected provider state",
+            "library or playback still reachable"
+          ],
+          "must_not_include": [
+            "connected state without credentials",
+            "blocking modal over library"
+          ],
+          "step_id": "step-03-result"
+        }
+      ],
+      "title": "Provider settings remain disconnected without blocking library or playback",
+      "ui_ux_liquid_glass_checks": [
+        {
+          "area": "ux",
+          "check": "Skip copy explains consequences without making AI setup feel mandatory for library or playback.",
+          "id": "fnd003-skip-copy-honesty",
+          "skill_refs": [
+            "qodex-ai/ai-agent-skills@mobile-app-interface"
+          ]
+        },
+        {
+          "area": "ui",
+          "check": "Disconnected provider state is visible, stable, and not confused with a failure state.",
+          "id": "fnd003-settings-state-clarity",
+          "skill_refs": [
+            "vabole/apple-skills@hig"
+          ]
+        }
+      ],
+      "verdict": "incomplete"
+    },
+    {
+      "catalog_status": "mapped",
+      "category": "Foundation And First Run",
+      "data_url": "scenarios/fnd-004/data.json",
+      "execution_status": "not_run",
+      "issue_filing_gates": [
+        {
+          "affected_dimensions": [
+            "data_integrity_state_sync",
+            "nmp_architecture",
+            "actual_result"
+          ],
+          "file_issue_if": "Settings identity does not match the name entered during onboarding.",
+          "id": "fnd004-name-mismatch",
+          "severity": "major"
+        },
+        {
+          "affected_dimensions": [
+            "privacy_security",
+            "evidence_provenance",
+            "verdict"
+          ],
+          "file_issue_if": "Screenshots, UI tree, logs, or export state expose nsec/private key material.",
+          "id": "fnd004-secret-exposure",
+          "severity": "blocker"
+        }
+      ],
+      "missing_evidence": [
+        "accessibility_audit",
+        "command_output",
+        "log",
+        "screenshot",
+        "ui_tree"
+      ],
+      "performance_metrics": [
+        {
+          "budget": "<= 500 ms",
+          "id": "fnd004-projection-settle-ms",
+          "method": "Timestamp completion tap to stable identity UI tree with the entered name.",
+          "name": "Identity projection settle after completion",
+          "required": true
+        }
+      ],
+      "priority": 4,
+      "readiness": "incomplete",
+      "runbook": "Enter a unique agent display name during onboarding, complete setup, and open Settings identity/account details.",
+      "scenario_id": "FND-004",
+      "scenario_url": "scenarios/fnd-004/",
+      "screenshot_requirements": [
+        {
+          "description": "Onboarding name-entry page with typed test name before completion.",
+          "id": "fnd004-name-entry",
+          "must_include": [
+            "text field label",
+            "typed display name",
+            "primary continue action"
+          ],
+          "must_not_include": [
+            "private key",
+            "raw nsec",
+            "unlabeled text field"
+          ],
+          "step_id": "step-02-action"
+        },
+        {
+          "description": "Settings identity screen showing the same display name from persisted kernel state.",
+          "id": "fnd004-identity-projection",
+          "must_include": [
+            "matching display name",
+            "account/identity route"
+          ],
+          "must_not_include": [
+            "default placeholder replacing typed name",
+            "duplicate identity rows"
+          ],
+          "step_id": "step-03-result"
+        }
+      ],
+      "title": "Settings identity shows the same display name from kernel state",
+      "ui_ux_liquid_glass_checks": [
+        {
+          "area": "ui",
+          "check": "Keyboard, field label, focus state, and primary action remain reachable and understandable.",
+          "id": "fnd004-form-ergonomics",
+          "skill_refs": [
+            "vabole/apple-skills@hig",
+            "qodex-ai/ai-agent-skills@mobile-app-interface"
+          ]
+        },
+        {
+          "area": "ux",
+          "check": "The name appears consistently across onboarding completion and Settings identity without native-side remapping.",
+          "id": "fnd004-state-coherence",
+          "skill_refs": [
+            "qodex-ai/ai-agent-skills@mobile-app-interface"
+          ]
+        }
+      ],
+      "verdict": "incomplete"
+    },
+    {
+      "catalog_status": "mapped",
+      "category": "Foundation And First Run",
+      "data_url": "scenarios/fnd-005/data.json",
+      "execution_status": "not_run",
+      "issue_filing_gates": [
+        {
+          "affected_dimensions": [
+            "data_integrity_state_sync",
+            "flow",
+            "performance"
+          ],
+          "file_issue_if": "The subscribed show appears only after manual refresh, relaunch, or reseeding.",
+          "id": "fnd005-manual-refresh-required",
+          "severity": "major"
+        },
+        {
+          "affected_dimensions": [
+            "replayability_cassette_provenance",
+            "actual_result",
+            "content_hierarchy"
+          ],
+          "file_issue_if": "The cassette is missing/unmapped, subscription duplicates the show, or the row lacks title/artwork/metadata.",
+          "id": "fnd005-cassette-or-duplicate-defect",
+          "severity": "major"
+        }
+      ],
+      "missing_evidence": [
+        "accessibility_audit",
+        "cassette",
+        "command_output",
+        "log",
+        "metric_trace",
+        "screenshot",
+        "ui_tree"
+      ],
+      "performance_metrics": [
+        {
+          "budget": "<= 1000 ms after cassette response",
+          "id": "fnd005-subscribe-to-library-ms",
+          "method": "Timestamp subscribe tap, cassette replay response, and first Library UI tree containing the show.",
+          "name": "Subscribe action to Library row visible",
+          "required": true
+        }
+      ],
+      "priority": 5,
+      "readiness": "incomplete",
+      "runbook": "Use the starter feed cassette, subscribe from onboarding suggestions, then open Library without manual refresh.",
+      "scenario_id": "FND-005",
+      "scenario_url": "scenarios/fnd-005/",
+      "screenshot_requirements": [
+        {
+          "description": "Starter suggestion row before subscription.",
+          "id": "fnd005-suggestion-row",
+          "must_include": [
+            "show title",
+            "artwork or fallback",
+            "subscribe action",
+            "cassette fixture name in log"
+          ],
+          "must_not_include": [
+            "already subscribed state",
+            "live provider key"
+          ],
+          "step_id": "step-01-preconditions"
+        },
+        {
+          "description": "Library after onboarding subscription completes with the show visible.",
+          "id": "fnd005-library-after-subscribe",
+          "must_include": [
+            "subscribed show row",
+            "episode count or meaningful metadata",
+            "no manual refresh step"
+          ],
+          "must_not_include": [
+            "duplicate show rows",
+            "stale loading spinner"
+          ],
+          "step_id": "step-03-result"
+        }
+      ],
+      "title": "The show appears in Library without manual refresh",
+      "ui_ux_liquid_glass_checks": [
+        {
+          "area": "ux",
+          "check": "Subscription progress and success feedback are visible and do not require hidden refresh knowledge.",
+          "id": "fnd005-subscribe-feedback",
+          "skill_refs": [
+            "qodex-ai/ai-agent-skills@mobile-app-interface"
+          ]
+        },
+        {
+          "area": "ui",
+          "check": "The new Library row gives the show identity priority over decorative chrome.",
+          "id": "fnd005-library-hierarchy",
+          "skill_refs": [
+            "vabole/apple-skills@hig",
+            "vabole/apple-skills@ios-liquid-glass"
+          ]
+        }
+      ],
+      "verdict": "incomplete"
+    },
+    {
+      "catalog_status": "mapped",
+      "category": "Foundation And First Run",
+      "data_url": "scenarios/fnd-006/data.json",
+      "execution_status": "not_run",
+      "issue_filing_gates": [
+        {
+          "affected_dimensions": [
+            "error_recovery",
+            "reliability_flakiness",
+            "verdict"
+          ],
+          "file_issue_if": "Invalid RSS submit crashes, loops, hangs, or traps the user with no recovery.",
+          "id": "fnd006-crash-or-spinner",
+          "severity": "blocker"
+        },
+        {
+          "affected_dimensions": [
+            "ux_polish",
+            "accessibility_dynamic_type",
+            "content_localization"
+          ],
+          "file_issue_if": "The error is generic, offscreen, inaccessible, or does not explain the next recoverable action.",
+          "id": "fnd006-error-not-actionable",
+          "severity": "major"
+        }
+      ],
+      "missing_evidence": [
+        "accessibility_audit",
+        "cassette",
+        "command_output",
+        "log",
+        "screenshot",
+        "ui_tree"
+      ],
+      "performance_metrics": [
+        {
+          "budget": "1 submitted attempt, 0 automatic retry loops",
+          "id": "fnd006-retry-loop-count",
+          "method": "Inspect structured logs or cassette miss logs around the invalid submit.",
+          "name": "Network or parser retry loop count",
+          "required": true
+        }
+      ],
+      "priority": 6,
+      "readiness": "incomplete",
+      "runbook": "Enter an invalid RSS URL during onboarding, submit it once, inspect the inline error, then recover by continuing or correcting input.",
+      "scenario_id": "FND-006",
+      "scenario_url": "scenarios/fnd-006/",
+      "screenshot_requirements": [
+        {
+          "description": "Inline invalid-RSS error immediately after one submit.",
+          "id": "fnd006-invalid-rss-error",
+          "must_include": [
+            "invalid URL value or redacted placeholder",
+            "localized inline error",
+            "retry or continue recovery"
+          ],
+          "must_not_include": [
+            "crash alert",
+            "endless spinner",
+            "main shell underneath"
+          ],
+          "step_id": "step-03-result"
+        },
+        {
+          "description": "Recovered state after correcting, clearing, or skipping the invalid feed.",
+          "id": "fnd006-recovery",
+          "must_include": [
+            "stable next action",
+            "cleared busy state"
+          ],
+          "must_not_include": [
+            "duplicated error rows",
+            "disabled recovery controls"
+          ],
+          "step_id": "step-04-exit"
+        }
+      ],
+      "title": "An inline recoverable error appears and onboarding can continue",
+      "ui_ux_liquid_glass_checks": [
+        {
+          "area": "ux",
+          "check": "Error copy is specific, placed near the field, and leaves a clear recovery path.",
+          "id": "fnd006-error-recovery-clarity",
+          "skill_refs": [
+            "qodex-ai/ai-agent-skills@mobile-app-interface"
+          ]
+        },
+        {
+          "area": "accessibility",
+          "check": "VoiceOver and focus order announce the invalid state without trapping the user.",
+          "id": "fnd006-error-accessibility",
+          "skill_refs": [
+            "vabole/apple-skills@hig"
+          ]
+        }
+      ],
+      "verdict": "incomplete"
+    },
+    {
+      "catalog_status": "mapped",
+      "category": "Foundation And First Run",
+      "data_url": "scenarios/fnd-007/data.json",
+      "execution_status": "not_run",
+      "issue_filing_gates": [
+        {
+          "affected_dimensions": [
+            "navigation_state_restoration",
+            "data_integrity_state_sync",
+            "verdict"
+          ],
+          "file_issue_if": "Onboarding reappears after completion and preserved-data relaunch.",
+          "id": "fnd007-onboarding-reappears",
+          "severity": "blocker"
+        },
+        {
+          "affected_dimensions": [
+            "privacy_security",
+            "nmp_architecture",
+            "reliability_flakiness"
+          ],
+          "file_issue_if": "Relaunch creates duplicate identity/account/library state or loses completed setup state.",
+          "id": "fnd007-duplicate-identity",
+          "severity": "major"
+        }
+      ],
+      "missing_evidence": [
+        "accessibility_audit",
+        "command_output",
+        "log",
+        "metric_trace",
+        "screenshot",
+        "ui_tree"
+      ],
+      "performance_metrics": [
+        {
+          "budget": "<= 1500 ms",
+          "id": "fnd007-preserved-cold-launch-ms",
+          "method": "Timestamp process launch to stable main-shell UI tree after force quit.",
+          "name": "Preserved-data cold launch to main shell",
+          "required": true
+        }
+      ],
+      "priority": 7,
+      "readiness": "incomplete",
+      "runbook": "Complete onboarding, force quit, relaunch with preserved app data, and verify the main shell appears instead of onboarding.",
+      "scenario_id": "FND-007",
+      "scenario_url": "scenarios/fnd-007/",
+      "screenshot_requirements": [
+        {
+          "description": "Completed onboarding state immediately before force quit.",
+          "id": "fnd007-before-quit",
+          "must_include": [
+            "main shell",
+            "selected tab or stable route"
+          ],
+          "must_not_include": [
+            "onboarding overlay",
+            "completion prompt"
+          ],
+          "step_id": "step-01-preconditions"
+        },
+        {
+          "description": "Cold relaunch with preserved data.",
+          "id": "fnd007-relaunch-home",
+          "must_include": [
+            "main shell",
+            "same identity/library state where applicable"
+          ],
+          "must_not_include": [
+            "onboarding page",
+            "duplicate setup prompt",
+            "blank restore screen"
+          ],
+          "step_id": "step-03-result"
+        }
+      ],
+      "title": "Onboarding does not reappear",
+      "ui_ux_liquid_glass_checks": [
+        {
+          "area": "ux",
+          "check": "The user returns to app state with no duplicate setup burden or contradictory welcome copy.",
+          "id": "fnd007-restoration-honesty",
+          "skill_refs": [
+            "qodex-ai/ai-agent-skills@mobile-app-interface"
+          ]
+        },
+        {
+          "area": "liquid_glass",
+          "check": "Restored main navigation chrome remains readable and does not ghost onboarding content behind glass.",
+          "id": "fnd007-main-chrome",
+          "skill_refs": [
+            "vabole/apple-skills@ios-liquid-glass"
+          ]
+        }
+      ],
+      "verdict": "incomplete"
+    },
+    {
+      "catalog_status": "mapped",
+      "category": "Foundation And First Run",
+      "data_url": "scenarios/fnd-008/data.json",
+      "execution_status": "not_run",
+      "issue_filing_gates": [
+        {
+          "affected_dimensions": [
+            "data_integrity_state_sync",
+            "navigation_state_restoration",
+            "privacy_security"
+          ],
+          "file_issue_if": "Interrupted relaunch duplicates identity/account state, jumps to main shell, or resumes with contradictory step state.",
+          "id": "fnd008-duplicate-or-stale-state",
+          "severity": "blocker"
+        },
+        {
+          "affected_dimensions": [
+            "ux_polish",
+            "error_recovery",
+            "reliability_flakiness"
+          ],
+          "file_issue_if": "The app restarts onboarding without explaining lost partial progress or providing a stable recovery path.",
+          "id": "fnd008-no-safe-recovery",
+          "severity": "major"
+        }
+      ],
+      "missing_evidence": [
+        "accessibility_audit",
+        "command_output",
+        "log",
+        "screenshot",
+        "ui_tree"
+      ],
+      "performance_metrics": [
+        {
+          "budget": "<= 500 ms after first frame",
+          "id": "fnd008-restore-decision-ms",
+          "method": "Timestamp first frame to stable restored step or safe restart route.",
+          "name": "Interrupted onboarding restore decision",
+          "required": true
+        }
+      ],
+      "priority": 8,
+      "readiness": "incomplete",
+      "runbook": "Advance halfway through onboarding, force quit before completion, relaunch, and record whether the app restores the step or restarts safely.",
+      "scenario_id": "FND-008",
+      "scenario_url": "scenarios/fnd-008/",
+      "screenshot_requirements": [
+        {
+          "description": "Partially completed onboarding step before force quit.",
+          "id": "fnd008-interrupted-step",
+          "must_include": [
+            "current step title",
+            "entered state if any",
+            "progress indicator"
+          ],
+          "must_not_include": [
+            "private key",
+            "uncommitted secret"
+          ],
+          "step_id": "step-01-preconditions"
+        },
+        {
+          "description": "Relaunch state after interruption.",
+          "id": "fnd008-relaunch-step-or-safe-restart",
+          "must_include": [
+            "restored step or explicit safe restart",
+            "single identity/account count evidence"
+          ],
+          "must_not_include": [
+            "duplicate identity",
+            "inconsistent progress",
+            "main shell bypass"
+          ],
+          "step_id": "step-03-result"
+        }
+      ],
+      "title": "It restores the correct step or restarts safely without duplicate identity creation",
+      "ui_ux_liquid_glass_checks": [
+        {
+          "area": "ux",
+          "check": "Restoration is understandable and avoids asking the user to redo irreversible identity work.",
+          "id": "fnd008-interruption-recovery",
+          "skill_refs": [
+            "qodex-ai/ai-agent-skills@mobile-app-interface"
+          ]
+        },
+        {
+          "area": "ui",
+          "check": "The current step and next action are visually obvious after relaunch.",
+          "id": "fnd008-state-visibility",
+          "skill_refs": [
+            "vabole/apple-skills@hig"
+          ]
+        }
+      ],
+      "verdict": "incomplete"
+    }
+  ],
+  "search_command": "npx skills search \"iOS mobile UI UX liquid glass native polish validation\"",
+  "status": "planned",
+  "target_count": 8,
+  "title": "Foundation Onboarding Screenshot Wave 001",
+  "wave_id": "foundation-onboarding-wave-001"
+}

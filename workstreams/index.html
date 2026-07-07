@@ -25,10 +25,10 @@
     </header>
 
     <section class="stats" aria-label="Workstream totals">
-      <div><strong>1</strong><span>open PRs</span></div>
-      <div><strong>1</strong><span>required lanes running or queued</span></div>
+      <div><strong>0</strong><span>open PRs</span></div>
+      <div><strong>0</strong><span>required lanes running or queued</span></div>
       <div><strong>0</strong><span>red required builds in current runs</span></div>
-      <div><strong>3</strong><span>merged today</span></div>
+      <div><strong>4</strong><span>merged today</span></div>
     </section>
 
     <section id="active-prs">
@@ -45,10 +45,7 @@
         </thead>
         <tbody>
           <tr>
-            <td data-label="PR"><a href="https://github.com/pablof7z/podcast-player/pull/739">#739</a> Next-wave validation manifest</td>
-            <td data-label="Status"><span class="badge badge-incomplete">blocked by required check</span></td>
-            <td data-label="Why It Is Not Merged Yet">GitHub reports the PR as blocked because the required <a href="https://github.com/pablof7z/podcast-player/actions/runs/28900450401/job/85735706097">Build and Test</a> job is queued on the Test workflow. All other reported checks are green.</td>
-            <td data-label="Next Action">Merge after Build and Test completes successfully; inspect the Actions log and fix the branch if the queued job fails.</td>
+            <td data-label="PR" colspan="4">No open pull requests remain after merging <a href="https://github.com/pablof7z/podcast-player/pull/739">#739</a>. The next validation work should open new PRs only when a focused scenario wave, evidence ingestion fix, or product defect fix is ready for review.</td>
           </tr>
         </tbody>
       </table>
@@ -67,6 +64,11 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td data-label="Item"><a href="https://github.com/pablof7z/podcast-player/pull/739">#739</a> Next-wave validation manifest</td>
+            <td data-label="Status"><span class="badge badge-pass">merged to main</span></td>
+            <td data-label="Follow-Up">The generated report now includes <a href="../next-wave/">Foundation Onboarding Screenshot Wave 001</a>, raw <a href="../data/next-wave.json">next-wave JSON</a>, and per-scenario next-wave blocks for 8 planned foundation/onboarding targets.</td>
+          </tr>
           <tr>
             <td data-label="Item"><a href="https://github.com/pablof7z/podcast-player/pull/738">#738</a> Scenario blocker issue links</td>
             <td data-label="Status"><span class="badge badge-pass">merged to main</span></td>
@@ -133,7 +135,7 @@
 
     <section id="site-evidence">
       <h2>Published Evidence Status</h2>
-      <p>The live site now exposes 320 per-scenario pages, a screenshot gallery, launch-readiness sections, missing-evidence placeholders, provider cassette links, and issue-backed blockers on every generated scenario page. The evidence count remains intentionally strict: only 4 of 320 scenario records currently have screenshot evidence. The remaining scenarios stay incomplete until real runs attach screenshots, logs, metrics, UI trees, accessibility checks, and skill-grounded UI/UX critique.</p>
+      <p>The live site now exposes 320 per-scenario pages, a screenshot gallery, launch-readiness sections, missing-evidence placeholders, provider cassette links, issue-backed blockers on every generated scenario page, and the first 8-scenario next execution wave. The evidence count remains intentionally strict: only 4 of 320 scenario records currently have screenshot evidence. The remaining scenarios stay incomplete until real runs attach screenshots, logs, metrics, UI trees, accessibility checks, and skill-grounded UI/UX critique.</p>
       <p>Latest audit: 320/320 scenario pages still lack accessibility audit artifacts, 191 lack metric traces, and provider cassette coverage is now mapped to 11 generated scenario refs with 0 unmapped refs. Tracking issues are <a href="https://github.com/pablof7z/podcast-player/issues/730">#730</a>, <a href="https://github.com/pablof7z/podcast-player/issues/731">#731</a>, <a href="https://github.com/pablof7z/podcast-player/issues/732">#732</a>, and <a href="https://github.com/pablof7z/podcast-player/issues/733">#733</a>. See <a href="../data/audit-gaps.json">raw audit gap JSON</a>.</p>
     </section>
   </main>
