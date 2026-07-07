@@ -1,4 +1,5 @@
 {
+  "all_refs_current_catalog_ids": true,
   "all_within_budget": true,
   "cassette_count": 7,
   "cassettes": [
@@ -11,13 +12,49 @@
         "recorded_latency_ms": 4100,
         "replay_latency_ms": 5
       },
-      "nmp_doctrine_refs": [],
+      "nmp_rules": [
+        "D6",
+        "D7",
+        "D8"
+      ],
       "operation": "stt_transcription",
       "provider": "assemblyai",
       "redaction": {},
+      "scenario_ref_links": [
+        {
+          "category": "Transcripts",
+          "id": "TR-008",
+          "mapped": true,
+          "slug": "tr-008",
+          "title": "Submit/poll result is replayed from cassette with injected clock"
+        },
+        {
+          "category": "Transcripts",
+          "id": "TR-010",
+          "mapped": true,
+          "slug": "tr-010",
+          "title": "Progress continues or cancels according to kernel state and is visible on return"
+        },
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-012",
+          "mapped": true,
+          "slug": "llm-012",
+          "title": "It contains no API keys, nsec, bearer tokens, or raw private audio"
+        },
+        {
+          "category": "Offline, Relay, And Replay Honesty",
+          "id": "OFFLINE-008",
+          "mapped": true,
+          "slug": "offline-008",
+          "title": "Every provider-backed UI can be explored without live credentials"
+        }
+      ],
       "scenario_refs": [
-        "E2",
-        "J5"
+        "TR-008",
+        "TR-010",
+        "LLM-012",
+        "OFFLINE-008"
       ]
     },
     {
@@ -29,13 +66,41 @@
         "recorded_latency_ms": 2840,
         "replay_latency_ms": 5
       },
-      "nmp_doctrine_refs": [],
+      "nmp_rules": [
+        "D6",
+        "D7",
+        "D8"
+      ],
       "operation": "stt_transcription",
       "provider": "elevenlabs",
       "redaction": {},
+      "scenario_ref_links": [
+        {
+          "category": "Transcripts",
+          "id": "TR-007",
+          "mapped": true,
+          "slug": "tr-007",
+          "title": "Selected model and result are captured in a Scribe cassette"
+        },
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-012",
+          "mapped": true,
+          "slug": "llm-012",
+          "title": "It contains no API keys, nsec, bearer tokens, or raw private audio"
+        },
+        {
+          "category": "Offline, Relay, And Replay Honesty",
+          "id": "OFFLINE-008",
+          "mapped": true,
+          "slug": "offline-008",
+          "title": "Every provider-backed UI can be explored without live credentials"
+        }
+      ],
       "scenario_refs": [
-        "E2",
-        "M3"
+        "TR-007",
+        "LLM-012",
+        "OFFLINE-008"
       ]
     },
     {
@@ -47,14 +112,50 @@
         "recorded_latency_ms": 980,
         "replay_latency_ms": 4
       },
-      "nmp_doctrine_refs": [],
+      "nmp_rules": [
+        "D1",
+        "D6",
+        "D7",
+        "D8"
+      ],
       "operation": "chat_completion",
       "provider": "ollama",
       "redaction": {},
+      "scenario_ref_links": [
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-011",
+          "mapped": true,
+          "slug": "llm-011",
+          "title": "Normalized answer and tool calls match snapshot"
+        },
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-012",
+          "mapped": true,
+          "slug": "llm-012",
+          "title": "It contains no API keys, nsec, bearer tokens, or raw private audio"
+        },
+        {
+          "category": "Wiki, RAG, Knowledge, And Briefings",
+          "id": "WIKI-001",
+          "mapped": true,
+          "slug": "wiki-001",
+          "title": "The answer cites matching transcript spans"
+        },
+        {
+          "category": "Offline, Relay, And Replay Honesty",
+          "id": "OFFLINE-008",
+          "mapped": true,
+          "slug": "offline-008",
+          "title": "Every provider-backed UI can be explored without live credentials"
+        }
+      ],
       "scenario_refs": [
-        "G1",
-        "L2",
-        "L4"
+        "LLM-011",
+        "LLM-012",
+        "WIKI-001",
+        "OFFLINE-008"
       ]
     },
     {
@@ -66,14 +167,50 @@
         "recorded_latency_ms": 1240,
         "replay_latency_ms": 4
       },
-      "nmp_doctrine_refs": [],
+      "nmp_rules": [
+        "D1",
+        "D6",
+        "D7",
+        "D8"
+      ],
       "operation": "chat_completion",
       "provider": "openrouter",
       "redaction": {},
+      "scenario_ref_links": [
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-011",
+          "mapped": true,
+          "slug": "llm-011",
+          "title": "Normalized answer and tool calls match snapshot"
+        },
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-012",
+          "mapped": true,
+          "slug": "llm-012",
+          "title": "It contains no API keys, nsec, bearer tokens, or raw private audio"
+        },
+        {
+          "category": "Wiki, RAG, Knowledge, And Briefings",
+          "id": "WIKI-001",
+          "mapped": true,
+          "slug": "wiki-001",
+          "title": "The answer cites matching transcript spans"
+        },
+        {
+          "category": "Offline, Relay, And Replay Honesty",
+          "id": "OFFLINE-008",
+          "mapped": true,
+          "slug": "offline-008",
+          "title": "Every provider-backed UI can be explored without live credentials"
+        }
+      ],
       "scenario_refs": [
-        "G3",
-        "L4",
-        "M3"
+        "LLM-011",
+        "LLM-012",
+        "WIKI-001",
+        "OFFLINE-008"
       ]
     },
     {
@@ -85,13 +222,42 @@
         "recorded_latency_ms": 430,
         "replay_latency_ms": 3
       },
-      "nmp_doctrine_refs": [],
+      "nmp_rules": [
+        "D4",
+        "D5",
+        "D7",
+        "D8"
+      ],
       "operation": "embedding",
       "provider": "openrouter",
       "redaction": {},
+      "scenario_ref_links": [
+        {
+          "category": "Wiki, RAG, Knowledge, And Briefings",
+          "id": "WIKI-015",
+          "mapped": true,
+          "slug": "wiki-015",
+          "title": "Fuzzy result cards include why-match snippets"
+        },
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-012",
+          "mapped": true,
+          "slug": "llm-012",
+          "title": "It contains no API keys, nsec, bearer tokens, or raw private audio"
+        },
+        {
+          "category": "Offline, Relay, And Replay Honesty",
+          "id": "OFFLINE-008",
+          "mapped": true,
+          "slug": "offline-008",
+          "title": "Every provider-backed UI can be explored without live credentials"
+        }
+      ],
       "scenario_refs": [
-        "E4",
-        "L7"
+        "WIKI-015",
+        "LLM-012",
+        "OFFLINE-008"
       ]
     },
     {
@@ -103,14 +269,49 @@
         "recorded_latency_ms": 3120,
         "replay_latency_ms": 5
       },
-      "nmp_doctrine_refs": [],
+      "nmp_rules": [
+        "D6",
+        "D7",
+        "D8"
+      ],
       "operation": "stt_transcription",
       "provider": "openrouter",
       "redaction": {},
+      "scenario_ref_links": [
+        {
+          "category": "Transcripts",
+          "id": "TR-005",
+          "mapped": true,
+          "slug": "tr-005",
+          "title": "STT request is routed through Rust and replayable"
+        },
+        {
+          "category": "Transcripts",
+          "id": "TR-010",
+          "mapped": true,
+          "slug": "tr-010",
+          "title": "Progress continues or cancels according to kernel state and is visible on return"
+        },
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-012",
+          "mapped": true,
+          "slug": "llm-012",
+          "title": "It contains no API keys, nsec, bearer tokens, or raw private audio"
+        },
+        {
+          "category": "Offline, Relay, And Replay Honesty",
+          "id": "OFFLINE-008",
+          "mapped": true,
+          "slug": "offline-008",
+          "title": "Every provider-backed UI can be explored without live credentials"
+        }
+      ],
       "scenario_refs": [
-        "E2",
-        "K5",
-        "M3"
+        "TR-005",
+        "TR-010",
+        "LLM-012",
+        "OFFLINE-008"
       ]
     },
     {
@@ -122,15 +323,65 @@
         "recorded_latency_ms": 1460,
         "replay_latency_ms": 4
       },
-      "nmp_doctrine_refs": [],
+      "nmp_rules": [
+        "D6",
+        "D7",
+        "D8"
+      ],
       "operation": "web_search",
       "provider": "perplexity",
       "redaction": {},
+      "scenario_ref_links": [
+        {
+          "category": "Discovery And Search",
+          "id": "DISC-011",
+          "mapped": true,
+          "slug": "disc-011",
+          "title": "Perplexity/OpenRouter search uses a cassette in replay mode"
+        },
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-007",
+          "mapped": true,
+          "slug": "llm-007",
+          "title": "Citations and fallback provider choice are captured in replay"
+        },
+        {
+          "category": "LLM Provider And Replay",
+          "id": "LLM-012",
+          "mapped": true,
+          "slug": "llm-012",
+          "title": "It contains no API keys, nsec, bearer tokens, or raw private audio"
+        },
+        {
+          "category": "Offline, Relay, And Replay Honesty",
+          "id": "OFFLINE-008",
+          "mapped": true,
+          "slug": "offline-008",
+          "title": "Every provider-backed UI can be explored without live credentials"
+        }
+      ],
       "scenario_refs": [
-        "G2",
-        "L7"
+        "DISC-011",
+        "LLM-007",
+        "LLM-012",
+        "OFFLINE-008"
       ]
     }
+  ],
+  "catalog_scenario_count": 320,
+  "mapped_scenario_refs": [
+    "DISC-011",
+    "LLM-007",
+    "LLM-011",
+    "LLM-012",
+    "OFFLINE-008",
+    "TR-005",
+    "TR-007",
+    "TR-008",
+    "TR-010",
+    "WIKI-001",
+    "WIKI-015"
   ],
   "operations": [
     "chat_completion",
@@ -146,18 +397,19 @@
     "perplexity"
   ],
   "scenario_refs": [
-    "E2",
-    "E4",
-    "G1",
-    "G2",
-    "G3",
-    "J5",
-    "K5",
-    "L2",
-    "L4",
-    "L7",
-    "M3"
+    "DISC-011",
+    "LLM-007",
+    "LLM-011",
+    "LLM-012",
+    "OFFLINE-008",
+    "TR-005",
+    "TR-007",
+    "TR-008",
+    "TR-010",
+    "WIKI-001",
+    "WIKI-015"
   ],
+  "unmapped_scenario_refs": [],
   "validation": {
     "commands": [
       {
@@ -169,13 +421,29 @@
         "command": "POD0_PROVIDER_CASSETTE_DIR=tests/fixtures/provider_cassettes cargo test -p nmp-app-podcast provider_replay --lib",
         "status": "pass",
         "summary": "2 provider_replay tests passed; 0 failed"
+      },
+      {
+        "command": "cargo test -p nmp-app-podcast provider_cassette --lib",
+        "status": "pass",
+        "summary": "3 provider_cassette tests passed; 0 failed"
+      },
+      {
+        "command": "python3 -m unittest docs/testing/report-generator/tests/test_generator_contract.py",
+        "status": "pass",
+        "summary": "4 report-generator contract tests passed; 0 failed"
+      },
+      {
+        "command": "python3 docs/testing/report-generator/generate_scenario_report.py --out build/pod0-scenario-report-provider-cassettes",
+        "status": "pass",
+        "summary": "Generated 320 scenario pages with 7 cassettes, 11 mapped scenario refs, and 0 unmapped refs"
       }
     ],
     "notes": [
       "Replay mode fails closed on cassette misses instead of falling through to live provider calls.",
-      "Fixture metadata includes recorded latency, replay latency, 2026 premium-app budget, scenario references, and redaction markers."
+      "Fixture metadata includes recorded latency, replay latency, 2026 premium-app budget, scenario references, and redaction markers.",
+      "Cassette scenario references now use generated BDD catalog IDs and the report links them to scenario pages."
     ],
-    "verified_at": "2026-07-05T22:21:54Z",
+    "verified_at": "2026-07-06T05:36:32Z",
     "verified_by": "Codex"
   }
 }

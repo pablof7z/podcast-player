@@ -5,81 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Issues</title>
   <link rel="stylesheet" href="../styles.css">
-  <link rel="icon" href="/podcast-player/assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to content</a>
   <main id="content">
-    <nav>
-      <a href="../">Report Home</a>
-      <a href="../scenarios/">All Scenarios</a>
-      <a href="../workstreams/">Workstreams</a>
-      <a href="../screenshots/">Screenshots</a>
-      <a href="../revalidation/">Revalidation</a>
-    </nav>
-    <header class="hero">
-      <p class="eyebrow">Pod0 Validation</p>
-      <h1>Issues</h1>
-      <p>4 linked defects are tracked from evidence-backed runs and CI evidence. One UI reliability defect remains open after the #723 validation rerun, and three fixes have merged but still need fresh scenario evidence before promotion.</p>
-    </header>
-
-    <section class="stats" aria-label="Issue totals">
-      <div><strong>1</strong><span>open linked defect</span></div>
-      <div><strong>0</strong><span>open with fix PR pending</span></div>
-      <div><strong>3</strong><span>closed, revalidation pending</span></div>
-    </section>
-
-    <section id="linked-defects">
-      <h2>Linked Defects</h2>
-      <table class="responsive-table">
-        <caption>Linked scenario defects</caption>
-        <thead>
-          <tr>
-            <th>Scenario</th>
-            <th>Issue</th>
-            <th>Severity</th>
-            <th>Title</th>
-            <th>Status</th>
-            <th>Fix / Revalidation</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td data-label="Scenario"><a href="../scenarios/lib-008/">LIB-008</a></td>
-            <td data-label="Issue"><a href="https://github.com/pablof7z/podcast-player/issues/727">#727</a></td>
-            <td data-label="Severity"><span class="badge badge-major">major</span></td>
-            <td data-label="Title">UI stress: Show options does not reliably expose Follow after unsubscribe</td>
-            <td data-label="Status"><span class="badge badge-fail">open</span></td>
-            <td data-label="Fix / Revalidation">Filed from <a href="https://github.com/pablof7z/podcast-player/pull/723">#723</a> CI evidence; needs UI reliability fix and fresh follow/unfollow screenshots, metrics, logs, and accessibility tree.</td>
-          </tr>
-          <tr>
-            <td data-label="Scenario"><a href="../scenarios/qd-011/">QD-011</a></td>
-            <td data-label="Issue"><a href="https://github.com/pablof7z/podcast-player/issues/728">#728</a></td>
-            <td data-label="Severity"><span class="badge badge-major">major</span></td>
-            <td data-label="Title">Auto-download settings sheet does not reliably expose Auto-download controls</td>
-            <td data-label="Status"><span class="badge badge-pass-with-issues">closed</span></td>
-            <td data-label="Fix / Revalidation">Filed from <a href="https://github.com/pablof7z/podcast-player/pull/723">#723</a> CI evidence; fix merged in <a href="https://github.com/pablof7z/podcast-player/pull/729">#729</a>, then QD-011 needs fresh screenshots, metrics, logs, and accessibility tree evidence.</td>
-          </tr>
-          <tr>
-            <td data-label="Scenario"><a href="../scenarios/play-001/">PLAY-001</a></td>
-            <td data-label="Issue"><a href="https://github.com/pablof7z/podcast-player/issues/718">#718</a></td>
-            <td data-label="Severity"><span class="badge badge-major">major</span></td>
-            <td data-label="Title">D1: Seeded playback reaches end at 1:00 despite 5m episode metadata, blocking resume validation</td>
-            <td data-label="Status"><span class="badge badge-pass-with-issues">closed</span></td>
-            <td data-label="Fix / Revalidation">Fix merged in <a href="https://github.com/pablof7z/podcast-player/pull/720">#720</a>; PLAY-001 still needs a fresh evidence run before the scenario can be promoted.</td>
-          </tr>
-          <tr>
-            <td data-label="Scenario"><a href="../scenarios/set-005/">SET-005</a></td>
-            <td data-label="Issue"><a href="https://github.com/pablof7z/podcast-player/issues/717">#717</a></td>
-            <td data-label="Severity"><span class="badge badge-major">major</span></td>
-            <td data-label="Title">I4/SET-005: Downloads &amp; Disk reports Zero KB while Downloads shows a saved 240 KB episode</td>
-            <td data-label="Status"><span class="badge badge-pass-with-issues">closed</span></td>
-            <td data-label="Fix / Revalidation">Fix merged in <a href="https://github.com/pablof7z/podcast-player/pull/721">#721</a>; SET-005 still needs a fresh evidence run before the scenario can be promoted.</td>
-          </tr>
-        </tbody>
-      </table>
-      <p><a href="../data/issues.json">Raw issues JSON</a></p>
-    </section>
+    <header class="hero"><p class="eyebrow">Pod0 Validation</p><h1>Issues</h1><p>2 observed defect links from evidence-backed runs.</p></header><section id="linked-defects"><h2>Linked Defects</h2><table><caption>Linked scenario defects</caption><thead><tr><th>Scenario</th><th>Issue</th><th>Severity</th><th>Title</th><th>Status</th></tr></thead><tbody><tr><td><a href="../scenarios/play-001/">PLAY-001</a></td><td><a href="https://github.com/pablof7z/podcast-player/issues/718">#718</a></td><td><span class="badge badge-major">major</span></td><td>D1: Seeded playback reaches end at 1:00 despite 5m episode metadata, blocking resume validation</td><td><span class="badge badge-open">open</span></td></tr><tr><td><a href="../scenarios/set-005/">SET-005</a></td><td><a href="https://github.com/pablof7z/podcast-player/issues/717">#717</a></td><td><span class="badge badge-major">major</span></td><td>I4/SET-005: Downloads &amp; Disk reports Zero KB while Downloads shows a saved 240 KB episode</td><td><span class="badge badge-open">open</span></td></tr></tbody></table></section>
   </main>
 </body>
 </html>

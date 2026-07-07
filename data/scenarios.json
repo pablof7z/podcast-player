@@ -2,8 +2,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -15,6 +17,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-001",
     "tags": [
       "catalog-scaffold",
@@ -32,8 +35,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -45,6 +50,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-002",
     "tags": [
       "catalog-scaffold",
@@ -61,8 +67,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -73,6 +81,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-003",
     "tags": [
       "catalog-scaffold",
@@ -88,8 +97,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -100,6 +111,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-004",
     "tags": [
       "catalog-scaffold",
@@ -116,8 +128,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -130,6 +144,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-005",
     "tags": [
       "cassette-required",
@@ -149,8 +164,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -162,6 +179,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-006",
     "tags": [
       "cassette-required",
@@ -179,8 +197,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -192,6 +212,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-007",
     "tags": [
       "catalog-scaffold",
@@ -208,8 +229,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -220,6 +243,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-008",
     "tags": [
       "catalog-scaffold",
@@ -236,8 +260,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -249,6 +275,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-009",
     "tags": [
       "catalog-scaffold",
@@ -266,8 +293,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -278,6 +307,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-010",
     "tags": [
       "catalog-scaffold",
@@ -293,8 +323,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -306,6 +338,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-011",
     "tags": [
       "catalog-scaffold",
@@ -323,8 +356,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -335,6 +370,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-012",
     "tags": [
       "catalog-scaffold",
@@ -350,8 +386,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -363,6 +401,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-013",
     "tags": [
       "catalog-scaffold",
@@ -380,8 +419,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -393,6 +434,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-014",
     "tags": [
       "catalog-scaffold",
@@ -410,8 +452,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -422,6 +466,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-015",
     "tags": [
       "catalog-scaffold",
@@ -437,8 +482,10 @@
   {
     "category": "Foundation And First Run",
     "data_url": "scenarios/fnd-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "FND-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -449,6 +496,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "fnd-016",
     "tags": [
       "catalog-scaffold",
@@ -464,8 +512,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -476,6 +526,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-001",
     "tags": [
       "catalog-scaffold",
@@ -493,8 +544,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -505,6 +558,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-002",
     "tags": [
       "catalog-scaffold",
@@ -522,8 +576,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -534,6 +590,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-003",
     "tags": [
       "catalog-scaffold",
@@ -549,8 +606,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -561,6 +620,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-004",
     "tags": [
       "catalog-scaffold",
@@ -577,8 +637,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -590,6 +652,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-005",
     "tags": [
       "cassette-required",
@@ -607,8 +670,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -619,6 +684,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-006",
     "tags": [
       "catalog-scaffold",
@@ -634,8 +700,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -648,6 +716,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-007",
     "tags": [
       "cassette-required",
@@ -668,8 +737,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -682,6 +753,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-008",
     "tags": [
       "cassette-required",
@@ -700,8 +772,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -712,6 +786,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-009",
     "tags": [
       "catalog-scaffold",
@@ -728,8 +803,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -741,6 +818,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-010",
     "tags": [
       "catalog-scaffold",
@@ -758,8 +836,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -770,6 +850,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-011",
     "tags": [
       "catalog-scaffold",
@@ -786,8 +867,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -798,6 +881,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-012",
     "tags": [
       "catalog-scaffold",
@@ -815,8 +899,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -828,6 +914,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-013",
     "tags": [
       "catalog-scaffold",
@@ -847,8 +934,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -860,6 +949,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-014",
     "tags": [
       "cassette-required",
@@ -877,8 +967,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -889,6 +981,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-015",
     "tags": [
       "catalog-scaffold",
@@ -904,8 +997,10 @@
   {
     "category": "Identity And Accounts",
     "data_url": "scenarios/id-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "ID-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -917,6 +1012,7 @@
     "product_cluster": "identity-and-accounts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "id-016",
     "tags": [
       "catalog-scaffold",
@@ -934,8 +1030,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -948,6 +1046,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-001",
     "tags": [
       "cassette-required",
@@ -965,8 +1064,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -979,6 +1080,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-002",
     "tags": [
       "cassette-required",
@@ -996,8 +1098,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1009,6 +1113,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-003",
     "tags": [
       "catalog-scaffold",
@@ -1026,8 +1131,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -1039,6 +1146,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-004",
     "tags": [
       "cassette-required",
@@ -1055,8 +1163,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -1068,6 +1178,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-005",
     "tags": [
       "cassette-required",
@@ -1084,8 +1195,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1097,6 +1210,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-006",
     "tags": [
       "catalog-scaffold",
@@ -1114,8 +1228,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1127,6 +1243,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-007",
     "tags": [
       "catalog-scaffold",
@@ -1144,8 +1261,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1157,6 +1276,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-008",
     "tags": [
       "catalog-scaffold",
@@ -1176,8 +1296,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1189,6 +1311,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-009",
     "tags": [
       "catalog-scaffold",
@@ -1208,8 +1331,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1221,6 +1346,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-010",
     "tags": [
       "catalog-scaffold",
@@ -1238,8 +1364,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -1252,6 +1380,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-011",
     "tags": [
       "cassette-required",
@@ -1269,8 +1398,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -1282,6 +1413,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-012",
     "tags": [
       "catalog-scaffold",
@@ -1298,8 +1430,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1311,6 +1445,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-013",
     "tags": [
       "catalog-scaffold",
@@ -1328,8 +1463,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -1341,6 +1478,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-014",
     "tags": [
       "cassette-required",
@@ -1357,8 +1495,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1369,6 +1509,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-015",
     "tags": [
       "catalog-scaffold",
@@ -1384,8 +1525,10 @@
   {
     "category": "Discovery And Search",
     "data_url": "scenarios/disc-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "DISC-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -1397,6 +1540,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "disc-016",
     "tags": [
       "cassette-required",
@@ -1413,14 +1557,17 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-001/data.json",
+    "evidence_quality": "pass_with_issues",
     "group_coherence": "incomplete",
     "id": "LIB-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit"
     ],
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "minor",
     "slug": "lib-001",
     "tags": [
       "catalog-scaffold",
@@ -1437,8 +1584,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1450,6 +1599,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-002",
     "tags": [
       "catalog-scaffold",
@@ -1466,8 +1616,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1479,6 +1631,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-003",
     "tags": [
       "catalog-scaffold",
@@ -1495,8 +1648,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1508,6 +1663,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-004",
     "tags": [
       "catalog-scaffold",
@@ -1525,8 +1681,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1538,6 +1696,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-005",
     "tags": [
       "catalog-scaffold",
@@ -1554,8 +1713,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1567,6 +1728,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-006",
     "tags": [
       "catalog-scaffold",
@@ -1585,8 +1747,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1597,6 +1761,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-007",
     "tags": [
       "catalog-scaffold",
@@ -1612,8 +1777,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1625,6 +1792,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-008",
     "tags": [
       "catalog-scaffold",
@@ -1642,8 +1810,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -1656,6 +1826,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-009",
     "tags": [
       "cassette-required",
@@ -1674,8 +1845,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -1687,6 +1860,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-010",
     "tags": [
       "cassette-required",
@@ -1704,8 +1878,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1717,6 +1893,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-011",
     "tags": [
       "catalog-scaffold",
@@ -1734,8 +1911,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1747,6 +1926,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-012",
     "tags": [
       "catalog-scaffold",
@@ -1764,8 +1944,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1776,6 +1958,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-013",
     "tags": [
       "catalog-scaffold",
@@ -1791,8 +1974,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1803,6 +1988,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-014",
     "tags": [
       "catalog-scaffold",
@@ -1819,8 +2005,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -1833,6 +2021,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-015",
     "tags": [
       "cassette-required",
@@ -1850,8 +2039,10 @@
   {
     "category": "Library And Episode Management",
     "data_url": "scenarios/lib-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LIB-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1863,6 +2054,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "lib-016",
     "tags": [
       "catalog-scaffold",
@@ -1881,8 +2073,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-001/data.json",
+    "evidence_quality": "pass_with_issues",
     "group_coherence": "incomplete",
     "id": "PLAY-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "resume-fixture",
       "accessibility_audit"
@@ -1890,6 +2084,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-001",
     "tags": [
       "catalog-scaffold",
@@ -1907,8 +2102,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1920,6 +2117,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-002",
     "tags": [
       "catalog-scaffold",
@@ -1937,8 +2135,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1950,6 +2150,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-003",
     "tags": [
       "catalog-scaffold",
@@ -1966,8 +2167,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -1979,6 +2182,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-004",
     "tags": [
       "catalog-scaffold",
@@ -1996,8 +2200,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2009,6 +2215,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-005",
     "tags": [
       "catalog-scaffold",
@@ -2026,8 +2233,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2039,6 +2248,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-006",
     "tags": [
       "catalog-scaffold",
@@ -2056,8 +2266,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2069,6 +2281,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-007",
     "tags": [
       "catalog-scaffold",
@@ -2086,8 +2299,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2099,6 +2314,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-008",
     "tags": [
       "catalog-scaffold",
@@ -2116,8 +2332,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2128,6 +2346,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-009",
     "tags": [
       "catalog-scaffold",
@@ -2143,8 +2362,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2156,6 +2377,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-010",
     "tags": [
       "catalog-scaffold",
@@ -2173,8 +2395,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2186,6 +2410,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-011",
     "tags": [
       "catalog-scaffold",
@@ -2203,8 +2428,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2216,6 +2443,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-012",
     "tags": [
       "catalog-scaffold",
@@ -2233,8 +2461,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2246,6 +2476,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-013",
     "tags": [
       "catalog-scaffold",
@@ -2263,8 +2494,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2276,6 +2509,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-014",
     "tags": [
       "catalog-scaffold",
@@ -2293,8 +2527,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2305,6 +2541,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-015",
     "tags": [
       "catalog-scaffold",
@@ -2320,8 +2557,10 @@
   {
     "category": "Playback",
     "data_url": "scenarios/play-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PLAY-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2333,6 +2572,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "play-016",
     "tags": [
       "catalog-scaffold",
@@ -2349,8 +2589,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2362,6 +2604,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-001",
     "tags": [
       "catalog-scaffold",
@@ -2379,8 +2622,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2392,6 +2637,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-002",
     "tags": [
       "catalog-scaffold",
@@ -2408,8 +2654,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2420,6 +2668,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-003",
     "tags": [
       "catalog-scaffold",
@@ -2435,8 +2684,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2448,6 +2699,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-004",
     "tags": [
       "catalog-scaffold",
@@ -2465,8 +2717,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2477,6 +2731,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-005",
     "tags": [
       "catalog-scaffold",
@@ -2492,8 +2747,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2505,6 +2762,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-006",
     "tags": [
       "catalog-scaffold",
@@ -2523,8 +2781,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -2537,6 +2797,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-007",
     "tags": [
       "cassette-required",
@@ -2556,8 +2817,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2568,6 +2831,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-008",
     "tags": [
       "catalog-scaffold",
@@ -2583,8 +2847,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2596,6 +2862,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-009",
     "tags": [
       "catalog-scaffold",
@@ -2613,8 +2880,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2626,6 +2895,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-010",
     "tags": [
       "catalog-scaffold",
@@ -2644,8 +2914,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2656,6 +2928,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-011",
     "tags": [
       "catalog-scaffold",
@@ -2671,8 +2944,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2684,6 +2959,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-012",
     "tags": [
       "catalog-scaffold",
@@ -2701,8 +2977,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2714,6 +2992,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-013",
     "tags": [
       "catalog-scaffold",
@@ -2731,8 +3010,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2744,6 +3025,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-014",
     "tags": [
       "catalog-scaffold",
@@ -2762,8 +3044,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2774,6 +3058,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-015",
     "tags": [
       "catalog-scaffold",
@@ -2790,8 +3075,10 @@
   {
     "category": "Queue And Downloads",
     "data_url": "scenarios/qd-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "QD-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -2803,6 +3090,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "qd-016",
     "tags": [
       "cassette-required",
@@ -2820,8 +3108,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -2834,6 +3124,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-001",
     "tags": [
       "cassette-required",
@@ -2852,8 +3143,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -2866,6 +3159,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-002",
     "tags": [
       "cassette-required",
@@ -2883,8 +3177,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -2897,6 +3193,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-003",
     "tags": [
       "cassette-required",
@@ -2914,8 +3211,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -2927,6 +3226,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-004",
     "tags": [
       "cassette-required",
@@ -2944,8 +3244,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -2958,6 +3260,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-005",
     "tags": [
       "cassette-required",
@@ -2975,8 +3278,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -2987,6 +3292,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-006",
     "tags": [
       "catalog-scaffold",
@@ -3003,8 +3309,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -3017,6 +3325,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-007",
     "tags": [
       "cassette-required",
@@ -3034,8 +3343,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -3048,6 +3359,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-008",
     "tags": [
       "cassette-required",
@@ -3066,8 +3378,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3078,6 +3392,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-009",
     "tags": [
       "catalog-scaffold",
@@ -3094,8 +3409,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -3108,6 +3425,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-010",
     "tags": [
       "catalog-scaffold",
@@ -3125,8 +3443,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3138,6 +3458,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-011",
     "tags": [
       "catalog-scaffold",
@@ -3155,8 +3476,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3168,6 +3491,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-012",
     "tags": [
       "catalog-scaffold",
@@ -3185,8 +3509,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3197,6 +3523,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-013",
     "tags": [
       "catalog-scaffold",
@@ -3213,8 +3540,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3226,6 +3555,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-014",
     "tags": [
       "catalog-scaffold",
@@ -3243,8 +3573,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3256,6 +3588,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-015",
     "tags": [
       "catalog-scaffold",
@@ -3272,8 +3605,10 @@
   {
     "category": "Transcripts",
     "data_url": "scenarios/tr-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "TR-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3285,6 +3620,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "tr-016",
     "tags": [
       "catalog-scaffold",
@@ -3302,8 +3638,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3315,6 +3653,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-001",
     "tags": [
       "catalog-scaffold",
@@ -3331,8 +3670,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3343,6 +3684,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-002",
     "tags": [
       "catalog-scaffold",
@@ -3358,8 +3700,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3370,6 +3714,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-003",
     "tags": [
       "catalog-scaffold",
@@ -3386,8 +3731,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3399,6 +3746,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-004",
     "tags": [
       "catalog-scaffold",
@@ -3416,8 +3764,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3429,6 +3779,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-005",
     "tags": [
       "catalog-scaffold",
@@ -3446,8 +3797,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -3459,6 +3812,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-006",
     "tags": [
       "cassette-required",
@@ -3476,8 +3830,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3489,6 +3845,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-007",
     "tags": [
       "catalog-scaffold",
@@ -3505,8 +3862,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3518,6 +3877,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-008",
     "tags": [
       "catalog-scaffold",
@@ -3534,8 +3894,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3547,6 +3909,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-009",
     "tags": [
       "catalog-scaffold",
@@ -3563,8 +3926,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3576,6 +3941,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-010",
     "tags": [
       "catalog-scaffold",
@@ -3595,8 +3961,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -3608,6 +3976,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-011",
     "tags": [
       "cassette-required",
@@ -3626,8 +3995,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3639,6 +4010,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-012",
     "tags": [
       "catalog-scaffold",
@@ -3655,8 +4027,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3667,6 +4041,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-013",
     "tags": [
       "catalog-scaffold",
@@ -3683,8 +4058,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3696,6 +4073,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-014",
     "tags": [
       "catalog-scaffold",
@@ -3713,8 +4091,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3725,6 +4105,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-015",
     "tags": [
       "catalog-scaffold",
@@ -3740,8 +4121,10 @@
   {
     "category": "Clips, Highlights, And Sharing",
     "data_url": "scenarios/clip-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CLIP-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3752,6 +4135,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "clip-016",
     "tags": [
       "catalog-scaffold",
@@ -3768,8 +4152,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3781,6 +4167,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-001",
     "tags": [
       "ag",
@@ -3798,8 +4185,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3811,6 +4200,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-002",
     "tags": [
       "ag",
@@ -3828,8 +4218,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3841,6 +4233,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-003",
     "tags": [
       "ag",
@@ -3857,8 +4250,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3869,6 +4264,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-004",
     "tags": [
       "ag",
@@ -3885,8 +4281,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -3898,6 +4296,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-005",
     "tags": [
       "ag",
@@ -3915,8 +4314,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3928,6 +4329,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-006",
     "tags": [
       "ag",
@@ -3944,8 +4346,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -3957,6 +4361,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-007",
     "tags": [
       "ag",
@@ -3974,8 +4379,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -3988,6 +4395,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-008",
     "tags": [
       "ag",
@@ -4006,8 +4414,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4018,6 +4428,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-009",
     "tags": [
       "ag",
@@ -4033,8 +4444,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4047,6 +4460,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-010",
     "tags": [
       "ag",
@@ -4066,8 +4480,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4080,6 +4496,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-011",
     "tags": [
       "ag",
@@ -4099,8 +4516,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4111,6 +4530,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-012",
     "tags": [
       "ag",
@@ -4127,8 +4547,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4140,6 +4562,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-013",
     "tags": [
       "ag",
@@ -4156,8 +4579,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4170,6 +4595,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-014",
     "tags": [
       "ag",
@@ -4187,8 +4613,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4199,6 +4627,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-015",
     "tags": [
       "ag",
@@ -4215,8 +4644,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4228,6 +4659,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-016",
     "tags": [
       "ag",
@@ -4245,8 +4677,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-017/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-017",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4257,6 +4691,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-017",
     "tags": [
       "ag",
@@ -4273,8 +4708,10 @@
   {
     "category": "Agent Chat And Tools",
     "data_url": "scenarios/ag-018/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "AG-018",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4287,6 +4724,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "ag-018",
     "tags": [
       "ag",
@@ -4305,8 +4743,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4319,6 +4759,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-001",
     "tags": [
       "cassette-required",
@@ -4336,8 +4777,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4348,6 +4791,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-002",
     "tags": [
       "catalog-scaffold",
@@ -4364,8 +4808,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4378,6 +4824,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-003",
     "tags": [
       "cassette-required",
@@ -4396,8 +4843,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4409,6 +4858,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-004",
     "tags": [
       "cassette-required",
@@ -4427,8 +4877,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4441,6 +4893,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-005",
     "tags": [
       "cassette-required",
@@ -4458,8 +4911,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4470,6 +4925,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-006",
     "tags": [
       "catalog-scaffold",
@@ -4486,8 +4942,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4500,6 +4958,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-007",
     "tags": [
       "cassette-required",
@@ -4517,8 +4976,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4531,6 +4992,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-008",
     "tags": [
       "cassette-required",
@@ -4549,8 +5011,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4562,6 +5026,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-009",
     "tags": [
       "catalog-scaffold",
@@ -4579,8 +5044,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4592,6 +5059,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-010",
     "tags": [
       "cassette-required",
@@ -4608,8 +5076,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4622,6 +5092,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-011",
     "tags": [
       "cassette-required",
@@ -4639,8 +5110,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4652,6 +5125,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-012",
     "tags": [
       "cassette-required",
@@ -4668,8 +5142,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4680,6 +5156,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-013",
     "tags": [
       "catalog-scaffold",
@@ -4696,8 +5173,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4710,6 +5189,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-014",
     "tags": [
       "cassette-required",
@@ -4728,8 +5208,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4742,6 +5224,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-015",
     "tags": [
       "cassette-required",
@@ -4760,8 +5243,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4773,6 +5258,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-016",
     "tags": [
       "cassette-required",
@@ -4791,8 +5277,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-017/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-017",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4805,6 +5293,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-017",
     "tags": [
       "cassette-required",
@@ -4823,8 +5312,10 @@
   {
     "category": "LLM Provider And Replay",
     "data_url": "scenarios/llm-018/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "LLM-018",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4837,6 +5328,7 @@
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "llm-018",
     "tags": [
       "cassette-required",
@@ -4855,8 +5347,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4869,6 +5363,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-001",
     "tags": [
       "cassette-required",
@@ -4887,8 +5382,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4900,6 +5397,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-002",
     "tags": [
       "cassette-required",
@@ -4917,8 +5415,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -4931,6 +5431,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-003",
     "tags": [
       "cassette-required",
@@ -4949,8 +5450,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4962,6 +5465,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-004",
     "tags": [
       "catalog-scaffold",
@@ -4978,8 +5482,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -4990,6 +5496,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-005",
     "tags": [
       "catalog-scaffold",
@@ -5005,8 +5512,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5019,6 +5528,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-006",
     "tags": [
       "cassette-required",
@@ -5037,8 +5547,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5050,6 +5562,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-007",
     "tags": [
       "catalog-scaffold",
@@ -5067,8 +5580,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5079,6 +5594,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-008",
     "tags": [
       "catalog-scaffold",
@@ -5094,8 +5610,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5108,6 +5626,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-009",
     "tags": [
       "cassette-required",
@@ -5126,8 +5645,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5138,6 +5659,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-010",
     "tags": [
       "catalog-scaffold",
@@ -5153,8 +5675,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5167,6 +5691,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-011",
     "tags": [
       "cassette-required",
@@ -5185,8 +5710,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5199,6 +5726,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-012",
     "tags": [
       "cassette-required",
@@ -5217,8 +5745,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5230,6 +5760,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-013",
     "tags": [
       "cassette-required",
@@ -5247,8 +5778,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5260,6 +5793,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-014",
     "tags": [
       "catalog-scaffold",
@@ -5276,8 +5810,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5289,6 +5825,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-015",
     "tags": [
       "catalog-scaffold",
@@ -5306,8 +5843,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5319,6 +5858,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-016",
     "tags": [
       "catalog-scaffold",
@@ -5336,8 +5876,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-017/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-017",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5348,6 +5890,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-017",
     "tags": [
       "catalog-scaffold",
@@ -5363,8 +5906,10 @@
   {
     "category": "Wiki, RAG, Knowledge, And Briefings",
     "data_url": "scenarios/wiki-018/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "WIKI-018",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5376,6 +5921,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "wiki-018",
     "tags": [
       "cassette-required",
@@ -5393,8 +5939,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5406,6 +5954,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-001",
     "tags": [
       "catalog-scaffold",
@@ -5423,8 +5972,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5435,6 +5986,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-002",
     "tags": [
       "catalog-scaffold",
@@ -5450,8 +6002,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5462,6 +6016,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-003",
     "tags": [
       "catalog-scaffold",
@@ -5478,8 +6033,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5491,6 +6048,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-004",
     "tags": [
       "catalog-scaffold",
@@ -5508,8 +6066,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5522,6 +6082,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-005",
     "tags": [
       "cassette-required",
@@ -5539,8 +6100,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5553,6 +6116,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-006",
     "tags": [
       "catalog-scaffold",
@@ -5570,8 +6134,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5583,6 +6149,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-007",
     "tags": [
       "catalog-scaffold",
@@ -5600,8 +6167,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5614,6 +6183,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-008",
     "tags": [
       "cassette-required",
@@ -5631,8 +6201,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5645,6 +6217,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-009",
     "tags": [
       "cassette-required",
@@ -5664,8 +6237,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5676,6 +6251,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-010",
     "tags": [
       "catalog-scaffold",
@@ -5692,8 +6268,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5706,6 +6284,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-011",
     "tags": [
       "cassette-required",
@@ -5724,8 +6303,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5738,6 +6319,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-012",
     "tags": [
       "cassette-required",
@@ -5756,8 +6338,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5770,6 +6354,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-013",
     "tags": [
       "catalog-scaffold",
@@ -5787,8 +6372,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5799,6 +6386,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-014",
     "tags": [
       "catalog-scaffold",
@@ -5814,8 +6402,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5827,6 +6417,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-015",
     "tags": [
       "catalog-scaffold",
@@ -5843,8 +6434,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5856,6 +6449,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-016",
     "tags": [
       "catalog-scaffold",
@@ -5872,8 +6466,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-017/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-017",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5885,6 +6481,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-017",
     "tags": [
       "catalog-scaffold",
@@ -5902,8 +6499,10 @@
   {
     "category": "Voice And Generated Audio",
     "data_url": "scenarios/voice-018/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VOICE-018",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -5916,6 +6515,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "voice-018",
     "tags": [
       "cassette-required",
@@ -5934,8 +6534,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5947,6 +6549,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-001",
     "tags": [
       "catalog-scaffold",
@@ -5966,8 +6569,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -5978,6 +6583,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-002",
     "tags": [
       "catalog-scaffold",
@@ -5996,8 +6602,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6009,6 +6617,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-003",
     "tags": [
       "catalog-scaffold",
@@ -6027,8 +6636,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6039,6 +6650,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-004",
     "tags": [
       "catalog-scaffold",
@@ -6056,8 +6668,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -6070,6 +6684,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-005",
     "tags": [
       "cassette-required",
@@ -6089,8 +6704,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -6102,6 +6719,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-006",
     "tags": [
       "cassette-required",
@@ -6120,8 +6738,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6133,6 +6753,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-007",
     "tags": [
       "catalog-scaffold",
@@ -6151,8 +6772,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6164,6 +6787,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-008",
     "tags": [
       "catalog-scaffold",
@@ -6181,8 +6805,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6194,6 +6820,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-009",
     "tags": [
       "catalog-scaffold",
@@ -6212,8 +6839,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6224,6 +6853,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-010",
     "tags": [
       "catalog-scaffold",
@@ -6240,8 +6870,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6252,6 +6884,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-011",
     "tags": [
       "catalog-scaffold",
@@ -6269,8 +6902,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6282,6 +6917,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-012",
     "tags": [
       "catalog-scaffold",
@@ -6300,8 +6936,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6312,6 +6950,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-013",
     "tags": [
       "catalog-scaffold",
@@ -6328,8 +6967,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6340,6 +6981,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-014",
     "tags": [
       "catalog-scaffold",
@@ -6355,8 +6997,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6367,6 +7011,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-015",
     "tags": [
       "catalog-scaffold",
@@ -6382,8 +7027,10 @@
   {
     "category": "Nostr Publishing And Protocol",
     "data_url": "scenarios/nostr-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NOSTR-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6394,6 +7041,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nostr-016",
     "tags": [
       "catalog-scaffold",
@@ -6411,8 +7059,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6424,6 +7074,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-001",
     "tags": [
       "catalog-scaffold",
@@ -6443,8 +7094,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6455,6 +7108,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-002",
     "tags": [
       "catalog-scaffold",
@@ -6471,8 +7125,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6484,6 +7140,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-003",
     "tags": [
       "catalog-scaffold",
@@ -6502,8 +7159,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6515,6 +7174,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-004",
     "tags": [
       "catalog-scaffold",
@@ -6534,8 +7194,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6547,6 +7209,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-005",
     "tags": [
       "catalog-scaffold",
@@ -6565,8 +7228,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6577,6 +7242,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-006",
     "tags": [
       "catalog-scaffold",
@@ -6592,8 +7258,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6604,6 +7272,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-007",
     "tags": [
       "catalog-scaffold",
@@ -6619,8 +7288,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6632,6 +7303,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-008",
     "tags": [
       "catalog-scaffold",
@@ -6650,8 +7322,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -6663,6 +7337,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-009",
     "tags": [
       "cassette-required",
@@ -6681,8 +7356,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6694,6 +7371,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-010",
     "tags": [
       "catalog-scaffold",
@@ -6711,8 +7389,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6723,6 +7403,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-011",
     "tags": [
       "catalog-scaffold",
@@ -6740,8 +7421,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6752,6 +7435,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-012",
     "tags": [
       "catalog-scaffold",
@@ -6768,8 +7452,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -6782,6 +7468,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-013",
     "tags": [
       "cassette-required",
@@ -6801,8 +7488,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6813,6 +7502,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-014",
     "tags": [
       "catalog-scaffold",
@@ -6828,8 +7518,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6841,6 +7533,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-015",
     "tags": [
       "catalog-scaffold",
@@ -6858,8 +7551,10 @@
   {
     "category": "Social, Friends, Feedback",
     "data_url": "scenarios/soc-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SOC-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6871,6 +7566,7 @@
     "product_cluster": "social-friends-feedback",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "soc-016",
     "tags": [
       "catalog-scaffold",
@@ -6887,8 +7583,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-001/data.json",
+    "evidence_quality": "pass_with_issues",
     "group_coherence": "incomplete",
     "id": "SET-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "picker-change-coverage",
       "relaunch-persistence",
@@ -6897,6 +7595,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-001",
     "tags": [
       "catalog-scaffold",
@@ -6912,8 +7611,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -6926,6 +7627,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-002",
     "tags": [
       "cassette-required",
@@ -6944,8 +7646,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6956,6 +7660,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-003",
     "tags": [
       "catalog-scaffold",
@@ -6971,8 +7676,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -6983,6 +7690,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-004",
     "tags": [
       "catalog-scaffold",
@@ -6999,8 +7707,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-005/data.json",
+    "evidence_quality": "pass_with_issues",
     "group_coherence": "incomplete",
     "id": "SET-005",
+    "launch_readiness": "blocked",
     "missing_evidence": [
       "clear-all-data-teardown",
       "accessibility_audit"
@@ -7008,6 +7718,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "blocked",
+    "risk_classification": "major",
     "slug": "set-005",
     "tags": [
       "catalog-scaffold",
@@ -7024,8 +7735,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7037,6 +7750,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-006",
     "tags": [
       "catalog-scaffold",
@@ -7054,8 +7768,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7067,6 +7783,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-007",
     "tags": [
       "catalog-scaffold",
@@ -7083,8 +7800,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7095,6 +7814,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-008",
     "tags": [
       "catalog-scaffold",
@@ -7111,8 +7831,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7123,6 +7845,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-009",
     "tags": [
       "catalog-scaffold",
@@ -7140,8 +7863,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -7153,6 +7878,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-010",
     "tags": [
       "cassette-required",
@@ -7170,8 +7896,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7182,6 +7910,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-011",
     "tags": [
       "catalog-scaffold",
@@ -7199,8 +7928,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -7213,6 +7944,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-012",
     "tags": [
       "cassette-required",
@@ -7231,8 +7963,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7243,6 +7977,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-013",
     "tags": [
       "catalog-scaffold",
@@ -7258,8 +7993,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7271,6 +8008,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-014",
     "tags": [
       "catalog-scaffold",
@@ -7287,8 +8025,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7299,6 +8039,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-015",
     "tags": [
       "catalog-scaffold",
@@ -7314,8 +8055,10 @@
   {
     "category": "Settings And Storage",
     "data_url": "scenarios/set-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "SET-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7326,6 +8069,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "set-016",
     "tags": [
       "catalog-scaffold",
@@ -7341,8 +8085,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7354,6 +8100,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-001",
     "tags": [
       "catalog-scaffold",
@@ -7371,8 +8118,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -7385,6 +8134,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-002",
     "tags": [
       "cassette-required",
@@ -7403,8 +8153,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7416,6 +8168,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-003",
     "tags": [
       "catalog-scaffold",
@@ -7432,8 +8185,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7444,6 +8199,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-004",
     "tags": [
       "catalog-scaffold",
@@ -7460,8 +8216,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7473,6 +8231,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-005",
     "tags": [
       "catalog-scaffold",
@@ -7490,8 +8249,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7502,6 +8263,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-006",
     "tags": [
       "catalog-scaffold",
@@ -7518,8 +8280,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7531,6 +8295,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-007",
     "tags": [
       "catalog-scaffold",
@@ -7548,8 +8313,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7561,6 +8328,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-008",
     "tags": [
       "catalog-scaffold",
@@ -7578,8 +8346,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-009/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-009",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7591,6 +8361,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-009",
     "tags": [
       "catalog-scaffold",
@@ -7608,8 +8379,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-010/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-010",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7621,6 +8394,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-010",
     "tags": [
       "catalog-scaffold",
@@ -7637,8 +8411,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-011/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-011",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7649,6 +8425,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-011",
     "tags": [
       "catalog-scaffold",
@@ -7664,8 +8441,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-012/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-012",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7676,6 +8455,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-012",
     "tags": [
       "catalog-scaffold",
@@ -7692,8 +8472,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-013/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-013",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7705,6 +8487,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-013",
     "tags": [
       "catalog-scaffold",
@@ -7723,8 +8506,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-014/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-014",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7735,6 +8520,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-014",
     "tags": [
       "catalog-scaffold",
@@ -7750,8 +8536,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-015/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-015",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7762,6 +8550,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-015",
     "tags": [
       "catalog-scaffold",
@@ -7777,8 +8566,10 @@
   {
     "category": "Platform, Parity, Performance, Regression",
     "data_url": "scenarios/xplat-016/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "XPLAT-016",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7789,6 +8580,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "xplat-016",
     "tags": [
       "all-doctrine",
@@ -7804,8 +8596,10 @@
   {
     "category": "Chirp Fix Parity",
     "data_url": "scenarios/chirp-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CHIRP-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7817,6 +8611,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "chirp-001",
     "tags": [
       "catalog-scaffold",
@@ -7835,8 +8630,10 @@
   {
     "category": "Chirp Fix Parity",
     "data_url": "scenarios/chirp-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CHIRP-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7848,6 +8645,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "chirp-002",
     "tags": [
       "catalog-scaffold",
@@ -7865,8 +8663,10 @@
   {
     "category": "Chirp Fix Parity",
     "data_url": "scenarios/chirp-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CHIRP-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7878,6 +8678,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "chirp-003",
     "tags": [
       "catalog-scaffold",
@@ -7896,8 +8697,10 @@
   {
     "category": "Chirp Fix Parity",
     "data_url": "scenarios/chirp-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CHIRP-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7909,6 +8712,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "chirp-004",
     "tags": [
       "catalog-scaffold",
@@ -7926,8 +8730,10 @@
   {
     "category": "Chirp Fix Parity",
     "data_url": "scenarios/chirp-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CHIRP-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7939,6 +8745,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "chirp-005",
     "tags": [
       "catalog-scaffold",
@@ -7958,8 +8765,10 @@
   {
     "category": "Chirp Fix Parity",
     "data_url": "scenarios/chirp-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CHIRP-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7970,6 +8779,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "chirp-006",
     "tags": [
       "catalog-scaffold",
@@ -7986,8 +8796,10 @@
   {
     "category": "Chirp Fix Parity",
     "data_url": "scenarios/chirp-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CHIRP-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -7998,6 +8810,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "chirp-007",
     "tags": [
       "catalog-scaffold",
@@ -8014,8 +8827,10 @@
   {
     "category": "Chirp Fix Parity",
     "data_url": "scenarios/chirp-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "CHIRP-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8027,6 +8842,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "chirp-008",
     "tags": [
       "catalog-scaffold",
@@ -8045,8 +8861,10 @@
   {
     "category": "NMP Master Pin And Runtime Lifecycle",
     "data_url": "scenarios/nmpm-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NMPM-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8057,6 +8875,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nmpm-001",
     "tags": [
       "catalog-scaffold",
@@ -8073,8 +8892,10 @@
   {
     "category": "NMP Master Pin And Runtime Lifecycle",
     "data_url": "scenarios/nmpm-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NMPM-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8086,6 +8907,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nmpm-002",
     "tags": [
       "catalog-scaffold",
@@ -8105,8 +8927,10 @@
   {
     "category": "NMP Master Pin And Runtime Lifecycle",
     "data_url": "scenarios/nmpm-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NMPM-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8118,6 +8942,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nmpm-003",
     "tags": [
       "catalog-scaffold",
@@ -8135,8 +8960,10 @@
   {
     "category": "NMP Master Pin And Runtime Lifecycle",
     "data_url": "scenarios/nmpm-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NMPM-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8148,6 +8975,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nmpm-004",
     "tags": [
       "catalog-scaffold",
@@ -8165,8 +8993,10 @@
   {
     "category": "NMP Master Pin And Runtime Lifecycle",
     "data_url": "scenarios/nmpm-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NMPM-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8177,6 +9007,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nmpm-005",
     "tags": [
       "catalog-scaffold",
@@ -8193,8 +9024,10 @@
   {
     "category": "NMP Master Pin And Runtime Lifecycle",
     "data_url": "scenarios/nmpm-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NMPM-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8205,6 +9038,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nmpm-006",
     "tags": [
       "catalog-scaffold",
@@ -8222,8 +9056,10 @@
   {
     "category": "NMP Master Pin And Runtime Lifecycle",
     "data_url": "scenarios/nmpm-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NMPM-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8234,6 +9070,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nmpm-007",
     "tags": [
       "catalog-scaffold",
@@ -8251,8 +9088,10 @@
   {
     "category": "NMP Master Pin And Runtime Lifecycle",
     "data_url": "scenarios/nmpm-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NMPM-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8263,6 +9102,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nmpm-008",
     "tags": [
       "catalog-scaffold",
@@ -8279,8 +9119,10 @@
   {
     "category": "NIP-05 And Discovery State",
     "data_url": "scenarios/nip05-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NIP05-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8292,6 +9134,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nip05-001",
     "tags": [
       "catalog-scaffold",
@@ -8310,8 +9153,10 @@
   {
     "category": "NIP-05 And Discovery State",
     "data_url": "scenarios/nip05-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NIP05-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8323,6 +9168,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nip05-002",
     "tags": [
       "catalog-scaffold",
@@ -8341,8 +9187,10 @@
   {
     "category": "NIP-05 And Discovery State",
     "data_url": "scenarios/nip05-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NIP05-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8353,6 +9201,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nip05-003",
     "tags": [
       "catalog-scaffold",
@@ -8369,8 +9218,10 @@
   {
     "category": "NIP-05 And Discovery State",
     "data_url": "scenarios/nip05-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NIP05-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8382,6 +9233,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nip05-004",
     "tags": [
       "catalog-scaffold",
@@ -8400,8 +9252,10 @@
   {
     "category": "NIP-05 And Discovery State",
     "data_url": "scenarios/nip05-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NIP05-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8413,6 +9267,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nip05-005",
     "tags": [
       "catalog-scaffold",
@@ -8430,8 +9285,10 @@
   {
     "category": "NIP-05 And Discovery State",
     "data_url": "scenarios/nip05-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NIP05-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8442,6 +9299,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nip05-006",
     "tags": [
       "catalog-scaffold",
@@ -8458,8 +9316,10 @@
   {
     "category": "NIP-05 And Discovery State",
     "data_url": "scenarios/nip05-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NIP05-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8470,6 +9330,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nip05-007",
     "tags": [
       "catalog-scaffold",
@@ -8486,8 +9347,10 @@
   {
     "category": "NIP-05 And Discovery State",
     "data_url": "scenarios/nip05-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "NIP05-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8498,6 +9361,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "nip05-008",
     "tags": [
       "catalog-scaffold",
@@ -8513,8 +9377,10 @@
   {
     "category": "Projection Cache And Stale-State Guards",
     "data_url": "scenarios/proj-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PROJ-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8526,6 +9392,7 @@
     "product_cluster": "projection-cache-and-stale-state-guards",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "proj-001",
     "tags": [
       "catalog-scaffold",
@@ -8543,8 +9410,10 @@
   {
     "category": "Projection Cache And Stale-State Guards",
     "data_url": "scenarios/proj-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PROJ-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8556,6 +9425,7 @@
     "product_cluster": "projection-cache-and-stale-state-guards",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "proj-002",
     "tags": [
       "catalog-scaffold",
@@ -8573,8 +9443,10 @@
   {
     "category": "Projection Cache And Stale-State Guards",
     "data_url": "scenarios/proj-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PROJ-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8586,6 +9458,7 @@
     "product_cluster": "projection-cache-and-stale-state-guards",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "proj-003",
     "tags": [
       "catalog-scaffold",
@@ -8603,8 +9476,10 @@
   {
     "category": "Projection Cache And Stale-State Guards",
     "data_url": "scenarios/proj-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PROJ-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8616,6 +9491,7 @@
     "product_cluster": "projection-cache-and-stale-state-guards",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "proj-004",
     "tags": [
       "catalog-scaffold",
@@ -8634,8 +9510,10 @@
   {
     "category": "Projection Cache And Stale-State Guards",
     "data_url": "scenarios/proj-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PROJ-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8647,6 +9525,7 @@
     "product_cluster": "projection-cache-and-stale-state-guards",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "proj-005",
     "tags": [
       "catalog-scaffold",
@@ -8664,8 +9543,10 @@
   {
     "category": "Projection Cache And Stale-State Guards",
     "data_url": "scenarios/proj-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PROJ-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8677,6 +9558,7 @@
     "product_cluster": "projection-cache-and-stale-state-guards",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "proj-006",
     "tags": [
       "catalog-scaffold",
@@ -8694,8 +9576,10 @@
   {
     "category": "Projection Cache And Stale-State Guards",
     "data_url": "scenarios/proj-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PROJ-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8706,6 +9590,7 @@
     "product_cluster": "projection-cache-and-stale-state-guards",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "proj-007",
     "tags": [
       "catalog-scaffold",
@@ -8722,8 +9607,10 @@
   {
     "category": "Projection Cache And Stale-State Guards",
     "data_url": "scenarios/proj-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "PROJ-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8735,6 +9622,7 @@
     "product_cluster": "projection-cache-and-stale-state-guards",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "proj-008",
     "tags": [
       "catalog-scaffold",
@@ -8752,8 +9640,10 @@
   {
     "category": "Offline, Relay, And Replay Honesty",
     "data_url": "scenarios/offline-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "OFFLINE-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8765,6 +9655,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "offline-001",
     "tags": [
       "catalog-scaffold",
@@ -8783,8 +9674,10 @@
   {
     "category": "Offline, Relay, And Replay Honesty",
     "data_url": "scenarios/offline-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "OFFLINE-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8796,6 +9689,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "offline-002",
     "tags": [
       "catalog-scaffold",
@@ -8815,8 +9709,10 @@
   {
     "category": "Offline, Relay, And Replay Honesty",
     "data_url": "scenarios/offline-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "OFFLINE-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8827,6 +9723,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "offline-003",
     "tags": [
       "catalog-scaffold",
@@ -8843,8 +9740,10 @@
   {
     "category": "Offline, Relay, And Replay Honesty",
     "data_url": "scenarios/offline-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "OFFLINE-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8856,6 +9755,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "offline-004",
     "tags": [
       "catalog-scaffold",
@@ -8873,8 +9773,10 @@
   {
     "category": "Offline, Relay, And Replay Honesty",
     "data_url": "scenarios/offline-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "OFFLINE-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8885,6 +9787,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "offline-005",
     "tags": [
       "catalog-scaffold",
@@ -8901,8 +9804,10 @@
   {
     "category": "Offline, Relay, And Replay Honesty",
     "data_url": "scenarios/offline-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "OFFLINE-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -8914,6 +9819,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "offline-006",
     "tags": [
       "catalog-scaffold",
@@ -8931,8 +9837,10 @@
   {
     "category": "Offline, Relay, And Replay Honesty",
     "data_url": "scenarios/offline-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "OFFLINE-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -8944,6 +9852,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "offline-007",
     "tags": [
       "cassette-required",
@@ -8961,8 +9870,10 @@
   {
     "category": "Offline, Relay, And Replay Honesty",
     "data_url": "scenarios/offline-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "OFFLINE-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -8975,6 +9886,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "offline-008",
     "tags": [
       "cassette-required",
@@ -8994,8 +9906,10 @@
   {
     "category": "Visual, Accessibility, And Liquid Glass Parity",
     "data_url": "scenarios/vis-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VIS-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9007,6 +9921,7 @@
     "product_cluster": "visual-accessibility-and-liquid-glass-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "vis-001",
     "tags": [
       "catalog-scaffold",
@@ -9024,8 +9939,10 @@
   {
     "category": "Visual, Accessibility, And Liquid Glass Parity",
     "data_url": "scenarios/vis-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VIS-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9036,6 +9953,7 @@
     "product_cluster": "visual-accessibility-and-liquid-glass-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "vis-002",
     "tags": [
       "catalog-scaffold",
@@ -9052,8 +9970,10 @@
   {
     "category": "Visual, Accessibility, And Liquid Glass Parity",
     "data_url": "scenarios/vis-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VIS-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9065,6 +9985,7 @@
     "product_cluster": "visual-accessibility-and-liquid-glass-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "vis-003",
     "tags": [
       "catalog-scaffold",
@@ -9082,8 +10003,10 @@
   {
     "category": "Visual, Accessibility, And Liquid Glass Parity",
     "data_url": "scenarios/vis-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VIS-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9094,6 +10017,7 @@
     "product_cluster": "visual-accessibility-and-liquid-glass-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "vis-004",
     "tags": [
       "catalog-scaffold",
@@ -9110,8 +10034,10 @@
   {
     "category": "Visual, Accessibility, And Liquid Glass Parity",
     "data_url": "scenarios/vis-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VIS-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9122,6 +10048,7 @@
     "product_cluster": "visual-accessibility-and-liquid-glass-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "vis-005",
     "tags": [
       "catalog-scaffold",
@@ -9137,8 +10064,10 @@
   {
     "category": "Visual, Accessibility, And Liquid Glass Parity",
     "data_url": "scenarios/vis-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VIS-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9149,6 +10078,7 @@
     "product_cluster": "visual-accessibility-and-liquid-glass-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "vis-006",
     "tags": [
       "catalog-scaffold",
@@ -9165,8 +10095,10 @@
   {
     "category": "Visual, Accessibility, And Liquid Glass Parity",
     "data_url": "scenarios/vis-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VIS-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9177,6 +10109,7 @@
     "product_cluster": "visual-accessibility-and-liquid-glass-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "vis-007",
     "tags": [
       "catalog-scaffold",
@@ -9192,8 +10125,10 @@
   {
     "category": "Visual, Accessibility, And Liquid Glass Parity",
     "data_url": "scenarios/vis-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "VIS-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9205,6 +10140,7 @@
     "product_cluster": "visual-accessibility-and-liquid-glass-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "vis-008",
     "tags": [
       "catalog-scaffold",
@@ -9221,8 +10157,10 @@
   {
     "category": "Performance And D8 No-Polling Gates",
     "data_url": "scenarios/d8-001/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "D8-001",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9234,6 +10172,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "d8-001",
     "tags": [
       "catalog-scaffold",
@@ -9249,8 +10188,10 @@
   {
     "category": "Performance And D8 No-Polling Gates",
     "data_url": "scenarios/d8-002/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "D8-002",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9262,6 +10203,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "d8-002",
     "tags": [
       "catalog-scaffold",
@@ -9277,8 +10219,10 @@
   {
     "category": "Performance And D8 No-Polling Gates",
     "data_url": "scenarios/d8-003/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "D8-003",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9290,6 +10234,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "d8-003",
     "tags": [
       "catalog-scaffold",
@@ -9306,8 +10251,10 @@
   {
     "category": "Performance And D8 No-Polling Gates",
     "data_url": "scenarios/d8-004/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "D8-004",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9319,6 +10266,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "d8-004",
     "tags": [
       "catalog-scaffold",
@@ -9335,8 +10283,10 @@
   {
     "category": "Performance And D8 No-Polling Gates",
     "data_url": "scenarios/d8-005/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "D8-005",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9348,6 +10298,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "d8-005",
     "tags": [
       "catalog-scaffold",
@@ -9363,8 +10314,10 @@
   {
     "category": "Performance And D8 No-Polling Gates",
     "data_url": "scenarios/d8-006/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "D8-006",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "cassette",
@@ -9377,6 +10330,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "blocked",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "d8-006",
     "tags": [
       "cassette-required",
@@ -9394,8 +10348,10 @@
   {
     "category": "Performance And D8 No-Polling Gates",
     "data_url": "scenarios/d8-007/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "D8-007",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9407,6 +10363,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "d8-007",
     "tags": [
       "catalog-scaffold",
@@ -9423,8 +10380,10 @@
   {
     "category": "Performance And D8 No-Polling Gates",
     "data_url": "scenarios/d8-008/data.json",
+    "evidence_quality": "incomplete",
     "group_coherence": "incomplete",
     "id": "D8-008",
+    "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
       "command_output",
@@ -9435,6 +10394,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
+    "risk_classification": "major",
     "slug": "d8-008",
     "tags": [
       "catalog-scaffold",

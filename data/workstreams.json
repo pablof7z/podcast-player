@@ -1,31 +1,39 @@
 {
-  "generated_at": "2026-07-06T04:45:00Z",
+  "generated_at": "2026-07-07T20:17:02Z",
   "counts": {
-    "open_prs": 1,
-    "required_builds_running_or_queued": 2,
-    "blocked_by_required_checks": 1,
+    "open_prs": 0,
+    "required_builds_running_or_queued": 0,
+    "blocked_by_required_checks": 0,
     "red_required_builds": 0,
-    "merged_today": 12,
-    "closed_superseded": 1
+    "merged_today": 2,
+    "closed_superseded": 0
   },
-  "items": [
+  "items": [],
+  "recently_resolved": [
+    {
+      "id": "#737",
+      "title": "Deepen scenario page launch report template",
+      "url": "https://github.com/pablof7z/podcast-player/pull/737",
+      "status": "merged_to_main",
+      "merge_commit": "18f3e780",
+      "follow_up": "The generated scenario pages now expose launch readiness, missing-evidence placeholders, and skill-grounded UI/UX review structure for all 320 scenarios."
+    },
+    {
+      "id": "#736",
+      "title": "Normalize provider cassette scenario refs",
+      "url": "https://github.com/pablof7z/podcast-player/pull/736",
+      "status": "merged_to_main",
+      "merge_commit": "f77862da",
+      "follow_up": "Provider cassettes now map to 11 generated scenario pages with 0 unmapped refs in the report."
+    },
     {
       "id": "#735",
       "title": "Add Chirp/NMP regression validation catalog",
       "url": "https://github.com/pablof7z/podcast-player/pull/735",
-      "branch": "codex/chirp-nmp-validation-pack",
-      "status": "required_checks_running",
-      "current_gate": "Migration lint gates are green after fixing the PR description contract; Android Kotlin compile + unit tests is still running and Build and Test is queued.",
-      "why_not_merged": "The branch is mergeable at the git level but cannot merge until all required GitHub checks finish green.",
-      "progress": [
-        "Adds 56 Chirp/NMP regression parity scenarios and expands the generated catalog to 320 scenario pages.",
-        "Files #734 for concrete D8 Task.sleep scanner findings in haptics, press feedback, and CarPlay startup.",
-        "Publishes the corresponding gh-pages expansion at commit e9d723fb while preserving the curated issue dashboard and screenshot assets."
-      ],
-      "next_action": "Merge #735 as soon as Android Kotlin compile + unit tests and Build and Test pass; inspect the failing log immediately if either turns red."
-    }
-  ],
-  "recently_resolved": [
+      "status": "merged_to_main",
+      "merge_commit": "8760c46a",
+      "follow_up": "The Chirp/NMP validation pack expanded the live catalog to 320 generated scenario pages."
+    },
     {
       "id": "#729",
       "title": "Stabilize auto-download settings controls",
@@ -40,54 +48,7 @@
       "url": "https://github.com/pablof7z/podcast-player/pull/722",
       "status": "merged_to_main",
       "merge_commit": "updated-main",
-      "follow_up": "The generated report now has per-scenario pages and required UI/UX/performance/cohesion sections."
-    },
-    {
-      "id": "#710",
-      "title": "[codex] Add NMP and Chirp sync audit",
-      "url": "https://github.com/pablof7z/podcast-player/pull/710",
-      "status": "merged_to_main",
-      "merge_commit": "updated-main",
-      "follow_up": "Follow-up drift is now represented in #735 and the NMP/Chirp validation pack."
-    },
-    {
-      "id": "#723",
-      "title": "Fix xcodebuild false-red CI chunks",
-      "url": "https://github.com/pablof7z/podcast-player/pull/723",
-      "status": "merged_to_main",
-      "merge_commit": "updated-main",
-      "follow_up": "Future Build and Test logs should no longer report false-red chunks after ** TEST SUCCEEDED **."
-    },
-    {
-      "id": "#726",
-      "title": "[codex] Add scenario report taxonomy gaps",
-      "url": "https://github.com/pablof7z/podcast-player/pull/726",
-      "status": "merged_to_main",
-      "merge_commit": "updated-main",
-      "follow_up": "The taxonomy dimensions are included in the 320-page generated report."
-    },
-    {
-      "id": "#721",
-      "title": "Fix Downloads & Disk storage accounting",
-      "url": "https://github.com/pablof7z/podcast-player/pull/721",
-      "status": "merged_to_main",
-      "merge_commit": "886a90532266912527ca27d9546c9a14446809e4",
-      "follow_up": "SET-005 remains pending revalidation with fresh screenshots, metrics, logs, and UI tree evidence."
-    },
-    {
-      "id": "#720",
-      "title": "Fix seeded playback fixture duration",
-      "url": "https://github.com/pablof7z/podcast-player/pull/720",
-      "status": "merged_to_main",
-      "merge_commit": "e456e9c3fc82432a8b060bd8adebc2e4afb0c5e6",
-      "follow_up": "PLAY-001 remains pending revalidation with fresh playback evidence."
-    },
-    {
-      "id": "#706",
-      "title": "[codex] Publish validation report hub",
-      "url": "https://github.com/pablof7z/podcast-player/pull/706",
-      "status": "closed_superseded",
-      "follow_up": "Superseded by the live gh-pages branch and the deeper report-generator work in #722."
+      "follow_up": "The generated report has per-scenario pages and required UI/UX/performance/cohesion sections."
     }
   ]
 }

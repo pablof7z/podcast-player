@@ -83,8 +83,16 @@
     "Voice And Generated Audio": 18,
     "Wiki, RAG, Knowledge, And Briefings": 18
   },
+  "by_evidence_quality": {
+    "incomplete": 316,
+    "pass_with_issues": 4
+  },
   "by_group_coherence": {
     "incomplete": 320
+  },
+  "by_launch_readiness": {
+    "blocked": 1,
+    "incomplete": 319
   },
   "by_nmp_boundary": {
     "d0": 2,
@@ -131,6 +139,10 @@
   "by_readiness": {
     "blocked": 1,
     "incomplete": 319
+  },
+  "by_risk_classification": {
+    "major": 319,
+    "minor": 1
   },
   "by_tag": {
     "ag": 18,

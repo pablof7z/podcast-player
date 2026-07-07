@@ -545,6 +545,68 @@
         "required": true
       }
     ],
+    "placeholders": [
+      {
+        "blocks_dimensions": [
+          "accessibility_dynamic_type",
+          "touch_ergonomics"
+        ],
+        "id": "placeholder:accessibility_audit",
+        "kind": "accessibility_audit",
+        "message": "Missing required accessibility audit evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "attempted_test",
+          "execution_attempts"
+        ],
+        "id": "placeholder:command_output",
+        "kind": "command_output",
+        "message": "Missing required command output evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "observability",
+          "reliability_flakiness"
+        ],
+        "id": "placeholder:log",
+        "kind": "log",
+        "message": "Missing required log evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "performance"
+        ],
+        "id": "placeholder:metric_trace",
+        "kind": "metric_trace",
+        "message": "Missing required metric trace evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "actual_result",
+          "ui_polish",
+          "content_hierarchy"
+        ],
+        "id": "placeholder:screenshot",
+        "kind": "screenshot",
+        "message": "Missing required screenshot evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "accessibility_dynamic_type",
+          "information_architecture"
+        ],
+        "id": "placeholder:ui_tree",
+        "kind": "ui_tree",
+        "message": "Missing required ui tree evidence is blocking this report area.",
+        "required": true
+      }
+    ],
     "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
     "required_kinds": [
       "accessibility_audit",
@@ -568,14 +630,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-06T04:31:58Z",
+        "completed_at": "2026-07-07T20:17:30Z",
         "evidence_refs": [
           "catalog:soc-015"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-06T04:31:58Z",
+        "started_at": "2026-07-07T20:17:30Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -825,6 +887,36 @@
     }
   ],
   "issues": [],
+  "launch_assessment": {
+    "accessibility_status": "incomplete",
+    "blocking_gates": [
+      "required_evidence",
+      "skill_grounding",
+      "score_integrity",
+      "product_coherence",
+      "defect_tracking",
+      "release_readiness"
+    ],
+    "dependency_posture": "not_run",
+    "evidence_quality": "incomplete",
+    "individual_judgment": "SOC-015 has not been judged in isolation because observed product behavior is missing.",
+    "issue_refs": [],
+    "launch_readiness": "incomplete",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_judgment": "Not launch-ready. The page has a complete review structure, but product judgment remains blocked until current evidence supports individual and whole-product coherence.",
+    "regression_coverage": "incomplete",
+    "risk_classification": "major",
+    "scenario_owner": "validation-agent",
+    "scenario_status": "not_run",
+    "whole_product_judgment": "Group-level coherence for Social, Friends, Feedback is unproven until adjacent scenarios are reviewed together."
+  },
   "metrics": [],
   "next_actions": [
     {
@@ -867,7 +959,7 @@
   "page": {
     "assets_base": "assets/scenarios/soc-015/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/soc-015/",
-    "generated_at": "2026-07-06T04:31:58Z",
+    "generated_at": "2026-07-07T20:17:30Z",
     "navigation": {
       "category_url": "../social-friends-feedback/",
       "next_url": "../soc-016/",
@@ -1144,63 +1236,45 @@
   "review_grounding": {
     "all_considered": [
       {
-        "coverage": "Mobile-first user goals, thumb-zone controls, 44 pt targets, visual hierarchy, 8-point spacing, empty/loading/error/success states, and peak-end product moments.",
-        "name": "ceorkm/mobile-app-ui-design@mobile-app-ui-design",
+        "coverage": "iOS-native hierarchy, restrained glass/material use, system typography, semantic foreground styles, safe areas, sheet/navigation conventions, and Reduce Transparency/Motion expectations.",
+        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
+        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
+        "selected": true
+      },
+      {
+        "coverage": "Mobile-first user goals, thumb-zone reachability, 44 pt/48 dp target checks, interruption/resume behavior, platform navigation conventions, and performance-as-UX budgets.",
+        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
         "search_terms": "mobile ux design",
         "selected": true
       },
       {
-        "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
-        "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "liquid glass iOS mobile frontend design UI polish",
-        "selected": true
-      },
-      {
-        "coverage": "Semantic HTML, focus, accessibility labels, image metadata, reduced motion, touch behavior, safe areas, locale-safe formatting, content overflow, and frontend performance review gates.",
-        "name": "local web-design-guidelines",
-        "search_terms": "local skill plus fetched Vercel Web Interface Guidelines",
-        "selected": true
-      },
-      {
-        "coverage": "Local GitHub Pages validation, screenshots, snapshots, responsive viewport checks, interaction verification, and generated-site smoke testing.",
-        "name": "local playwright-cli",
-        "search_terms": "local browser validation skill",
-        "selected": true
-      },
-      {
-        "coverage": "Search result considered for additional iOS UI review; selected mobile and Liquid Glass skills cover the needed app-screen and iOS-material gates.",
+        "coverage": "Search result considered for additional iOS UI review; loaded iOS glass and mobile UX skills cover the required page-template rubric.",
         "name": "charleswiltgen/axiom@axiom-ios-ui",
-        "search_terms": "liquid glass iOS mobile frontend design UI polish",
+        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
         "selected": false
       },
       {
-        "coverage": "Search result considered for mobile UX critique; ceorkm/mobile-app-ui-design was loaded for the primary mobile UI/UX rubric.",
-        "name": "phazurlabs/ux-ui-mastery@mobile ux design",
-        "search_terms": "liquid glass iOS mobile frontend design UI polish",
+        "coverage": "Search result considered for Apple platform critique; ios-glass-ui-designer was closer to the requested Liquid Glass report focus.",
+        "name": "vabole/apple-skills@ios-design-consultant",
+        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
         "selected": false
       },
       {
-        "coverage": "Search result considered as an alternate glass-design critic; vabole/apple-skills@ios-liquid-glass was loaded as the primary Liquid Glass reference.",
-        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
-        "search_terms": "liquid glass iOS mobile frontend design UI polish",
-        "selected": false
-      },
-      {
-        "coverage": "Search result considered for alternate Liquid Glass critique; current selected Liquid Glass skill is the primary material source.",
+        "coverage": "Search result considered for alternate Liquid Glass critique; not loaded because the selected iOS glass skill was more directly iOS-native.",
         "name": "xu-xiang/everything-claude-code-zh@liquid-glass-design",
-        "search_terms": "liquid glass design",
+        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
         "selected": false
       },
       {
         "coverage": "Search result considered for additional glass-specific implementation review; selected skills already cover iOS material restraint and mobile interface gates.",
         "name": "ravnhq/ai-toolkit@liquid-glass-ios",
-        "search_terms": "liquid glass iOS",
+        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
         "selected": false
       },
       {
-        "coverage": "Search result considered for future native implementation review; selected skills already cover the iOS interface and Liquid Glass dimensions for this template.",
-        "name": "simota/agent-skills@native",
-        "search_terms": "native mobile interface",
+        "coverage": "Useful follow-up for generated-site review, but this pass grounds the report rubric in skills discovered and loaded through npx skills search/use.",
+        "name": "local web-design-guidelines",
+        "search_terms": "local generated-page accessibility/design guidance",
         "selected": false
       },
       {
@@ -1210,39 +1284,27 @@
         "selected": false
       }
     ],
-    "search_command": "npx skills search \"liquid glass iOS mobile frontend design UI polish\"",
+    "search_command": "npx skills search \"Liquid Glass iOS mobile UI UX polish accessibility frontend design\"",
     "selected_skills": [
       {
-        "coverage": "Mobile-first user goals, thumb-zone controls, 44 pt targets, visual hierarchy, 8-point spacing, empty/loading/error/success states, and peak-end product moments.",
-        "name": "ceorkm/mobile-app-ui-design@mobile-app-ui-design",
+        "coverage": "iOS-native hierarchy, restrained glass/material use, system typography, semantic foreground styles, safe areas, sheet/navigation conventions, and Reduce Transparency/Motion expectations.",
+        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
+        "search_terms": "Liquid Glass iOS mobile UI UX polish accessibility frontend design",
+        "selected": true
+      },
+      {
+        "coverage": "Mobile-first user goals, thumb-zone reachability, 44 pt/48 dp target checks, interruption/resume behavior, platform navigation conventions, and performance-as-UX budgets.",
+        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
         "search_terms": "mobile ux design",
-        "selected": true
-      },
-      {
-        "coverage": "Liquid Glass hierarchy, harmony, consistency, control-layer restraint, GlassEffect container behavior, semantic foreground styles, and Reduce Motion/Transparency fallbacks.",
-        "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "liquid glass iOS mobile frontend design UI polish",
-        "selected": true
-      },
-      {
-        "coverage": "Semantic HTML, focus, accessibility labels, image metadata, reduced motion, touch behavior, safe areas, locale-safe formatting, content overflow, and frontend performance review gates.",
-        "name": "local web-design-guidelines",
-        "search_terms": "local skill plus fetched Vercel Web Interface Guidelines",
-        "selected": true
-      },
-      {
-        "coverage": "Local GitHub Pages validation, screenshots, snapshots, responsive viewport checks, interaction verification, and generated-site smoke testing.",
-        "name": "local playwright-cli",
-        "search_terms": "local browser validation skill",
         "selected": true
       }
     ],
     "template_impact": [
-      "Mobile App UI/UX Design drives user-goal framing, thumb-zone/reachability checks, visual hierarchy, 8-point spacing, empty/loading/error/success state coverage, and peak-end flow judgment.",
-      "iOS Liquid Glass drives hierarchy/harmony/consistency checks, control-layer restraint, GlassEffect composition, semantic foreground styles, and Reduce Motion/Transparency requirements.",
-      "Web Interface Guidelines drive generated-site accessibility, semantic HTML, focus, image metadata, safe-area, touch, reduced-motion, content-overflow, localization, and frontend performance checks.",
-      "Playwright CLI is the expected local verification path for generated GitHub Pages screenshots, snapshots, responsive viewports, and interaction smoke tests.",
-      "The generated page separates scenario facts, evidence, individual dimensions, grouped product judgment, risk, and confidence so isolated passes cannot hide a weak product flow."
+      "iOS Glass UI Designer drives restrained material judgment: native chrome first, glass only for hierarchy/context, semantic foreground styles, safe areas, and accessibility fallbacks.",
+      "Mobile UX Design drives user-goal framing, thumb-zone reachability, touch-target sizing, interruption/resume checks, navigation convention review, and performance-as-UX budgets.",
+      "The Liquid Glass reference from Mobile UX Design adds explicit contrast, Reduce Transparency, Increase Contrast, Dynamic Type, and oldest-device performance checks.",
+      "The generated page front-loads launch readiness, risk class, evidence quality, accessibility status, regression coverage, and dependency posture before detailed scores.",
+      "The report separates individual dimensions from whole-product cluster judgment so an isolated pass cannot hide a weak or inconsistent product flow."
     ]
   },
   "risks": [
@@ -1285,9 +1347,9 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "codex/chirp-nmp-validation-pack",
+    "branch": "",
     "cassettes": [],
-    "completed_at": "2026-07-06T04:31:58Z",
+    "completed_at": "2026-07-07T20:17:30Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1305,12 +1367,12 @@
     "fixtures": [
       "domain frame fixture"
     ],
-    "generator_version": "scenario-report-generator/0.3.3",
+    "generator_version": "scenario-report-generator/0.4.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260706T043158Z-soc-015",
-    "source_commit": "92ff6a77a2529cf9969379c017338f5dc433eca5",
-    "started_at": "2026-07-06T04:31:58Z"
+    "run_id": "catalog-scaffold-20260707T201730Z-soc-015",
+    "source_commit": "18f3e780b92243ec5a47813ab57b7afcb9b8996d",
+    "started_at": "2026-07-07T20:17:30Z"
   },
   "scenario": {
     "bdd": {
@@ -1348,7 +1410,7 @@
     ],
     "title": "Trust and direction fields match"
   },
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "sections": {
     "accessibility_dynamic_type": {
       "evidence_refs": [
@@ -1651,9 +1713,9 @@
         "rubric:review-skill-grounding"
       ],
       "notes": [
-        "Selected skills: ceorkm/mobile-app-ui-design@mobile-app-ui-design, vabole/apple-skills@ios-liquid-glass, local web-design-guidelines, local playwright-cli."
+        "Selected skills: heyman333/atelier-ui@ios-glass-ui-designer, phazurlabs/ux-ui-mastery@Mobile UX Design."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass/iOS primitives, generated-site accessibility and interaction guidelines, and Playwright-based page verification."
+      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers iOS-native glass/material restraint, mobile task flow, touch ergonomics, accessibility settings, and performance-as-UX review."
     },
     "risks_follow_up": {
       "evidence_refs": [
