@@ -12,6 +12,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from architecture_scan_report import architecture_scan_data, render_architecture_scan_page  # noqa: E402
 from catalog import parse_catalog, slugify  # noqa: E402
 from contract import GENERATOR_VERSION, SCHEMA_VERSION, SITE_BASE, SKILL_GROUNDING  # noqa: E402
 from evidence import apply_evidence_overlays, copy_evidence_assets, load_evidence_overlays  # noqa: E402
@@ -57,13 +58,16 @@ def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Pa
         copy_evidence_assets(evidence, out)
     if repo is not None:
         copy_repo_assets(repo, out)
+    scan_data = architecture_scan_data(evidence or repo / "docs" / "testing" / "evidence")
     write_text(out / "styles.css", stylesheet())
     write_json(out / "data" / "skill-grounding.json", {"generated_by": GENERATOR_VERSION, "skills": SKILL_GROUNDING})
     cassette_data = provider_cassette_data(repo, evidence or repo / "docs" / "testing" / "evidence", catalog)
     write_json(out / "data" / "provider-cassettes.json", cassette_data)
+    write_json(out / "data" / "architecture-scan.json", scan_data)
     write_data_files(records, out, issues, next_wave)
-    write_text(out / "index.html", render_home(records, 0, next_wave))
+    write_text(out / "index.html", render_home(records, 0, next_wave, scan_data))
     write_text(out / "provider-cassettes" / "index.html", render_provider_cassette_page(cassette_data, 1))
+    write_text(out / "architecture-scan" / "index.html", render_architecture_scan_page(scan_data, 1))
     write_text(out / "next-wave" / "index.html", render_next_wave_page(records, next_wave, 1))
     write_text(out / "scenarios" / "index.html", render_scenario_index(records, 1, "All Scenarios"))
     for slug, grouped in group_by_category(records).items():
