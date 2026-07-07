@@ -19,20 +19,36 @@
     <header class="hero">
       <p class="eyebrow">Pod0 Validation</p>
       <h1>Screenshot Evidence</h1>
-      <p>52 published image assets are visible here. This page is an evidence index, not a completion claim: only 4 of 320 scenario records currently have screenshot evidence attached.</p>
+      <p>56 published image assets are visible here. This page is an evidence index, not a completion claim: only 4 of 320 scenario records currently have screenshot evidence attached.</p>
     </header>
 
     <section class="stats" aria-label="Screenshot evidence totals">
-      <div><strong>52</strong><span>published image assets</span></div>
+      <div><strong>56</strong><span>published image assets</span></div>
       <div><strong>13</strong><span>scenario-run screenshots</span></div>
-      <div><strong>9</strong><span>live report verification screenshots</span></div>
+      <div><strong>13</strong><span>live report verification screenshots</span></div>
       <div><strong>4</strong><span>scenario records with screenshot evidence</span></div>
     </section>
 
     <section id="live-report-verification">
       <h2>Live Report Verification</h2>
-      <p class="muted">These screenshots prove the published GitHub Pages report itself was loaded and checked after the PR queue update, the 320-page scenario expansion, and the launch-template/provider-cassette publish at commit b5e5653e.</p>
+      <p class="muted">These screenshots prove the generated GitHub Pages report itself was loaded and checked after the issue-backed scenario publish at commit 29169f27, plus earlier queue, 320-page, launch-template, and provider-cassette publishes.</p>
       <div class="screenshot-gallery">
+        <figure>
+          <img src="../assets/live-verification/20260707T221800Z-workstreams-pr739-desktop-29169f27.png" alt="Desktop viewport of the generated workstreams page showing PR 739 blocked only by the queued Build and Test check.">
+          <figcaption><strong>Workstreams desktop</strong> Generated report showing exactly 1 open PR, #739, blocked by the queued Build and Test job.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260707T221800Z-workstreams-pr739-mobile-29169f27.png" alt="Mobile viewport of the generated workstreams page showing PR 739 blocked only by the queued Build and Test check.">
+          <figcaption><strong>Workstreams mobile</strong> Mobile report view showing #739 as the only active PR blocker.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260707T221800Z-issues-1369-desktop-29169f27.png" alt="Desktop viewport of the generated issues page showing 1,369 scenario issue links.">
+          <figcaption><strong>Issue ledger desktop</strong> Generated issue ledger showing 1,369 scenario issue links after #738 merged.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260707T221800Z-d8-001-issues-desktop-29169f27.png" alt="Desktop viewport of the generated D8-001 scenario page showing linked blocker issues GH-704 and GH-734.">
+          <figcaption><strong>D8-001 blockers</strong> Generated scenario page showing issue-backed blockers including GH-704 and GH-734.</figcaption>
+        </figure>
         <figure>
           <img src="../assets/live-verification/20260707T202200Z-scenarios-320-launch-desktop-b5e5653e.png" alt="Desktop viewport of the live All Scenarios page after the launch-template publish, showing 320 scenario records.">
           <figcaption><strong>All Scenarios desktop</strong> Live page showing 320 scenario page records after #736 and #737 were merged and published.</figcaption>
