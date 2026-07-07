@@ -141,7 +141,8 @@
     "incomplete": 319
   },
   "by_risk_classification": {
-    "major": 319,
+    "blocker": 81,
+    "major": 238,
     "minor": 1
   },
   "by_tag": {
@@ -233,7 +234,8 @@
     "viewport-coverage": 316
   },
   "issues_by_severity": {
-    "major": 2
+    "blocker": 85,
+    "major": 1284
   },
   "missing_evidence": {
     "accessibility_audit": 320,
@@ -249,7 +251,8 @@
     "ui_tree": 316
   },
   "open_issues_by_severity": {
-    "major": 2
+    "blocker": 85,
+    "major": 1284
   },
   "performance_required": 194,
   "scenario_count": 320,

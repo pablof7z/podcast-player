@@ -1,15 +1,40 @@
 {
-  "generated_at": "2026-07-07T20:17:02Z",
+  "generated_at": "2026-07-07T22:15:04Z",
   "counts": {
-    "open_prs": 0,
-    "required_builds_running_or_queued": 0,
-    "blocked_by_required_checks": 0,
+    "open_prs": 1,
+    "required_builds_running_or_queued": 1,
+    "blocked_by_required_checks": 1,
     "red_required_builds": 0,
-    "merged_today": 2,
+    "merged_today": 3,
     "closed_superseded": 0
   },
-  "items": [],
+  "items": [
+    {
+      "id": "#739",
+      "title": "[codex] Add foundation next-wave validation manifest",
+      "url": "https://github.com/pablof7z/podcast-player/pull/739",
+      "branch": "codex1/next-wave-execution-manifest",
+      "status": "blocked_by_required_check",
+      "merge_state": "BLOCKED",
+      "blocking_check": {
+        "workflow": "Test",
+        "name": "Build and Test",
+        "status": "QUEUED",
+        "run_url": "https://github.com/pablof7z/podcast-player/actions/runs/28900450401/job/85735706097"
+      },
+      "why_not_merged": "The required Build and Test job is queued on GitHub Actions. All other reported checks are green, and the repository does not allow auto-merge.",
+      "next_action": "Merge after Build and Test completes successfully; inspect the Actions log and fix the branch if the queued job fails."
+    }
+  ],
   "recently_resolved": [
+    {
+      "id": "#738",
+      "title": "[codex] Link scenario report blockers to GitHub issues",
+      "url": "https://github.com/pablof7z/podcast-player/pull/738",
+      "status": "merged_to_main",
+      "merge_commit": "5b486b65",
+      "follow_up": "All 320 scenario pages now carry issue-backed blockers; the rollup currently exposes 1,369 open issue links, including 85 blocker links and 1,284 major links."
+    },
     {
       "id": "#737",
       "title": "Deepen scenario page launch report template",

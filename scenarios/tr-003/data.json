@@ -650,14 +650,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-07T20:17:30Z",
+        "completed_at": "2026-07-07T22:12:32Z",
         "evidence_refs": [
           "catalog:tr-003"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-07T20:17:30Z",
+        "started_at": "2026-07-07T22:12:32Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -918,7 +918,74 @@
       "summary": "Provider, relay, network, STT, TTS, or LLM replay data is missing or blocked."
     }
   ],
-  "issues": [],
+  "issues": [
+    {
+      "affected_dimensions": [
+        "artifacts",
+        "ui_polish",
+        "ux_polish",
+        "liquid_glass_ios_primitives"
+      ],
+      "id": "GH-702",
+      "owner": "review-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Populate gh-pages report with screenshot-level UX critique",
+      "url": "https://github.com/pablof7z/podcast-player/issues/702"
+    },
+    {
+      "affected_dimensions": [
+        "accessibility_dynamic_type",
+        "touch_ergonomics",
+        "device_os_matrix"
+      ],
+      "id": "GH-730",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Add accessibility audit evidence for every scenario cluster",
+      "url": "https://github.com/pablof7z/podcast-player/issues/730"
+    },
+    {
+      "affected_dimensions": [
+        "evidence_provenance",
+        "revalidation_status",
+        "observability"
+      ],
+      "id": "GH-733",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Automate xcresult evidence ingestion into scenario report overlays",
+      "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "reliability_flakiness",
+        "readiness_gates"
+      ],
+      "id": "GH-700",
+      "owner": "performance-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Publish per-scenario performance metrics in the Pod0 validation report",
+      "url": "https://github.com/pablof7z/podcast-player/issues/700"
+    },
+    {
+      "affected_dimensions": [
+        "replayability_cassette_provenance",
+        "privacy_security",
+        "observability"
+      ],
+      "id": "GH-731",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Normalize provider cassette IDs and fill cassette evidence gaps",
+      "url": "https://github.com/pablof7z/podcast-player/issues/731"
+    }
+  ],
   "launch_assessment": {
     "accessibility_status": "incomplete",
     "blocking_gates": [
@@ -932,7 +999,13 @@
     "dependency_posture": "blocked",
     "evidence_quality": "incomplete",
     "individual_judgment": "TR-003 has not been judged in isolation because observed product behavior is missing.",
-    "issue_refs": [],
+    "issue_refs": [
+      "GH-702",
+      "GH-730",
+      "GH-733",
+      "GH-700",
+      "GH-731"
+    ],
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
@@ -998,7 +1071,7 @@
   "page": {
     "assets_base": "assets/scenarios/tr-003/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/tr-003/",
-    "generated_at": "2026-07-07T20:17:30Z",
+    "generated_at": "2026-07-07T22:12:32Z",
     "navigation": {
       "category_url": "../transcripts/",
       "next_url": "../tr-004/",
@@ -1212,12 +1285,18 @@
   "readiness": {
     "blocking_reasons": [
       "No current execution evidence is attached.",
-      "Product-quality judgments are scaffolded, not observed."
+      "Product-quality judgments are scaffolded, not observed.",
+      "Linked validation blocker(s): GH-702, GH-730, GH-733, GH-700, GH-731."
     ],
     "gates": [
       {
         "evidence_refs": [
-          "catalog:tr-003"
+          "catalog:tr-003",
+          "GH-702",
+          "GH-730",
+          "GH-733",
+          "GH-700",
+          "GH-731"
         ],
         "id": "required_evidence",
         "owner": "validation-agent",
@@ -1253,7 +1332,11 @@
       },
       {
         "evidence_refs": [
-          "rubric:review-skill-grounding"
+          "GH-702",
+          "GH-730",
+          "GH-733",
+          "GH-700",
+          "GH-731"
         ],
         "id": "defect_tracking",
         "owner": "validation-agent",
@@ -1262,7 +1345,11 @@
       },
       {
         "evidence_refs": [
-          "rubric:review-skill-grounding"
+          "GH-702",
+          "GH-730",
+          "GH-733",
+          "GH-700",
+          "GH-731"
         ],
         "id": "release_readiness",
         "owner": "validation-agent",
@@ -1395,7 +1482,7 @@
         "redaction_hash": "pending-redaction-hash"
       }
     ],
-    "completed_at": "2026-07-07T20:17:30Z",
+    "completed_at": "2026-07-07T22:12:32Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1416,9 +1503,9 @@
     "generator_version": "scenario-report-generator/0.4.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "blocked",
-    "run_id": "catalog-scaffold-20260707T201730Z-tr-003",
-    "source_commit": "18f3e780b92243ec5a47813ab57b7afcb9b8996d",
-    "started_at": "2026-07-07T20:17:30Z"
+    "run_id": "catalog-scaffold-20260707T221232Z-tr-003",
+    "source_commit": "5b486b650692327e81460b77b6da0d6cadc0092c",
+    "started_at": "2026-07-07T22:12:32Z"
   },
   "scenario": {
     "bdd": {

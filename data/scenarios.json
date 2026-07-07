@@ -144,7 +144,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "fnd-005",
     "tags": [
       "cassette-required",
@@ -338,7 +338,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "fnd-011",
     "tags": [
       "catalog-scaffold",
@@ -434,7 +434,7 @@
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "fnd-014",
     "tags": [
       "catalog-scaffold",
@@ -1113,7 +1113,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "disc-003",
     "tags": [
       "catalog-scaffold",
@@ -1346,7 +1346,7 @@
     "product_cluster": "discovery-and-search",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "disc-010",
     "tags": [
       "catalog-scaffold",
@@ -1728,7 +1728,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "lib-006",
     "tags": [
       "catalog-scaffold",
@@ -2054,7 +2054,7 @@
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "lib-016",
     "tags": [
       "catalog-scaffold",
@@ -2476,7 +2476,7 @@
     "product_cluster": "playback",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "play-013",
     "tags": [
       "catalog-scaffold",
@@ -2762,7 +2762,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "qd-006",
     "tags": [
       "catalog-scaffold",
@@ -2797,7 +2797,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "qd-007",
     "tags": [
       "cassette-required",
@@ -2862,7 +2862,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "qd-009",
     "tags": [
       "catalog-scaffold",
@@ -2992,7 +2992,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "qd-013",
     "tags": [
       "catalog-scaffold",
@@ -3025,7 +3025,7 @@
     "product_cluster": "queue-and-downloads",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "qd-014",
     "tags": [
       "catalog-scaffold",
@@ -3425,7 +3425,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "tr-010",
     "tags": [
       "catalog-scaffold",
@@ -3491,7 +3491,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "tr-012",
     "tags": [
       "catalog-scaffold",
@@ -3555,7 +3555,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "tr-014",
     "tags": [
       "catalog-scaffold",
@@ -3588,7 +3588,7 @@
     "product_cluster": "transcripts",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "tr-015",
     "tags": [
       "catalog-scaffold",
@@ -3714,7 +3714,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "clip-003",
     "tags": [
       "catalog-scaffold",
@@ -3976,7 +3976,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "clip-011",
     "tags": [
       "cassette-required",
@@ -4135,7 +4135,7 @@
     "product_cluster": "clips-highlights-and-sharing",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "clip-016",
     "tags": [
       "catalog-scaffold",
@@ -4460,7 +4460,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "ag-010",
     "tags": [
       "ag",
@@ -4496,7 +4496,7 @@
     "product_cluster": "agent-chat-and-tools",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "ag-011",
     "tags": [
       "ag",
@@ -5825,7 +5825,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "wiki-015",
     "tags": [
       "catalog-scaffold",
@@ -5858,7 +5858,7 @@
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "wiki-016",
     "tags": [
       "catalog-scaffold",
@@ -6048,7 +6048,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "voice-004",
     "tags": [
       "catalog-scaffold",
@@ -6116,7 +6116,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "voice-006",
     "tags": [
       "catalog-scaffold",
@@ -6149,7 +6149,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "voice-007",
     "tags": [
       "catalog-scaffold",
@@ -6217,7 +6217,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "voice-009",
     "tags": [
       "cassette-required",
@@ -6481,7 +6481,7 @@
     "product_cluster": "voice-and-generated-audio",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "voice-017",
     "tags": [
       "catalog-scaffold",
@@ -6549,7 +6549,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-001",
     "tags": [
       "catalog-scaffold",
@@ -6583,7 +6583,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-002",
     "tags": [
       "catalog-scaffold",
@@ -6617,7 +6617,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-003",
     "tags": [
       "catalog-scaffold",
@@ -6650,7 +6650,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-004",
     "tags": [
       "catalog-scaffold",
@@ -6684,7 +6684,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-005",
     "tags": [
       "cassette-required",
@@ -6719,7 +6719,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-006",
     "tags": [
       "cassette-required",
@@ -6753,7 +6753,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-007",
     "tags": [
       "catalog-scaffold",
@@ -6787,7 +6787,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-008",
     "tags": [
       "catalog-scaffold",
@@ -6820,7 +6820,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-009",
     "tags": [
       "catalog-scaffold",
@@ -6853,7 +6853,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-010",
     "tags": [
       "catalog-scaffold",
@@ -6884,7 +6884,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-011",
     "tags": [
       "catalog-scaffold",
@@ -6917,7 +6917,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-012",
     "tags": [
       "catalog-scaffold",
@@ -6950,7 +6950,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-013",
     "tags": [
       "catalog-scaffold",
@@ -6981,7 +6981,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-014",
     "tags": [
       "catalog-scaffold",
@@ -7011,7 +7011,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-015",
     "tags": [
       "catalog-scaffold",
@@ -7041,7 +7041,7 @@
     "product_cluster": "nostr-publishing-and-protocol",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nostr-016",
     "tags": [
       "catalog-scaffold",
@@ -8008,7 +8008,7 @@
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "set-014",
     "tags": [
       "catalog-scaffold",
@@ -8328,7 +8328,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "xplat-008",
     "tags": [
       "catalog-scaffold",
@@ -8361,7 +8361,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "xplat-009",
     "tags": [
       "catalog-scaffold",
@@ -8394,7 +8394,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "xplat-010",
     "tags": [
       "catalog-scaffold",
@@ -8487,7 +8487,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "xplat-013",
     "tags": [
       "catalog-scaffold",
@@ -8580,7 +8580,7 @@
     "product_cluster": "platform-parity-performance-regression",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "xplat-016",
     "tags": [
       "all-doctrine",
@@ -8611,7 +8611,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "chirp-001",
     "tags": [
       "catalog-scaffold",
@@ -8678,7 +8678,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "chirp-003",
     "tags": [
       "catalog-scaffold",
@@ -8712,7 +8712,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "chirp-004",
     "tags": [
       "catalog-scaffold",
@@ -8745,7 +8745,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "chirp-005",
     "tags": [
       "catalog-scaffold",
@@ -8779,7 +8779,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "chirp-006",
     "tags": [
       "catalog-scaffold",
@@ -8842,7 +8842,7 @@
     "product_cluster": "chirp-fix-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "chirp-008",
     "tags": [
       "catalog-scaffold",
@@ -8942,7 +8942,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nmpm-003",
     "tags": [
       "catalog-scaffold",
@@ -8975,7 +8975,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nmpm-004",
     "tags": [
       "catalog-scaffold",
@@ -9007,7 +9007,7 @@
     "product_cluster": "nmp-master-pin-and-runtime-lifecycle",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nmpm-005",
     "tags": [
       "catalog-scaffold",
@@ -9134,7 +9134,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nip05-001",
     "tags": [
       "catalog-scaffold",
@@ -9168,7 +9168,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nip05-002",
     "tags": [
       "catalog-scaffold",
@@ -9201,7 +9201,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nip05-003",
     "tags": [
       "catalog-scaffold",
@@ -9233,7 +9233,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nip05-004",
     "tags": [
       "catalog-scaffold",
@@ -9267,7 +9267,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nip05-005",
     "tags": [
       "catalog-scaffold",
@@ -9299,7 +9299,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nip05-006",
     "tags": [
       "catalog-scaffold",
@@ -9330,7 +9330,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nip05-007",
     "tags": [
       "catalog-scaffold",
@@ -9361,7 +9361,7 @@
     "product_cluster": "nip-05-and-discovery-state",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "nip05-008",
     "tags": [
       "catalog-scaffold",
@@ -9590,7 +9590,7 @@
     "product_cluster": "projection-cache-and-stale-state-guards",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "proj-007",
     "tags": [
       "catalog-scaffold",
@@ -9689,7 +9689,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "offline-002",
     "tags": [
       "catalog-scaffold",
@@ -9755,7 +9755,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "offline-004",
     "tags": [
       "catalog-scaffold",
@@ -9886,7 +9886,7 @@
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "offline-008",
     "tags": [
       "cassette-required",
@@ -10017,7 +10017,7 @@
     "product_cluster": "visual-accessibility-and-liquid-glass-parity",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "vis-004",
     "tags": [
       "catalog-scaffold",
@@ -10172,7 +10172,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "d8-001",
     "tags": [
       "catalog-scaffold",
@@ -10203,7 +10203,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "d8-002",
     "tags": [
       "catalog-scaffold",
@@ -10234,7 +10234,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "d8-003",
     "tags": [
       "catalog-scaffold",
@@ -10266,7 +10266,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "d8-004",
     "tags": [
       "catalog-scaffold",
@@ -10298,7 +10298,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "d8-005",
     "tags": [
       "catalog-scaffold",
@@ -10330,7 +10330,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "blocked",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "d8-006",
     "tags": [
       "cassette-required",
@@ -10363,7 +10363,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "d8-007",
     "tags": [
       "catalog-scaffold",
@@ -10394,7 +10394,7 @@
     "product_cluster": "performance-and-d8-no-polling-gates",
     "provider_mode": "none",
     "readiness": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "slug": "d8-008",
     "tags": [
       "catalog-scaffold",

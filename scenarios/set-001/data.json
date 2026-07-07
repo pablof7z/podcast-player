@@ -864,7 +864,48 @@
       "summary": "Settings persistence across app relaunch is not captured."
     }
   ],
-  "issues": [],
+  "issues": [
+    {
+      "affected_dimensions": [
+        "artifacts",
+        "ui_polish",
+        "ux_polish",
+        "liquid_glass_ios_primitives"
+      ],
+      "id": "GH-702",
+      "owner": "review-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Populate gh-pages report with screenshot-level UX critique",
+      "url": "https://github.com/pablof7z/podcast-player/issues/702"
+    },
+    {
+      "affected_dimensions": [
+        "accessibility_dynamic_type",
+        "touch_ergonomics",
+        "device_os_matrix"
+      ],
+      "id": "GH-730",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Add accessibility audit evidence for every scenario cluster",
+      "url": "https://github.com/pablof7z/podcast-player/issues/730"
+    },
+    {
+      "affected_dimensions": [
+        "evidence_provenance",
+        "revalidation_status",
+        "observability"
+      ],
+      "id": "GH-733",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Automate xcresult evidence ingestion into scenario report overlays",
+      "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    }
+  ],
   "launch_assessment": {
     "accessibility_status": "incomplete",
     "blocking_gates": [
@@ -932,7 +973,7 @@
   "page": {
     "assets_base": "assets/scenarios/set-001/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-001/",
-    "generated_at": "2026-07-07T20:17:30Z",
+    "generated_at": "2026-07-07T22:12:32Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-002/",
