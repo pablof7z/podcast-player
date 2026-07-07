@@ -19,20 +19,40 @@
     <header class="hero">
       <p class="eyebrow">Pod0 Validation</p>
       <h1>Screenshot Evidence</h1>
-      <p>41 published image assets are visible here. This page is an evidence index, not a completion claim: only 4 of 320 scenario records currently have screenshot evidence attached.</p>
+      <p>52 published image assets are visible here. This page is an evidence index, not a completion claim: only 4 of 320 scenario records currently have screenshot evidence attached.</p>
     </header>
 
     <section class="stats" aria-label="Screenshot evidence totals">
-      <div><strong>41</strong><span>published image assets</span></div>
+      <div><strong>52</strong><span>published image assets</span></div>
       <div><strong>13</strong><span>scenario-run screenshots</span></div>
-      <div><strong>4</strong><span>live report verification screenshots</span></div>
+      <div><strong>9</strong><span>live report verification screenshots</span></div>
       <div><strong>4</strong><span>scenario records with screenshot evidence</span></div>
     </section>
 
     <section id="live-report-verification">
       <h2>Live Report Verification</h2>
-      <p class="muted">These screenshots prove the published GitHub Pages report itself was loaded and checked after the PR queue update at commit bfcba4e1 and the 320-page scenario expansion at commit 097d559d.</p>
+      <p class="muted">These screenshots prove the published GitHub Pages report itself was loaded and checked after the PR queue update, the 320-page scenario expansion, and the launch-template/provider-cassette publish at commit b5e5653e.</p>
       <div class="screenshot-gallery">
+        <figure>
+          <img src="../assets/live-verification/20260707T202200Z-scenarios-320-launch-desktop-b5e5653e.png" alt="Desktop viewport of the live All Scenarios page after the launch-template publish, showing 320 scenario records.">
+          <figcaption><strong>All Scenarios desktop</strong> Live page showing 320 scenario page records after #736 and #737 were merged and published.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260707T202200Z-fnd-001-launch-readiness-desktop-b5e5653e.png" alt="Desktop viewport of the live FND-001 scenario page showing the Launch Readiness Summary and missing evidence placeholders.">
+          <figcaption><strong>FND-001 launch readiness</strong> Live scenario page showing launch readiness, blocking gates, and missing-evidence placeholders.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260707T202200Z-provider-cassettes-desktop-b5e5653e.png" alt="Desktop viewport of the live provider cassette report showing mapped scenario refs and zero unmapped refs.">
+          <figcaption><strong>Provider cassettes desktop</strong> Live provider replay page showing 7 cassettes, mapped scenario refs, and 0 unmapped refs.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260707T202200Z-workstreams-zero-prs-desktop-b5e5653e.png" alt="Desktop viewport of the live workstreams page showing zero open pull requests.">
+          <figcaption><strong>Workstreams desktop</strong> Live page showing 0 open PRs after #736 and #737 merged.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260707T202200Z-workstreams-zero-prs-mobile-b5e5653e.png" alt="Mobile viewport of the live workstreams page showing zero open pull requests.">
+          <figcaption><strong>Workstreams mobile</strong> Live mobile page showing the same zero-open-PR state.</figcaption>
+        </figure>
         <figure>
           <img src="../assets/live-verification/20260706T045000Z-scenarios-320-desktop-097d559d.png" alt="Desktop viewport of the live All Scenarios page showing 320 scenario page records.">
           <figcaption><strong>All Scenarios desktop</strong> Live page showing 320 scenario page records after the Chirp/NMP catalog expansion.</figcaption>
