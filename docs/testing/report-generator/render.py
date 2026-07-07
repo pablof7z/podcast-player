@@ -5,10 +5,11 @@ from typing import Any
 
 from catalog import slugify
 from contract import SECTION_LABELS
+from next_wave_render import render_next_wave_home, scenario_next_wave_block
 from records import count_boundaries, count_by, count_tags, missing_evidence_for, rollups_for
 
 
-def render_home(records: list[dict[str, Any]], depth: int) -> str:
+def render_home(records: list[dict[str, Any]], depth: int, next_wave: dict[str, Any] | None = None) -> str:
     rollups = rollups_for(records)
     observed = sum(1 for record in records if record["execution"]["status"] != "not_run")
     body = [
@@ -19,8 +20,10 @@ def render_home(records: list[dict[str, Any]], depth: int) -> str:
         stat_band(rollups["by_verdict"]),
         section("Scenario Page System", p("Each BDD catalog scenario now has a stable page, JSON record, source link, structured flow steps, attempts, evidence inventory, skill-grounded quality review, product-cluster coherence, readiness gates, and rollup membership.")),
         section("Evidence-Backed Scenarios", evidence_backed_summary(records, depth)),
-        link_list("Indexes", [("All scenarios", rel("scenarios/", depth)), ("Tags", rel("tags/", depth)), ("Issues", rel("issues/", depth)), ("Provider cassette replay", rel("provider-cassettes/", depth)), ("Performance rollup", rel("rollups/performance/", depth)), ("Raw scenario JSON", rel("data/scenarios.json", depth))]),
+        link_list("Indexes", [("All scenarios", rel("scenarios/", depth)), ("Tags", rel("tags/", depth)), ("Issues", rel("issues/", depth)), ("Next execution wave", rel("next-wave/", depth)), ("Provider cassette replay", rel("provider-cassettes/", depth)), ("Performance rollup", rel("rollups/performance/", depth)), ("Raw scenario JSON", rel("data/scenarios.json", depth))]),
     ]
+    if next_wave:
+        body.insert(3, render_next_wave_home(records, next_wave, depth))
     return page("Pod0 Validation Report", depth, "\n".join(body))
 
 
@@ -33,7 +36,7 @@ def render_scenario_index(records: list[dict[str, Any]], depth: int, title: str)
     return page(title, depth, hero(title, f"{len(records)} scenario page records") + section("Scenario Table", table))
 
 
-def render_scenario_page(record: dict[str, Any], depth: int) -> str:
+def render_scenario_page(record: dict[str, Any], depth: int, next_wave: dict[str, Any] | None = None) -> str:
     scenario = record["scenario"]
     nav = record["page"]["navigation"]
     nav_links = [
@@ -75,6 +78,10 @@ def render_scenario_page(record: dict[str, Any], depth: int) -> str:
         section("Individual Dimension Judgments", score_table(record["dimension_scores"])),
         section("Required Detailed Sections", "\n".join(render_required_section(key, value) for key, value in record["sections"].items())),
     ]
+    if next_wave:
+        block = scenario_next_wave_block(record, next_wave)
+        if block:
+            body.insert(5, section("Next-Wave Execution Manifest", block))
     return page(f"{scenario['id']} - {scenario['title']}", depth, "\n".join(body))
 
 

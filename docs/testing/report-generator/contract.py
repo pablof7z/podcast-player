@@ -1,7 +1,7 @@
 SCHEMA_VERSION = "1.1.0"
 GENERATOR_VERSION = "scenario-report-generator/0.4.0"
 SITE_BASE = "https://pablof7z.github.io/podcast-player/"
-SKILL_SEARCH_QUERY = "Liquid Glass iOS mobile UI UX polish accessibility frontend design"
+SKILL_SEARCH_QUERY = "iOS mobile UI UX liquid glass native polish validation"
 
 SECTION_TO_DIMENSION = {
     "persona_job_acceptance": "persona_acceptance",
@@ -175,45 +175,45 @@ GROUPS = {
 SKILL_GROUNDING = [
     {
         "selected": True,
-        "name": "heyman333/atelier-ui@ios-glass-ui-designer",
+        "name": "vabole/apple-skills@ios-liquid-glass",
         "search_terms": SKILL_SEARCH_QUERY,
-        "coverage": "iOS-native hierarchy, restrained glass/material use, system typography, semantic foreground styles, safe areas, sheet/navigation conventions, and Reduce Transparency/Motion expectations.",
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, native chrome usage, interactive glass restraint, safe-area-sensitive controls, and Reduce Motion/Transparency expectations.",
     },
     {
         "selected": True,
-        "name": "phazurlabs/ux-ui-mastery@Mobile UX Design",
-        "search_terms": "mobile ux design",
-        "coverage": "Mobile-first user goals, thumb-zone reachability, 44 pt/48 dp target checks, interruption/resume behavior, platform navigation conventions, and performance-as-UX budgets.",
+        "name": "vabole/apple-skills@hig",
+        "search_terms": SKILL_SEARCH_QUERY,
+        "coverage": "Apple HIG factual checks for safe areas, system typography, Dynamic Type, accessibility, color/contrast, materials, navigation, controls, and 44 pt touch targets.",
     },
     {
-        "selected": False,
-        "name": "charleswiltgen/axiom@axiom-ios-ui",
+        "selected": True,
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
         "search_terms": SKILL_SEARCH_QUERY,
-        "coverage": "Search result considered for additional iOS UI review; loaded iOS glass and mobile UX skills cover the required page-template rubric.",
+        "coverage": "Mobile app interface rules for safe areas, Dynamic Type, semantic colors, native navigation, haptics, accessibility labels, list performance, Liquid Glass overlays, and material fallbacks.",
     },
     {
         "selected": False,
         "name": "vabole/apple-skills@ios-design-consultant",
         "search_terms": SKILL_SEARCH_QUERY,
-        "coverage": "Search result considered for Apple platform critique; ios-glass-ui-designer was closer to the requested Liquid Glass report focus.",
+        "coverage": "Search result considered; the exact skill was not loadable from the package, so the package HIG skill was loaded instead for factual native iOS checks.",
     },
     {
         "selected": False,
-        "name": "xu-xiang/everything-claude-code-zh@liquid-glass-design",
+        "name": "phazurlabs/ux-ui-mastery@mobile ux design",
         "search_terms": SKILL_SEARCH_QUERY,
-        "coverage": "Search result considered for alternate Liquid Glass critique; not loaded because the selected iOS glass skill was more directly iOS-native.",
+        "coverage": "Search result considered for mobile UX critique; qodex mobile-app-interface and Apple HIG coverage were enough for this focused manifest.",
     },
     {
         "selected": False,
-        "name": "ravnhq/ai-toolkit@liquid-glass-ios",
+        "name": "openai/plugins@swiftui-liquid-glass",
         "search_terms": SKILL_SEARCH_QUERY,
-        "coverage": "Search result considered for additional glass-specific implementation review; selected skills already cover iOS material restraint and mobile interface gates.",
+        "coverage": "Search result considered for SwiftUI Liquid Glass implementation detail; this pass plans evidence requirements rather than changing SwiftUI runtime code.",
     },
     {
         "selected": False,
-        "name": "local web-design-guidelines",
-        "search_terms": "local generated-page accessibility/design guidance",
-        "coverage": "Useful follow-up for generated-site review, but this pass grounds the report rubric in skills discovered and loaded through npx skills search/use.",
+        "name": "petekp/claude-code-setup@swift-apps",
+        "search_terms": SKILL_SEARCH_QUERY,
+        "coverage": "Search result considered for Swift app implementation workflow; not needed because this change is report-generator planning data and rendering only.",
     },
     {
         "selected": False,

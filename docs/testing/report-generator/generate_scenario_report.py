@@ -16,6 +16,8 @@ from catalog import parse_catalog, slugify  # noqa: E402
 from contract import GENERATOR_VERSION, SCHEMA_VERSION, SITE_BASE, SKILL_GROUNDING  # noqa: E402
 from evidence import apply_evidence_overlays, copy_evidence_assets, load_evidence_overlays  # noqa: E402
 from issue_ledger import merge_issue_lists  # noqa: E402
+from next_wave import load_next_wave, next_wave_export  # noqa: E402
+from next_wave_render import render_next_wave_page  # noqa: E402
 from provider_cassettes_report import provider_cassette_data, render_provider_cassette_page  # noqa: E402
 from records import build_report, has_observed_data, rollups_for, summary_for, tags_for_records, validate_output, validate_schema_contract  # noqa: E402
 from render import render_home, render_scenario_index, render_scenario_page, write_rollup_pages, write_tag_pages  # noqa: E402
@@ -45,6 +47,7 @@ PRESERVED_OUTPUT_NAMES = {".git", ".gitignore", ".nojekyll", "CNAME", "assets"}
 def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Path | None = None, evidence: Path | None = None) -> None:
     previous_records = read_previous_records(out)
     records = [merge_previous_record(record, previous_records.get(record["scenario"]["slug"])) for record in records]
+    next_wave = load_next_wave()
     issues = issues_for_records(records)
     if not issues["issues"]:
         issues = read_json(out / "data" / "issues.json", {"issues": [], "counts": {"open": 0, "fixed": 0}})
@@ -58,16 +61,17 @@ def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Pa
     write_json(out / "data" / "skill-grounding.json", {"generated_by": GENERATOR_VERSION, "skills": SKILL_GROUNDING})
     cassette_data = provider_cassette_data(repo, evidence or repo / "docs" / "testing" / "evidence", catalog)
     write_json(out / "data" / "provider-cassettes.json", cassette_data)
-    write_data_files(records, out, issues)
-    write_text(out / "index.html", render_home(records, 0))
+    write_data_files(records, out, issues, next_wave)
+    write_text(out / "index.html", render_home(records, 0, next_wave))
     write_text(out / "provider-cassettes" / "index.html", render_provider_cassette_page(cassette_data, 1))
+    write_text(out / "next-wave" / "index.html", render_next_wave_page(records, next_wave, 1))
     write_text(out / "scenarios" / "index.html", render_scenario_index(records, 1, "All Scenarios"))
     for slug, grouped in group_by_category(records).items():
         write_text(out / "scenarios" / slug / "index.html", render_scenario_index(grouped, 2, grouped[0]["scenario"]["category"]))
     for record in records:
         scenario_dir = out / "scenarios" / record["scenario"]["slug"]
         write_json(scenario_dir / "data.json", record)
-        write_text(scenario_dir / "index.html", render_scenario_page(record, 2))
+        write_text(scenario_dir / "index.html", render_scenario_page(record, 2, next_wave))
     for path, content in {**write_tag_pages(records, out), **write_rollup_pages(records, out)}.items():
         write_text(path, content)
     validate_output(records, out)
@@ -119,11 +123,12 @@ def copy_file(source: Path, target: Path) -> None:
     shutil.copy2(source, target)
 
 
-def write_data_files(records: list[dict[str, Any]], out: Path, issues: dict[str, Any]) -> None:
+def write_data_files(records: list[dict[str, Any]], out: Path, issues: dict[str, Any], next_wave: dict[str, Any]) -> None:
     write_json(out / "data" / "scenarios.json", [summary_for(record) for record in records])
     write_json(out / "data" / "rollups.json", rollups_for(records))
     write_json(out / "data" / "tags.json", tags_for_records(records))
     write_json(out / "data" / "issues.json", issues)
+    write_json(out / "data" / "next-wave.json", next_wave_export(records, next_wave))
     write_json(out / "data" / "schema-version.json", {"schema_version": SCHEMA_VERSION, "generator_version": GENERATOR_VERSION})
 
 
