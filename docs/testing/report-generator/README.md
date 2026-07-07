@@ -41,6 +41,8 @@ The generated site includes:
 - tag pages under `tags/<tag>/`
 - rollups for verdict, provider mode, NMP boundary, performance requirements,
   and issues
+- `next-wave/index.html` plus `data/next-wave.json` for the planned
+  screenshot-backed execution wave
 - JSON rollups under `data/`
 - preserved `assets/` content when regenerating over an existing Pages checkout
 - preserved evidence-bearing per-scenario `data.json` fields when an existing
@@ -59,27 +61,34 @@ This taxonomy also includes explicit data integrity/state sync, navigation
 state/restoration, device/viewport coverage, and media session/background audio
 continuity dimensions.
 
+The focused next-wave manifest lives in
+`docs/testing/report-generator/data/next-wave-foundation-onboarding.json`. It is
+planning metadata only: it defines screenshot requirements, metrics to collect,
+UI/UX/Liquid Glass checks, and issue-filing gates for the next Foundation
+onboarding evidence wave, but it does not change execution status or verdicts.
+
 ## Review Skill Grounding
 
 This pass used:
 
 ```sh
-npx skills search "Liquid Glass iOS mobile UI UX polish accessibility frontend design"
-npx skills use heyman333/atelier-ui@ios-glass-ui-designer --dangerously-accept-openclaw-risks
-npx skills use phazurlabs/ux-ui-mastery --skill "Mobile UX Design" --dangerously-accept-openclaw-risks
+npx skills search "iOS mobile UI UX liquid glass native polish validation"
+npx skills use vabole/apple-skills@ios-liquid-glass
+npx skills use vabole/apple-skills@hig
+npx skills use qodex-ai/ai-agent-skills@mobile-app-interface
 ```
 
 `data/skill-grounding.json` records these selected skills and the template
 impact:
 
-- iOS Glass UI Designer: iOS-native hierarchy, restrained glass/material use,
-  system typography, semantic foreground styles, safe areas, native sheets and
-  navigation, and Reduce Transparency/Motion expectations.
-- Mobile UX Design: user-goal framing, thumb-zone reachability, 44 pt/48 dp
-  touch targets, interruption/resume behavior, platform navigation conventions,
-  and performance-as-UX budgets.
-- The Mobile UX Liquid Glass reference: contrast, Increase Contrast, Reduce
-  Transparency, Dynamic Type, and oldest-device performance checks.
+- iOS Liquid Glass: hierarchy, harmony, consistency, native chrome usage,
+  interactive material restraint, and Reduce Motion/Transparency expectations.
+- Apple HIG: factual safe-area, system typography, Dynamic Type, semantic
+  color, accessibility, navigation, control, material, and 44 pt touch-target
+  checks.
+- Mobile app interface: native navigation, safe areas, semantic colors,
+  haptics, list performance, Liquid Glass overlay fallbacks, and
+  performance-as-UX budgets.
 
 UI, UX, accessibility, performance, and product-coherence scores must stay at
 `2` or below until the relevant evidence and grounded critique are attached.

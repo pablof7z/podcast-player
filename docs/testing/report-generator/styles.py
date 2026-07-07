@@ -27,11 +27,11 @@ th { background: var(--soft); font-size: 0.9rem; }
 dl { display: grid; grid-template-columns: minmax(120px, 220px) 1fr; gap: 8px 14px; }
 dt { font-weight: 700; }
 dd { margin: 0; }
-.stats, .launch-grid, .placeholder-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-.stats div, .launch-card, .evidence-placeholder { border: 1px solid var(--line); padding: 14px; background: #ffffff; }
-.stats strong, .launch-card strong, .evidence-placeholder strong { display: block; font-size: 1.35rem; }
+.stats, .launch-grid, .placeholder-grid, .next-wave-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.stats div, .launch-card, .evidence-placeholder, .next-wave-card { border: 1px solid var(--line); padding: 14px; background: #ffffff; }
+.stats strong, .launch-card strong, .evidence-placeholder strong, .next-wave-card strong { display: block; font-size: 1.35rem; }
 .stats strong { font-size: 2rem; }
-.stats span, .muted, .launch-card span, .evidence-placeholder span { color: var(--muted); }
+.stats span, .muted, .launch-card span, .evidence-placeholder span, .next-wave-card span { color: var(--muted); }
 .evidence-grid, .screenshot-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .evidence-card, figure { border: 1px solid var(--line); margin: 0; background: #ffffff; }
 .evidence-card a { display: grid; gap: 8px; padding: 10px; color: inherit; text-decoration: none; }
@@ -39,6 +39,7 @@ dd { margin: 0; }
 .evidence-card span, figcaption { color: var(--muted); font-size: 0.9rem; }
 figcaption { padding: 8px 10px 10px; }
 .report-section { border-top: 1px solid var(--line); padding: 16px 0; }
+.next-wave-detail { border-top: 2px solid var(--line); padding: 18px 0; }
 .badge-incomplete { color: var(--warn); border-color: #d98f32; background: #fff7eb; }
 .badge-pass { color: var(--ok); border-color: #71b894; background: #effaf4; }
 .badge-fail, .badge-blocker { color: var(--risk); border-color: #d78585; background: #fff0f0; }

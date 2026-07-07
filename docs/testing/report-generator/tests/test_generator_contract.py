@@ -14,6 +14,7 @@ sys.path.insert(0, str(GENERATOR_DIR))
 from catalog import parse_catalog  # noqa: E402
 from contract import SKILL_GROUNDING  # noqa: E402
 from generate_scenario_report import write_site  # noqa: E402
+from next_wave import load_next_wave, next_wave_export  # noqa: E402
 from provider_cassettes_report import provider_cassette_data, render_provider_cassette_page  # noqa: E402
 from records import build_report, validate_schema_contract  # noqa: E402
 
@@ -63,6 +64,8 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertTrue((out / "index.html").exists())
             self.assertTrue((out / "provider-cassettes" / "index.html").exists())
             self.assertTrue((out / "data" / "provider-cassettes.json").exists())
+            self.assertTrue((out / "next-wave" / "index.html").exists())
+            self.assertTrue((out / "data" / "next-wave.json").exists())
             self.assertTrue((out / "scenarios" / "index.html").exists())
             self.assertTrue((out / "scenarios" / "smoke-001" / "index.html").exists())
             self.assertTrue((out / "scenarios" / "smoke-001" / "data.json").exists())
@@ -73,20 +76,27 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             scenario_page = (out / "scenarios" / "smoke-001" / "index.html").read_text()
             self.assertNotIn("Required Detailed Sections", home)
             self.assertIn("Provider cassette replay", home)
+            self.assertIn("Next Execution Wave", home)
             self.assertIn('rel="icon" href="assets/favicon.svg"', home)
             self.assertIn('rel="icon" href="../../assets/favicon.svg"', scenario_page)
             self.assertIn("Provider Cassette Replay Coverage", (out / "provider-cassettes" / "index.html").read_text())
+            self.assertIn("Foundation Onboarding Screenshot Wave 001", (out / "next-wave" / "index.html").read_text())
             for section in REQUIRED_SCENARIO_SECTIONS:
                 self.assertIn(section, scenario_page)
 
             data = json.loads((out / "scenarios" / "smoke-001" / "data.json").read_text())
             self.assertEqual(data["page"]["canonical_url"], "https://example.test/podcast-player/scenarios/smoke-001/")
-            self.assertEqual(data["review_grounding"]["search_command"], 'npx skills search "Liquid Glass iOS mobile UI UX polish accessibility frontend design"')
+            next_wave = json.loads((out / "data" / "next-wave.json").read_text())
+            self.assertEqual(next_wave["wave_id"], "foundation-onboarding-wave-001")
+            self.assertEqual(next_wave["target_count"], 8)
+            self.assertEqual(next_wave["mapped_count"], 0)
+            self.assertEqual(data["review_grounding"]["search_command"], 'npx skills search "iOS mobile UI UX liquid glass native polish validation"')
             self.assertEqual(
                 [skill["name"] for skill in SKILL_GROUNDING if skill["selected"]],
                 [
-                    "heyman333/atelier-ui@ios-glass-ui-designer",
-                    "phazurlabs/ux-ui-mastery@Mobile UX Design",
+                    "vabole/apple-skills@ios-liquid-glass",
+                    "vabole/apple-skills@hig",
+                    "qodex-ai/ai-agent-skills@mobile-app-interface",
                 ],
             )
             self.assertEqual(data["launch_assessment"]["launch_readiness"], "incomplete")
@@ -270,12 +280,13 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertEqual(
                 [skill["name"] for skill in merged["review_grounding"]["selected_skills"]],
                 [
-                    "heyman333/atelier-ui@ios-glass-ui-designer",
-                    "phazurlabs/ux-ui-mastery@Mobile UX Design",
+                    "vabole/apple-skills@ios-liquid-glass",
+                    "vabole/apple-skills@hig",
+                    "qodex-ai/ai-agent-skills@mobile-app-interface",
                 ],
             )
             self.assertNotIn("obsolete/old-skill", json.dumps(merged["sections"]["review_skill_grounding"]))
-            self.assertIn("heyman333/atelier-ui@ios-glass-ui-designer", merged["sections"]["review_skill_grounding"]["notes"][0])
+            self.assertIn("vabole/apple-skills@ios-liquid-glass", merged["sections"]["review_skill_grounding"]["notes"][0])
             self.assertNotIn("obsolete", merged["sections"]["review_skill_grounding"]["summary"])
             for section_key, dimension_key in stale_contract_keys.items():
                 self.assertIn(section_key, merged["sections"])
@@ -338,6 +349,34 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             page = render_provider_cassette_page(data, 1)
             self.assertIn("../scenarios/smoke-001/", page)
             self.assertIn("E2 unmapped", page)
+
+    def test_next_wave_manifest_maps_foundation_targets(self) -> None:
+        scenarios = parse_catalog(DOCS_TESTING_DIR / "scenarios" / "catalog")
+        records = [
+            {
+                "scenario": {
+                    "id": scenario.scenario_id,
+                    "slug": scenario.slug,
+                    "title": scenario.title,
+                    "category": scenario.category,
+                },
+                "execution": {"status": "not_run"},
+                "verdict": {"overall": "incomplete"},
+                "readiness": {"ship_gate": "incomplete"},
+                "evidence": {"missing": []},
+            }
+            for scenario in scenarios
+        ]
+        data = next_wave_export(records, load_next_wave())
+        self.assertEqual(data["target_count"], 8)
+        self.assertEqual(data["mapped_count"], 8)
+        self.assertEqual(data["not_run_count"], 8)
+        fnd001 = next(item for item in data["scenarios"] if item["scenario_id"] == "FND-001")
+        self.assertEqual(fnd001["catalog_status"], "mapped")
+        self.assertTrue(fnd001["screenshot_requirements"])
+        self.assertTrue(fnd001["performance_metrics"])
+        self.assertTrue(fnd001["ui_ux_liquid_glass_checks"])
+        self.assertTrue(fnd001["issue_filing_gates"])
 
     def test_schema_requires_quality_coherence_and_screenshot_evidence(self) -> None:
         schema = json.loads((DOCS_TESTING_DIR / "scenario-report.schema.json").read_text())

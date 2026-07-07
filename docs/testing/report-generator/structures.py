@@ -103,9 +103,9 @@ def review_grounding_for() -> dict[str, Any]:
         "selected_skills": selected,
         "all_considered": SKILL_GROUNDING,
         "template_impact": [
-            "iOS Glass UI Designer drives restrained material judgment: native chrome first, glass only for hierarchy/context, semantic foreground styles, safe areas, and accessibility fallbacks.",
-            "Mobile UX Design drives user-goal framing, thumb-zone reachability, touch-target sizing, interruption/resume checks, navigation convention review, and performance-as-UX budgets.",
-            "The Liquid Glass reference from Mobile UX Design adds explicit contrast, Reduce Transparency, Increase Contrast, Dynamic Type, and oldest-device performance checks.",
+            "iOS Liquid Glass grounding drives restrained material judgment: glass belongs on navigation/control chrome, not dense content, with accessibility fallbacks.",
+            "Apple HIG grounding drives factual checks for safe areas, system typography, Dynamic Type, semantic color, 44 pt touch targets, navigation conventions, and accessibility.",
+            "Mobile app interface grounding drives user-goal framing, thumb reach, native navigation, purposeful haptics, list performance, material fallback checks, and performance-as-UX budgets.",
             "The generated page front-loads launch readiness, risk class, evidence quality, accessibility status, regression coverage, and dependency posture before detailed scores.",
             "The report separates individual dimensions from whole-product cluster judgment so an isolated pass cannot hide a weak or inconsistent product flow.",
         ],
