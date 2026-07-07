@@ -4,7 +4,7 @@
   "title": "OpenRouter Whisper verbose transcript",
   "provider": "openrouter",
   "operation": "stt_transcription",
-  "scenario_refs": ["E2", "K5", "M3"],
+  "scenario_refs": ["TR-005", "TR-010", "LLM-012", "OFFLINE-008"],
   "nmp_rules": ["D6", "D7", "D8"],
   "request": {
     "method": "POST",

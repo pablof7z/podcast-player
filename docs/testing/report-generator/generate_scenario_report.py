@@ -53,7 +53,7 @@ def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Pa
         copy_repo_assets(repo, out)
     write_text(out / "styles.css", stylesheet())
     write_json(out / "data" / "skill-grounding.json", {"generated_by": GENERATOR_VERSION, "skills": SKILL_GROUNDING})
-    cassette_data = provider_cassette_data(repo, evidence or repo / "docs" / "testing" / "evidence")
+    cassette_data = provider_cassette_data(repo, evidence or repo / "docs" / "testing" / "evidence", catalog)
     write_json(out / "data" / "provider-cassettes.json", cassette_data)
     write_data_files(records, out, issues)
     write_text(out / "index.html", render_home(records, 0))

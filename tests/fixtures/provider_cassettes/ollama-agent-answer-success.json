@@ -4,7 +4,7 @@
   "title": "Ollama transcript-grounded local/cloud answer",
   "provider": "ollama",
   "operation": "chat_completion",
-  "scenario_refs": ["G1", "L2", "L4"],
+  "scenario_refs": ["LLM-011", "LLM-012", "WIKI-001", "OFFLINE-008"],
   "nmp_rules": ["D1", "D6", "D7", "D8"],
     "request": {
       "method": "POST",

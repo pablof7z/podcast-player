@@ -4,7 +4,7 @@
   "title": "OpenRouter transcript-grounded agent answer",
   "provider": "openrouter",
   "operation": "chat_completion",
-  "scenario_refs": ["G3", "L4", "M3"],
+  "scenario_refs": ["LLM-011", "LLM-012", "WIKI-001", "OFFLINE-008"],
   "nmp_rules": ["D1", "D6", "D7", "D8"],
   "request": {
     "method": "POST",

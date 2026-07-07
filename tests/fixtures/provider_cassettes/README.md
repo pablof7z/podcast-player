@@ -17,5 +17,9 @@ Contract:
   body. Authorization headers are intentionally excluded from the fingerprint.
 - Secrets must be represented only as redacted markers.
 - `metrics` records both observed live latency and deterministic replay latency.
-- Every cassette lists scenario references and NMP doctrine rules that the
-  replay helps validate.
+- Every cassette lists current generated BDD catalog IDs in `scenario_refs`
+  (for example `TR-005`, not legacy hand-authored refs such as `E2`). Use
+  suite-wide refs such as `LLM-012` or `OFFLINE-008` only when the fixture
+  materially contributes to that replay/sanitizer gate.
+- Every cassette lists NMP doctrine rules in `nmp_rules` that the replay helps
+  validate.

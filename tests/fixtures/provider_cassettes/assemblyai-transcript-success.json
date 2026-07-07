@@ -4,7 +4,7 @@
   "title": "AssemblyAI transcript submission",
   "provider": "assemblyai",
   "operation": "stt_transcription",
-  "scenario_refs": ["E2", "J5"],
+  "scenario_refs": ["TR-008", "TR-010", "LLM-012", "OFFLINE-008"],
   "nmp_rules": ["D6", "D7", "D8"],
   "request": {
     "method": "POST",

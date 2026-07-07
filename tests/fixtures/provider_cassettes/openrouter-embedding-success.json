@@ -4,7 +4,7 @@
   "title": "OpenRouter embedding for knowledge search chunk",
   "provider": "openrouter",
   "operation": "embedding",
-  "scenario_refs": ["E4", "L7"],
+  "scenario_refs": ["WIKI-015", "LLM-012", "OFFLINE-008"],
   "nmp_rules": ["D4", "D5", "D7", "D8"],
   "request": {
     "method": "POST",
