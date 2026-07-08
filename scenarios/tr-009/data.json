@@ -612,14 +612,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-08T00:55:02Z",
+        "completed_at": "2026-07-08T02:59:41Z",
         "evidence_refs": [
           "catalog:tr-009"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-08T00:55:02Z",
+        "started_at": "2026-07-08T02:59:41Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -908,7 +908,7 @@
       "defect_tracking",
       "release_readiness"
     ],
-    "dependency_posture": "not_run",
+    "dependency_posture": "none",
     "evidence_quality": "incomplete",
     "individual_judgment": "TR-009 has not been judged in isolation because observed product behavior is missing.",
     "issue_refs": [
@@ -972,8 +972,8 @@
   ],
   "page": {
     "assets_base": "assets/scenarios/tr-009/",
-    "canonical_url": "/podcast-player/scenarios/tr-009/",
-    "generated_at": "2026-07-08T00:55:02Z",
+    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/tr-009/",
+    "generated_at": "2026-07-08T02:59:41Z",
     "navigation": {
       "category_url": "../transcripts/",
       "next_url": "../tr-010/",
@@ -1364,9 +1364,9 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "",
+    "branch": "codex/validation-report-cassettes",
     "cassettes": [],
-    "completed_at": "2026-07-08T00:55:02Z",
+    "completed_at": "2026-07-08T02:59:41Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1385,11 +1385,11 @@
       "simulator permission state"
     ],
     "generator_version": "scenario-report-generator/0.4.0",
-    "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
+    "live_dependency_rationale": "No live provider dependency is declared for this catalog scaffold.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260708T005502Z-tr-009",
-    "source_commit": "c7f5e79342f836e29597a727b4dece73c486a2d7",
-    "started_at": "2026-07-08T00:55:02Z"
+    "run_id": "catalog-scaffold-20260708T025941Z-tr-009",
+    "source_commit": "5b3cbd12104e8d109d527752ac1d3b74568c7f37",
+    "started_at": "2026-07-08T02:59:41Z"
   },
   "scenario": {
     "bdd": {
@@ -1415,7 +1415,7 @@
       "TR-004"
     ],
     "slug": "tr-009",
-    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/02-playback-downloads-transcripts-clips.md:57",
+    "source_path": "docs/testing/scenarios/catalog/02-playback-downloads-transcripts-clips.md:57",
     "tags": [
       "catalog-scaffold",
       "d6",
@@ -1715,7 +1715,7 @@
         "catalog:tr-009"
       ],
       "notes": [],
-      "summary": "Not assessed. Declared dependencies: simulator permission state. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
+      "summary": "Not executed yet. Declared dependencies: simulator permission state. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
     },
     "revalidation_status": {
       "evidence_refs": [
@@ -1745,7 +1745,7 @@
         "catalog:tr-009"
       ],
       "notes": [],
-      "summary": "Declared setup dependencies: simulator permission state. Provider mode is none until validation attaches fixtures or cassettes."
+      "summary": "Declared setup dependencies: simulator permission state. Provider mode is none; Declared dependencies: simulator permission state. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
     },
     "sister_app_nmp_chirp_comparison": {
       "evidence_refs": [

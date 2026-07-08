@@ -1,7 +1,7 @@
 {
   "average_dimension_scores": {
-    "accessibility_dynamic_type": 0.0,
-    "actual_result": 0.03,
+    "accessibility_dynamic_type": 0.01,
+    "actual_result": 0.04,
     "analytics_privacy_boundaries": 0.0,
     "artifacts": 0.05,
     "attempted_test": 0.04,
@@ -40,7 +40,7 @@
     "regression_risk": 0.0,
     "reliability_flakiness": 0.0,
     "replayability_cassette_provenance": 0.0,
-    "revalidation_status": 0.0,
+    "revalidation_status": 0.01,
     "review_skill_grounding": 0.0,
     "risks_follow_up": 0.0,
     "scenario_setup": 0.0,
@@ -48,8 +48,8 @@
     "states_resilience": 0.0,
     "touch_ergonomics": 0.0,
     "ui_polish": 0.04,
-    "ux_polish": 0.02,
-    "verdict": 0.03
+    "ux_polish": 0.03,
+    "verdict": 0.04
   },
   "average_group_scores": {
     "engineering_quality": 0.02,
@@ -133,8 +133,9 @@
     "wiki-rag-knowledge-and-briefings": 18
   },
   "by_provider_mode": {
-    "blocked": 77,
-    "none": 243
+    "blocked": 67,
+    "none": 242,
+    "replay": 11
   },
   "by_readiness": {
     "blocked": 2,
@@ -212,14 +213,15 @@
     "xplat": 16
   },
   "by_verdict": {
-    "fail": 2,
+    "blocked": 1,
+    "fail": 1,
     "incomplete": 316,
     "pass_with_issues": 2
   },
   "instrumentation_gaps": {
     "accessibility": 315,
     "c1-accessibility-audit-missing": 1,
-    "cassettes": 77,
+    "cassettes": 67,
     "d1-accessibility-audit-missing": 1,
     "d1-resume-fixture-blocked": 1,
     "fnd001-accessibility-settings-audit-missing": 1,
@@ -241,7 +243,7 @@
   },
   "missing_evidence": {
     "accessibility_audit": 320,
-    "cassette": 77,
+    "cassette": 67,
     "clear-all-data-teardown": 1,
     "command_output": 315,
     "log": 315,

@@ -378,6 +378,13 @@
     },
     "replayability_cassette_provenance": {
       "evidence_refs": [
+        "cassette:assemblyai-transcript-success",
+        "cassette:elevenlabs-scribe-success",
+        "cassette:ollama-agent-answer-success",
+        "cassette:openrouter-agent-answer-success",
+        "cassette:openrouter-embedding-success",
+        "cassette:openrouter-whisper-success",
+        "cassette:perplexity-search-success",
         "catalog:llm-012"
       ],
       "rationale": "Replayability And Cassette Provenance has not been validated with current run evidence.",
@@ -410,6 +417,13 @@
     },
     "scenario_setup": {
       "evidence_refs": [
+        "cassette:assemblyai-transcript-success",
+        "cassette:elevenlabs-scribe-success",
+        "cassette:ollama-agent-answer-success",
+        "cassette:openrouter-agent-answer-success",
+        "cassette:openrouter-embedding-success",
+        "cassette:openrouter-whisper-success",
+        "cassette:perplexity-search-success",
         "catalog:llm-012"
       ],
       "rationale": "Scenario Setup has not been validated with current run evidence.",
@@ -487,6 +501,90 @@
         },
         "required": true,
         "type": "source_doc"
+      },
+      {
+        "description": "assemblyai stt_transcription replay fixture covering TR-008, TR-010, LLM-012, OFFLINE-008.",
+        "id": "cassette:assemblyai-transcript-success",
+        "path": "assets/cassettes/provider_cassettes/assemblyai-transcript-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "82a42256220b5b09f4ef8fd24c97090729ab7f2fdbf812fa79e0066745dfef36",
+        "type": "cassette"
+      },
+      {
+        "description": "elevenlabs stt_transcription replay fixture covering TR-007, LLM-012, OFFLINE-008.",
+        "id": "cassette:elevenlabs-scribe-success",
+        "path": "assets/cassettes/provider_cassettes/elevenlabs-scribe-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "c3f7a6696295b844ded12d956e0a7de8a0dc1ed819a1e7bc3b957f8effc70517",
+        "type": "cassette"
+      },
+      {
+        "description": "ollama chat_completion replay fixture covering LLM-011, LLM-012, WIKI-001, OFFLINE-008.",
+        "id": "cassette:ollama-agent-answer-success",
+        "path": "assets/cassettes/provider_cassettes/ollama-agent-answer-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "ccb0033b4069311a5fa3af3cd1146a7c43f6bfefd34a75ea4f4f8e80a543c926",
+        "type": "cassette"
+      },
+      {
+        "description": "openrouter chat_completion replay fixture covering LLM-011, LLM-012, WIKI-001, OFFLINE-008.",
+        "id": "cassette:openrouter-agent-answer-success",
+        "path": "assets/cassettes/provider_cassettes/openrouter-agent-answer-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "493087485ebc242c591c487a5f0e487d3008713f9d7aca790b2a38308c9425e8",
+        "type": "cassette"
+      },
+      {
+        "description": "openrouter embedding replay fixture covering WIKI-015, LLM-012, OFFLINE-008.",
+        "id": "cassette:openrouter-embedding-success",
+        "path": "assets/cassettes/provider_cassettes/openrouter-embedding-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "842dd4985185475cfd664c1315c450a4d64bc3c3858060ba2e06f12562d7e471",
+        "type": "cassette"
+      },
+      {
+        "description": "openrouter stt_transcription replay fixture covering TR-005, TR-010, LLM-012, OFFLINE-008.",
+        "id": "cassette:openrouter-whisper-success",
+        "path": "assets/cassettes/provider_cassettes/openrouter-whisper-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "6bbf21d2b1a9adc985690c91103b653495d9562e5f665982042fc5adb0d3ed73",
+        "type": "cassette"
+      },
+      {
+        "description": "perplexity web_search replay fixture covering DISC-011, LLM-007, LLM-012, OFFLINE-008.",
+        "id": "cassette:perplexity-search-success",
+        "path": "assets/cassettes/provider_cassettes/perplexity-search-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "6367b932497a84b85712ba37bb157eeff36a4eb133cf436f019d7c3e083eca33",
+        "type": "cassette"
       }
     ],
     "missing": [
@@ -497,15 +595,6 @@
         ],
         "kind": "accessibility_audit",
         "reason": "Apple HIG evidence is required before accessibility can pass.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "replayability_cassette_provenance",
-          "privacy_security"
-        ],
-        "kind": "cassette",
-        "reason": "Provider, relay, network, STT, TTS, or LLM behavior needs replay provenance or live-only rationale.",
         "required": true
       },
       {
@@ -559,16 +648,6 @@
       },
       {
         "blocks_dimensions": [
-          "replayability_cassette_provenance",
-          "privacy_security"
-        ],
-        "id": "placeholder:cassette",
-        "kind": "cassette",
-        "message": "Missing required cassette evidence is blocking this report area.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
           "attempted_test",
           "execution_attempts"
         ],
@@ -612,7 +691,6 @@
     "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
     "required_kinds": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "screenshot",
@@ -632,14 +710,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-08T00:55:02Z",
+        "completed_at": "2026-07-08T02:59:41Z",
         "evidence_refs": [
           "catalog:llm-012"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-08T00:55:02Z",
+        "started_at": "2026-07-08T02:59:41Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -875,17 +953,6 @@
       "severity": "minor",
       "status": "open",
       "summary": "No generated-page viewport or device coverage evidence is attached."
-    },
-    {
-      "affected_dimensions": [
-        "replayability_cassette_provenance",
-        "privacy_security"
-      ],
-      "id": "cassettes",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "Provider, relay, network, STT, TTS, or LLM replay data is missing or blocked."
     }
   ],
   "issues": [
@@ -953,7 +1020,7 @@
       "defect_tracking",
       "release_readiness"
     ],
-    "dependency_posture": "blocked",
+    "dependency_posture": "replay",
     "evidence_quality": "incomplete",
     "individual_judgment": "LLM-012 has not been judged in isolation because observed product behavior is missing.",
     "issue_refs": [
@@ -965,7 +1032,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "screenshot",
@@ -1017,16 +1083,16 @@
       "title": "Assign owner and status for every blocker, gate, action, defect, and revalidation item."
     },
     {
-      "id": "attach-cassettes",
+      "id": "execute-with-cassettes",
       "owner": "validation-agent",
       "status": "open",
-      "title": "Attach deterministic provider, relay, STT, TTS, LLM, or network cassettes."
+      "title": "Run this provider-backed scenario in deterministic replay mode with the mapped cassette fixture(s)."
     }
   ],
   "page": {
     "assets_base": "assets/scenarios/llm-012/",
-    "canonical_url": "/podcast-player/scenarios/llm-012/",
-    "generated_at": "2026-07-08T00:55:02Z",
+    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/llm-012/",
+    "generated_at": "2026-07-08T02:59:41Z",
     "navigation": {
       "category_url": "../llm-provider-and-replay/",
       "next_url": "../llm-013/",
@@ -1420,16 +1486,52 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "",
+    "branch": "codex/validation-report-cassettes",
     "cassettes": [
       {
-        "id": "cassette-sanitizer",
-        "mode": "blocked",
-        "provider": "provider",
-        "redaction_hash": "pending-redaction-hash"
+        "id": "assemblyai-transcript-success",
+        "mode": "replay",
+        "provider": "assemblyai",
+        "redaction_hash": "82a42256220b5b09f4ef8fd24c97090729ab7f2fdbf812fa79e0066745dfef36"
+      },
+      {
+        "id": "elevenlabs-scribe-success",
+        "mode": "replay",
+        "provider": "elevenlabs",
+        "redaction_hash": "c3f7a6696295b844ded12d956e0a7de8a0dc1ed819a1e7bc3b957f8effc70517"
+      },
+      {
+        "id": "ollama-agent-answer-success",
+        "mode": "replay",
+        "provider": "ollama",
+        "redaction_hash": "ccb0033b4069311a5fa3af3cd1146a7c43f6bfefd34a75ea4f4f8e80a543c926"
+      },
+      {
+        "id": "openrouter-agent-answer-success",
+        "mode": "replay",
+        "provider": "openrouter",
+        "redaction_hash": "493087485ebc242c591c487a5f0e487d3008713f9d7aca790b2a38308c9425e8"
+      },
+      {
+        "id": "openrouter-embedding-success",
+        "mode": "replay",
+        "provider": "openrouter",
+        "redaction_hash": "842dd4985185475cfd664c1315c450a4d64bc3c3858060ba2e06f12562d7e471"
+      },
+      {
+        "id": "openrouter-whisper-success",
+        "mode": "replay",
+        "provider": "openrouter",
+        "redaction_hash": "6bbf21d2b1a9adc985690c91103b653495d9562e5f665982042fc5adb0d3ed73"
+      },
+      {
+        "id": "perplexity-search-success",
+        "mode": "replay",
+        "provider": "perplexity",
+        "redaction_hash": "6367b932497a84b85712ba37bb157eeff36a4eb133cf436f019d7c3e083eca33"
       }
     ],
-    "completed_at": "2026-07-08T00:55:02Z",
+    "completed_at": "2026-07-08T02:59:41Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1448,11 +1550,11 @@
       "cassette sanitizer"
     ],
     "generator_version": "scenario-report-generator/0.4.0",
-    "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
-    "provider_mode": "blocked",
-    "run_id": "catalog-scaffold-20260708T005502Z-llm-012",
-    "source_commit": "c7f5e79342f836e29597a727b4dece73c486a2d7",
-    "started_at": "2026-07-08T00:55:02Z"
+    "live_dependency_rationale": "Replay fixture(s) are available for provider-backed validation: assemblyai-transcript-success, elevenlabs-scribe-success, ollama-agent-answer-success, openrouter-agent-answer-success, openrouter-embedding-success, openrouter-whisper-success, perplexity-search-success. The scenario still needs an execution run using those fixtures.",
+    "provider_mode": "replay",
+    "run_id": "catalog-scaffold-20260708T025941Z-llm-012",
+    "source_commit": "5b3cbd12104e8d109d527752ac1d3b74568c7f37",
+    "started_at": "2026-07-08T02:59:41Z"
   },
   "scenario": {
     "bdd": {
@@ -1478,7 +1580,7 @@
       "LLM-004"
     ],
     "slug": "llm-012",
-    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/03-agent-llm-knowledge-voice.md:41",
+    "source_path": "docs/testing/scenarios/catalog/03-agent-llm-knowledge-voice.md:41",
     "tags": [
       "cassette-required",
       "catalog-scaffold",
@@ -1775,10 +1877,17 @@
     },
     "replayability_cassette_provenance": {
       "evidence_refs": [
+        "cassette:assemblyai-transcript-success",
+        "cassette:elevenlabs-scribe-success",
+        "cassette:ollama-agent-answer-success",
+        "cassette:openrouter-agent-answer-success",
+        "cassette:openrouter-embedding-success",
+        "cassette:openrouter-whisper-success",
+        "cassette:perplexity-search-success",
         "catalog:llm-012"
       ],
       "notes": [],
-      "summary": "Not assessed. Declared dependencies: cassette sanitizer. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
+      "summary": "Not executed yet. Replay fixture(s) mapped to this scenario: assemblyai-transcript-success, elevenlabs-scribe-success, ollama-agent-answer-success, openrouter-agent-answer-success, openrouter-embedding-success, openrouter-whisper-success, perplexity-search-success."
     },
     "revalidation_status": {
       "evidence_refs": [
@@ -1805,10 +1914,17 @@
     },
     "scenario_setup": {
       "evidence_refs": [
+        "cassette:assemblyai-transcript-success",
+        "cassette:elevenlabs-scribe-success",
+        "cassette:ollama-agent-answer-success",
+        "cassette:openrouter-agent-answer-success",
+        "cassette:openrouter-embedding-success",
+        "cassette:openrouter-whisper-success",
+        "cassette:perplexity-search-success",
         "catalog:llm-012"
       ],
       "notes": [],
-      "summary": "Declared setup dependencies: cassette sanitizer. Provider mode is blocked until validation attaches fixtures or cassettes."
+      "summary": "Declared setup dependencies: cassette sanitizer. Provider mode is replay; Replay fixture(s) mapped to this scenario: assemblyai-transcript-success, elevenlabs-scribe-success, ollama-agent-answer-success, openrouter-agent-answer-success, openrouter-embedding-success, openrouter-whisper-success, perplexity-search-success."
     },
     "sister_app_nmp_chirp_comparison": {
       "evidence_refs": [

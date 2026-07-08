@@ -378,6 +378,7 @@
     },
     "replayability_cassette_provenance": {
       "evidence_refs": [
+        "cassette:openrouter-whisper-success",
         "catalog:tr-005"
       ],
       "rationale": "Replayability And Cassette Provenance has not been validated with current run evidence.",
@@ -410,6 +411,7 @@
     },
     "scenario_setup": {
       "evidence_refs": [
+        "cassette:openrouter-whisper-success",
         "catalog:tr-005"
       ],
       "rationale": "Scenario Setup has not been validated with current run evidence.",
@@ -487,6 +489,18 @@
         },
         "required": true,
         "type": "source_doc"
+      },
+      {
+        "description": "openrouter stt_transcription replay fixture covering TR-005, TR-010, LLM-012, OFFLINE-008.",
+        "id": "cassette:openrouter-whisper-success",
+        "path": "assets/cassettes/provider_cassettes/openrouter-whisper-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "6bbf21d2b1a9adc985690c91103b653495d9562e5f665982042fc5adb0d3ed73",
+        "type": "cassette"
       }
     ],
     "missing": [
@@ -497,15 +511,6 @@
         ],
         "kind": "accessibility_audit",
         "reason": "Apple HIG evidence is required before accessibility can pass.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "replayability_cassette_provenance",
-          "privacy_security"
-        ],
-        "kind": "cassette",
-        "reason": "Provider, relay, network, STT, TTS, or LLM behavior needs replay provenance or live-only rationale.",
         "required": true
       },
       {
@@ -567,16 +572,6 @@
       },
       {
         "blocks_dimensions": [
-          "replayability_cassette_provenance",
-          "privacy_security"
-        ],
-        "id": "placeholder:cassette",
-        "kind": "cassette",
-        "message": "Missing required cassette evidence is blocking this report area.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
           "attempted_test",
           "execution_attempts"
         ],
@@ -629,7 +624,6 @@
     "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
     "required_kinds": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -650,14 +644,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-08T00:55:02Z",
+        "completed_at": "2026-07-08T02:59:41Z",
         "evidence_refs": [
           "catalog:tr-005"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-08T00:55:02Z",
+        "started_at": "2026-07-08T02:59:41Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -905,17 +899,6 @@
       "severity": "major",
       "status": "open",
       "summary": "Catalog requires performance evidence, but no trace or metric is attached."
-    },
-    {
-      "affected_dimensions": [
-        "replayability_cassette_provenance",
-        "privacy_security"
-      ],
-      "id": "cassettes",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "Provider, relay, network, STT, TTS, or LLM replay data is missing or blocked."
     }
   ],
   "issues": [
@@ -996,7 +979,7 @@
       "defect_tracking",
       "release_readiness"
     ],
-    "dependency_posture": "blocked",
+    "dependency_posture": "replay",
     "evidence_quality": "incomplete",
     "individual_judgment": "TR-005 has not been judged in isolation because observed product behavior is missing.",
     "issue_refs": [
@@ -1009,7 +992,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -1062,16 +1044,16 @@
       "title": "Assign owner and status for every blocker, gate, action, defect, and revalidation item."
     },
     {
-      "id": "attach-cassettes",
+      "id": "execute-with-cassettes",
       "owner": "validation-agent",
       "status": "open",
-      "title": "Attach deterministic provider, relay, STT, TTS, LLM, or network cassettes."
+      "title": "Run this provider-backed scenario in deterministic replay mode with the mapped cassette fixture(s)."
     }
   ],
   "page": {
     "assets_base": "assets/scenarios/tr-005/",
-    "canonical_url": "/podcast-player/scenarios/tr-005/",
-    "generated_at": "2026-07-08T00:55:02Z",
+    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/tr-005/",
+    "generated_at": "2026-07-08T02:59:41Z",
     "navigation": {
       "category_url": "../transcripts/",
       "next_url": "../tr-006/",
@@ -1479,16 +1461,16 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "",
+    "branch": "codex/validation-report-cassettes",
     "cassettes": [
       {
-        "id": "cassettes/stt/openrouter-whisper-basic.json",
-        "mode": "blocked",
+        "id": "openrouter-whisper-success",
+        "mode": "replay",
         "provider": "openrouter",
-        "redaction_hash": "pending-redaction-hash"
+        "redaction_hash": "6bbf21d2b1a9adc985690c91103b653495d9562e5f665982042fc5adb0d3ed73"
       }
     ],
-    "completed_at": "2026-07-08T00:55:02Z",
+    "completed_at": "2026-07-08T02:59:41Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1507,11 +1489,11 @@
       "`cassettes/stt/openrouter-whisper-basic.json`"
     ],
     "generator_version": "scenario-report-generator/0.4.0",
-    "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
-    "provider_mode": "blocked",
-    "run_id": "catalog-scaffold-20260708T005502Z-tr-005",
-    "source_commit": "c7f5e79342f836e29597a727b4dece73c486a2d7",
-    "started_at": "2026-07-08T00:55:02Z"
+    "live_dependency_rationale": "Replay fixture(s) are available for provider-backed validation: openrouter-whisper-success. The scenario still needs an execution run using those fixtures.",
+    "provider_mode": "replay",
+    "run_id": "catalog-scaffold-20260708T025941Z-tr-005",
+    "source_commit": "5b3cbd12104e8d109d527752ac1d3b74568c7f37",
+    "started_at": "2026-07-08T02:59:41Z"
   },
   "scenario": {
     "bdd": {
@@ -1537,7 +1519,7 @@
       "TR-004"
     ],
     "slug": "tr-005",
-    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/02-playback-downloads-transcripts-clips.md:53",
+    "source_path": "docs/testing/scenarios/catalog/02-playback-downloads-transcripts-clips.md:53",
     "tags": [
       "cassette-required",
       "catalog-scaffold",
@@ -1835,10 +1817,11 @@
     },
     "replayability_cassette_provenance": {
       "evidence_refs": [
+        "cassette:openrouter-whisper-success",
         "catalog:tr-005"
       ],
       "notes": [],
-      "summary": "Not assessed. Declared dependencies: `cassettes/stt/openrouter-whisper-basic.json`. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
+      "summary": "Not executed yet. Replay fixture(s) mapped to this scenario: openrouter-whisper-success."
     },
     "revalidation_status": {
       "evidence_refs": [
@@ -1865,10 +1848,11 @@
     },
     "scenario_setup": {
       "evidence_refs": [
+        "cassette:openrouter-whisper-success",
         "catalog:tr-005"
       ],
       "notes": [],
-      "summary": "Declared setup dependencies: `cassettes/stt/openrouter-whisper-basic.json`. Provider mode is blocked until validation attaches fixtures or cassettes."
+      "summary": "Declared setup dependencies: `cassettes/stt/openrouter-whisper-basic.json`. Provider mode is replay; Replay fixture(s) mapped to this scenario: openrouter-whisper-success."
     },
     "sister_app_nmp_chirp_comparison": {
       "evidence_refs": [

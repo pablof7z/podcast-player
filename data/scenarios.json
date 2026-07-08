@@ -26,7 +26,7 @@
     ],
     "title": "Onboarding page 1 appears and no main-tab state is reachable behind it",
     "url": "scenarios/fnd-001/",
-    "verdict": "fail"
+    "verdict": "blocked"
   },
   {
     "category": "Foundation And First Run",
@@ -1366,7 +1366,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -1374,7 +1373,7 @@
       "ui_tree"
     ],
     "product_cluster": "discovery-and-search",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "major",
     "slug": "disc-011",
@@ -3246,7 +3245,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -3254,7 +3252,7 @@
       "ui_tree"
     ],
     "product_cluster": "transcripts",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "major",
     "slug": "tr-005",
@@ -3311,7 +3309,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -3319,7 +3316,7 @@
       "ui_tree"
     ],
     "product_cluster": "transcripts",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "major",
     "slug": "tr-007",
@@ -3345,7 +3342,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -3353,7 +3349,7 @@
       "ui_tree"
     ],
     "product_cluster": "transcripts",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "major",
     "slug": "tr-008",
@@ -3411,7 +3407,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -3419,7 +3414,7 @@
       "ui_tree"
     ],
     "product_cluster": "transcripts",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "blocker",
     "slug": "tr-010",
@@ -4944,7 +4939,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -4952,7 +4946,7 @@
       "ui_tree"
     ],
     "product_cluster": "llm-provider-and-replay",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "major",
     "slug": "llm-007",
@@ -5078,7 +5072,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -5086,7 +5079,7 @@
       "ui_tree"
     ],
     "product_cluster": "llm-provider-and-replay",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "major",
     "slug": "llm-011",
@@ -5112,14 +5105,13 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "screenshot",
       "ui_tree"
     ],
     "product_cluster": "llm-provider-and-replay",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "major",
     "slug": "llm-012",
@@ -5349,7 +5341,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -5357,7 +5348,7 @@
       "ui_tree"
     ],
     "product_cluster": "wiki-rag-knowledge-and-briefings",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "major",
     "slug": "wiki-001",
@@ -5819,7 +5810,7 @@
       "ui_tree"
     ],
     "product_cluster": "wiki-rag-knowledge-and-briefings",
-    "provider_mode": "none",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "blocker",
     "slug": "wiki-015",
@@ -9872,7 +9863,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -9880,7 +9870,7 @@
       "ui_tree"
     ],
     "product_cluster": "offline-relay-and-replay-honesty",
-    "provider_mode": "blocked",
+    "provider_mode": "replay",
     "readiness": "incomplete",
     "risk_classification": "blocker",
     "slug": "offline-008",

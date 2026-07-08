@@ -632,14 +632,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-08T00:55:02Z",
+        "completed_at": "2026-07-08T02:59:41Z",
         "evidence_refs": [
           "catalog:id-014"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-08T00:55:02Z",
+        "started_at": "2026-07-08T02:59:41Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -1039,8 +1039,8 @@
   ],
   "page": {
     "assets_base": "assets/scenarios/id-014/",
-    "canonical_url": "/podcast-player/scenarios/id-014/",
-    "generated_at": "2026-07-08T00:55:02Z",
+    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/id-014/",
+    "generated_at": "2026-07-08T02:59:41Z",
     "navigation": {
       "category_url": "../identity-and-accounts/",
       "next_url": "../id-015/",
@@ -1433,11 +1433,24 @@
       "severity": "major",
       "status": "open",
       "title": "Fixes for this flow may regress related scenarios: ID-001, ID-002, ID-003, ID-004."
+    },
+    {
+      "affected_dimensions": [
+        "replayability_cassette_provenance",
+        "privacy_security",
+        "observability"
+      ],
+      "id": "risk-missing-cassette",
+      "mitigation": "Attach a redacted provider, relay, STT, TTS, LLM, search, or network cassette before execution.",
+      "priority": "p0",
+      "severity": "major",
+      "status": "open",
+      "title": "Provider-backed scenario lacks mapped replay cassette coverage."
     }
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "",
+    "branch": "codex/validation-report-cassettes",
     "cassettes": [
       {
         "id": "malformed-relay-cassette",
@@ -1446,7 +1459,7 @@
         "redaction_hash": "pending-redaction-hash"
       }
     ],
-    "completed_at": "2026-07-08T00:55:02Z",
+    "completed_at": "2026-07-08T02:59:41Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1467,9 +1480,9 @@
     "generator_version": "scenario-report-generator/0.4.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "blocked",
-    "run_id": "catalog-scaffold-20260708T005502Z-id-014",
-    "source_commit": "c7f5e79342f836e29597a727b4dece73c486a2d7",
-    "started_at": "2026-07-08T00:55:02Z"
+    "run_id": "catalog-scaffold-20260708T025941Z-id-014",
+    "source_commit": "5b3cbd12104e8d109d527752ac1d3b74568c7f37",
+    "started_at": "2026-07-08T02:59:41Z"
   },
   "scenario": {
     "bdd": {
@@ -1495,7 +1508,7 @@
       "ID-004"
     ],
     "slug": "id-014",
-    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/01-foundation-identity-discovery-library.md:41",
+    "source_path": "docs/testing/scenarios/catalog/01-foundation-identity-discovery-library.md:41",
     "tags": [
       "cassette-required",
       "catalog-scaffold",
@@ -1796,7 +1809,7 @@
         "catalog:id-014"
       ],
       "notes": [],
-      "summary": "Not assessed. Declared dependencies: malformed relay cassette. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
+      "summary": "Not executed yet. Declared dependencies: malformed relay cassette. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
     },
     "revalidation_status": {
       "evidence_refs": [
@@ -1826,7 +1839,7 @@
         "catalog:id-014"
       ],
       "notes": [],
-      "summary": "Declared setup dependencies: malformed relay cassette. Provider mode is blocked until validation attaches fixtures or cassettes."
+      "summary": "Declared setup dependencies: malformed relay cassette. Provider mode is blocked; Declared dependencies: malformed relay cassette. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
     },
     "sister_app_nmp_chirp_comparison": {
       "evidence_refs": [

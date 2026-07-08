@@ -650,14 +650,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-08T00:55:02Z",
+        "completed_at": "2026-07-08T02:59:41Z",
         "evidence_refs": [
           "catalog:llm-003"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-08T00:55:02Z",
+        "started_at": "2026-07-08T02:59:41Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -1070,8 +1070,8 @@
   ],
   "page": {
     "assets_base": "assets/scenarios/llm-003/",
-    "canonical_url": "/podcast-player/scenarios/llm-003/",
-    "generated_at": "2026-07-08T00:55:02Z",
+    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/llm-003/",
+    "generated_at": "2026-07-08T02:59:41Z",
     "navigation": {
       "category_url": "../llm-provider-and-replay/",
       "next_url": "../llm-004/",
@@ -1475,11 +1475,24 @@
       "severity": "major",
       "status": "open",
       "title": "Performance budget is declared but unmeasured."
+    },
+    {
+      "affected_dimensions": [
+        "replayability_cassette_provenance",
+        "privacy_security",
+        "observability"
+      ],
+      "id": "risk-missing-cassette",
+      "mitigation": "Attach a redacted provider, relay, STT, TTS, LLM, search, or network cassette before execution.",
+      "priority": "p0",
+      "severity": "major",
+      "status": "open",
+      "title": "Provider-backed scenario lacks mapped replay cassette coverage."
     }
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "",
+    "branch": "codex/validation-report-cassettes",
     "cassettes": [
       {
         "id": "cassettes/llm/openrouter-key-valid.json",
@@ -1488,7 +1501,7 @@
         "redaction_hash": "pending-redaction-hash"
       }
     ],
-    "completed_at": "2026-07-08T00:55:02Z",
+    "completed_at": "2026-07-08T02:59:41Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1509,9 +1522,9 @@
     "generator_version": "scenario-report-generator/0.4.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "blocked",
-    "run_id": "catalog-scaffold-20260708T005502Z-llm-003",
-    "source_commit": "c7f5e79342f836e29597a727b4dece73c486a2d7",
-    "started_at": "2026-07-08T00:55:02Z"
+    "run_id": "catalog-scaffold-20260708T025941Z-llm-003",
+    "source_commit": "5b3cbd12104e8d109d527752ac1d3b74568c7f37",
+    "started_at": "2026-07-08T02:59:41Z"
   },
   "scenario": {
     "bdd": {
@@ -1537,7 +1550,7 @@
       "LLM-005"
     ],
     "slug": "llm-003",
-    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/03-agent-llm-knowledge-voice.md:32",
+    "source_path": "docs/testing/scenarios/catalog/03-agent-llm-knowledge-voice.md:32",
     "tags": [
       "cassette-required",
       "catalog-scaffold",
@@ -1839,7 +1852,7 @@
         "catalog:llm-003"
       ],
       "notes": [],
-      "summary": "Not assessed. Declared dependencies: `cassettes/llm/openrouter-key-valid.json`. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
+      "summary": "Not executed yet. Declared dependencies: `cassettes/llm/openrouter-key-valid.json`. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
     },
     "revalidation_status": {
       "evidence_refs": [
@@ -1869,7 +1882,7 @@
         "catalog:llm-003"
       ],
       "notes": [],
-      "summary": "Declared setup dependencies: `cassettes/llm/openrouter-key-valid.json`. Provider mode is blocked until validation attaches fixtures or cassettes."
+      "summary": "Declared setup dependencies: `cassettes/llm/openrouter-key-valid.json`. Provider mode is blocked; Declared dependencies: `cassettes/llm/openrouter-key-valid.json`. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
     },
     "sister_app_nmp_chirp_comparison": {
       "evidence_refs": [

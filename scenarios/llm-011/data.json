@@ -378,6 +378,8 @@
     },
     "replayability_cassette_provenance": {
       "evidence_refs": [
+        "cassette:ollama-agent-answer-success",
+        "cassette:openrouter-agent-answer-success",
         "catalog:llm-011"
       ],
       "rationale": "Replayability And Cassette Provenance has not been validated with current run evidence.",
@@ -410,6 +412,8 @@
     },
     "scenario_setup": {
       "evidence_refs": [
+        "cassette:ollama-agent-answer-success",
+        "cassette:openrouter-agent-answer-success",
         "catalog:llm-011"
       ],
       "rationale": "Scenario Setup has not been validated with current run evidence.",
@@ -487,6 +491,30 @@
         },
         "required": true,
         "type": "source_doc"
+      },
+      {
+        "description": "ollama chat_completion replay fixture covering LLM-011, LLM-012, WIKI-001, OFFLINE-008.",
+        "id": "cassette:ollama-agent-answer-success",
+        "path": "assets/cassettes/provider_cassettes/ollama-agent-answer-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "ccb0033b4069311a5fa3af3cd1146a7c43f6bfefd34a75ea4f4f8e80a543c926",
+        "type": "cassette"
+      },
+      {
+        "description": "openrouter chat_completion replay fixture covering LLM-011, LLM-012, WIKI-001, OFFLINE-008.",
+        "id": "cassette:openrouter-agent-answer-success",
+        "path": "assets/cassettes/provider_cassettes/openrouter-agent-answer-success.json",
+        "redaction": {
+          "notes": "Authorization, raw secrets, and private media are excluded from provider replay matching.",
+          "status": "redacted"
+        },
+        "required": true,
+        "sha256": "493087485ebc242c591c487a5f0e487d3008713f9d7aca790b2a38308c9425e8",
+        "type": "cassette"
       }
     ],
     "missing": [
@@ -497,15 +525,6 @@
         ],
         "kind": "accessibility_audit",
         "reason": "Apple HIG evidence is required before accessibility can pass.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "replayability_cassette_provenance",
-          "privacy_security"
-        ],
-        "kind": "cassette",
-        "reason": "Provider, relay, network, STT, TTS, or LLM behavior needs replay provenance or live-only rationale.",
         "required": true
       },
       {
@@ -567,16 +586,6 @@
       },
       {
         "blocks_dimensions": [
-          "replayability_cassette_provenance",
-          "privacy_security"
-        ],
-        "id": "placeholder:cassette",
-        "kind": "cassette",
-        "message": "Missing required cassette evidence is blocking this report area.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
           "attempted_test",
           "execution_attempts"
         ],
@@ -629,7 +638,6 @@
     "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
     "required_kinds": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -650,14 +658,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-08T00:55:02Z",
+        "completed_at": "2026-07-08T02:59:41Z",
         "evidence_refs": [
           "catalog:llm-011"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-08T00:55:02Z",
+        "started_at": "2026-07-08T02:59:41Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -905,17 +913,6 @@
       "severity": "major",
       "status": "open",
       "summary": "Catalog requires performance evidence, but no trace or metric is attached."
-    },
-    {
-      "affected_dimensions": [
-        "replayability_cassette_provenance",
-        "privacy_security"
-      ],
-      "id": "cassettes",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "Provider, relay, network, STT, TTS, or LLM replay data is missing or blocked."
     }
   ],
   "issues": [
@@ -996,7 +993,7 @@
       "defect_tracking",
       "release_readiness"
     ],
-    "dependency_posture": "blocked",
+    "dependency_posture": "replay",
     "evidence_quality": "incomplete",
     "individual_judgment": "LLM-011 has not been judged in isolation because observed product behavior is missing.",
     "issue_refs": [
@@ -1009,7 +1006,6 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "accessibility_audit",
-      "cassette",
       "command_output",
       "log",
       "metric_trace",
@@ -1062,16 +1058,16 @@
       "title": "Assign owner and status for every blocker, gate, action, defect, and revalidation item."
     },
     {
-      "id": "attach-cassettes",
+      "id": "execute-with-cassettes",
       "owner": "validation-agent",
       "status": "open",
-      "title": "Attach deterministic provider, relay, STT, TTS, LLM, or network cassettes."
+      "title": "Run this provider-backed scenario in deterministic replay mode with the mapped cassette fixture(s)."
     }
   ],
   "page": {
     "assets_base": "assets/scenarios/llm-011/",
-    "canonical_url": "/podcast-player/scenarios/llm-011/",
-    "generated_at": "2026-07-08T00:55:02Z",
+    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/llm-011/",
+    "generated_at": "2026-07-08T02:59:41Z",
     "navigation": {
       "category_url": "../llm-provider-and-replay/",
       "next_url": "../llm-012/",
@@ -1479,16 +1475,22 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "",
+    "branch": "codex/validation-report-cassettes",
     "cassettes": [
       {
-        "id": "frozen-cassette-and-clock",
-        "mode": "blocked",
-        "provider": "provider",
-        "redaction_hash": "pending-redaction-hash"
+        "id": "ollama-agent-answer-success",
+        "mode": "replay",
+        "provider": "ollama",
+        "redaction_hash": "ccb0033b4069311a5fa3af3cd1146a7c43f6bfefd34a75ea4f4f8e80a543c926"
+      },
+      {
+        "id": "openrouter-agent-answer-success",
+        "mode": "replay",
+        "provider": "openrouter",
+        "redaction_hash": "493087485ebc242c591c487a5f0e487d3008713f9d7aca790b2a38308c9425e8"
       }
     ],
-    "completed_at": "2026-07-08T00:55:02Z",
+    "completed_at": "2026-07-08T02:59:41Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1507,11 +1509,11 @@
       "frozen cassette and clock"
     ],
     "generator_version": "scenario-report-generator/0.4.0",
-    "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
-    "provider_mode": "blocked",
-    "run_id": "catalog-scaffold-20260708T005502Z-llm-011",
-    "source_commit": "c7f5e79342f836e29597a727b4dece73c486a2d7",
-    "started_at": "2026-07-08T00:55:02Z"
+    "live_dependency_rationale": "Replay fixture(s) are available for provider-backed validation: ollama-agent-answer-success, openrouter-agent-answer-success. The scenario still needs an execution run using those fixtures.",
+    "provider_mode": "replay",
+    "run_id": "catalog-scaffold-20260708T025941Z-llm-011",
+    "source_commit": "5b3cbd12104e8d109d527752ac1d3b74568c7f37",
+    "started_at": "2026-07-08T02:59:41Z"
   },
   "scenario": {
     "bdd": {
@@ -1537,7 +1539,7 @@
       "LLM-004"
     ],
     "slug": "llm-011",
-    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/03-agent-llm-knowledge-voice.md:40",
+    "source_path": "docs/testing/scenarios/catalog/03-agent-llm-knowledge-voice.md:40",
     "tags": [
       "cassette-required",
       "catalog-scaffold",
@@ -1835,10 +1837,12 @@
     },
     "replayability_cassette_provenance": {
       "evidence_refs": [
+        "cassette:ollama-agent-answer-success",
+        "cassette:openrouter-agent-answer-success",
         "catalog:llm-011"
       ],
       "notes": [],
-      "summary": "Not assessed. Declared dependencies: frozen cassette and clock. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
+      "summary": "Not executed yet. Replay fixture(s) mapped to this scenario: ollama-agent-answer-success, openrouter-agent-answer-success."
     },
     "revalidation_status": {
       "evidence_refs": [
@@ -1865,10 +1869,12 @@
     },
     "scenario_setup": {
       "evidence_refs": [
+        "cassette:ollama-agent-answer-success",
+        "cassette:openrouter-agent-answer-success",
         "catalog:llm-011"
       ],
       "notes": [],
-      "summary": "Declared setup dependencies: frozen cassette and clock. Provider mode is blocked until validation attaches fixtures or cassettes."
+      "summary": "Declared setup dependencies: frozen cassette and clock. Provider mode is replay; Replay fixture(s) mapped to this scenario: ollama-agent-answer-success, openrouter-agent-answer-success."
     },
     "sister_app_nmp_chirp_comparison": {
       "evidence_refs": [
