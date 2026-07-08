@@ -103,6 +103,26 @@ D8_POLLING_ISSUE = {
     "owner": "architecture-agent",
 }
 
+EXPANDED_D8_SCAN_ISSUE = {
+    "id": "GH-740",
+    "url": "https://github.com/pablof7z/podcast-player/issues/740",
+    "severity": "blocker",
+    "title": "Burn down all D8 no-polling scanner hard errors",
+    "affected_dimensions": ["performance", "nmp_architecture", "reliability_flakiness"],
+    "status": "open",
+    "owner": "architecture-agent",
+}
+
+D3_RELAY_SCAN_ISSUE = {
+    "id": "GH-741",
+    "url": "https://github.com/pablof7z/podcast-player/issues/741",
+    "severity": "blocker",
+    "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+    "affected_dimensions": ["nmp_architecture", "privacy_security", "replayability_cassette_provenance"],
+    "status": "open",
+    "owner": "architecture-agent",
+}
+
 
 def issues_for_scenario(scenario: Any) -> list[dict[str, Any]]:
     issues = [*BASE_VALIDATION_ISSUES]
@@ -130,6 +150,9 @@ def issues_for_scenario(scenario: Any) -> list[dict[str, Any]]:
         issues.append(CODEGEN_ISSUE)
     if "d8" in tags or "d8" in text or getattr(scenario, "scenario_id", "").startswith("D8-"):
         issues.append(D8_POLLING_ISSUE)
+        issues.append(EXPANDED_D8_SCAN_ISSUE)
+    if "relay" in text or "outbox" in text or getattr(scenario, "scenario_id", "").startswith(("NOSTR-", "SOC-", "NMPM-")):
+        issues.append(D3_RELAY_SCAN_ISSUE)
     return dedupe_issues(issues)
 
 

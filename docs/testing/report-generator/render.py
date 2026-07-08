@@ -9,7 +9,7 @@ from next_wave_render import render_next_wave_home, scenario_next_wave_block
 from records import count_boundaries, count_by, count_tags, missing_evidence_for, rollups_for
 
 
-def render_home(records: list[dict[str, Any]], depth: int, next_wave: dict[str, Any] | None = None) -> str:
+def render_home(records: list[dict[str, Any]], depth: int, next_wave: dict[str, Any] | None = None, architecture_scan: dict[str, Any] | None = None) -> str:
     rollups = rollups_for(records)
     observed = sum(1 for record in records if record["execution"]["status"] != "not_run")
     body = [
@@ -20,11 +20,33 @@ def render_home(records: list[dict[str, Any]], depth: int, next_wave: dict[str, 
         stat_band(rollups["by_verdict"]),
         section("Scenario Page System", p("Each BDD catalog scenario now has a stable page, JSON record, source link, structured flow steps, attempts, evidence inventory, skill-grounded quality review, product-cluster coherence, readiness gates, and rollup membership.")),
         section("Evidence-Backed Scenarios", evidence_backed_summary(records, depth)),
-        link_list("Indexes", [("All scenarios", rel("scenarios/", depth)), ("Tags", rel("tags/", depth)), ("Issues", rel("issues/", depth)), ("Next execution wave", rel("next-wave/", depth)), ("Provider cassette replay", rel("provider-cassettes/", depth)), ("Performance rollup", rel("rollups/performance/", depth)), ("Raw scenario JSON", rel("data/scenarios.json", depth))]),
+        link_list("Indexes", [("All scenarios", rel("scenarios/", depth)), ("Tags", rel("tags/", depth)), ("Issues", rel("issues/", depth)), ("Next execution wave", rel("next-wave/", depth)), ("Architecture scan", rel("architecture-scan/", depth)), ("Provider cassette replay", rel("provider-cassettes/", depth)), ("Performance rollup", rel("rollups/performance/", depth)), ("Raw scenario JSON", rel("data/scenarios.json", depth))]),
     ]
     if next_wave:
         body.insert(3, render_next_wave_home(records, next_wave, depth))
+    if architecture_scan:
+        body.insert(4, architecture_scan_home_block(architecture_scan, depth))
     return page("Pod0 Validation Report", depth, "\n".join(body))
+
+
+def architecture_scan_home_block(data: dict[str, Any], depth: int) -> str:
+    counts = data["counts"]
+    cards = [
+        ("Status", badge(data.get("status", "not_recorded")), "Current D0-D10 scan gate."),
+        ("Hard errors", e(str(counts.get("hard_errors", 0))), "D3/D8 findings blocking architecture confidence."),
+        ("Findings", e(str(counts.get("total", 0))), "Warnings and errors needing review."),
+        ("Linked issues", e(str(len(data.get("linked_issues", [])))), "GitHub follow-up entries tied to this scan."),
+    ]
+    html_cards = "".join(
+        f"<article class=\"next-wave-card\"><span>{e(label)}</span><strong>{value}</strong><p>{e(help_text)}</p></article>"
+        for label, value, help_text in cards
+    )
+    return section(
+        "NMP Architecture Scan",
+        f"<div class=\"next-wave-grid\">{html_cards}</div>"
+        + p("This is static triage, not proof of compliance. Hard errors keep the NMP/Chirp parity gate blocked until fixed and re-scanned.")
+        + f"<p><a href=\"{rel('architecture-scan/', depth)}\">Open the architecture scan report</a> &middot; <a href=\"{rel('data/architecture-scan.json', depth)}\">Raw JSON</a></p>",
+    )
 
 
 def render_scenario_index(records: list[dict[str, Any]], depth: int, title: str) -> str:

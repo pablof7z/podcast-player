@@ -49,7 +49,9 @@ worktrees currently in flight.
   Chirp-shipped NMP pin `bc6b42592d7fd61bc6767cac246a24a6b23bf8e3`. Open
   tracking remains #707 for re-pin/publish lifecycle/relay-config persistence,
   #708 for pollable NIP-05 lookup state, #709 for action/projection codegen
-  drift checks, and #734 for D8 sleep/polling paths found by the NMP scanner.
+  drift checks, #734 for the original D8 sleep/polling scanner subset, #740
+  for the expanded D8 hard-error burn-down, and #741 for D3 hardcoded relay
+  scanner hard errors.
   `docs/testing/chirp-nmp-validation-pack-2026-07-06.md` and the
   `05-chirp-nmp-regression-parity.md` catalog file map those gaps into 56
   scenario pages.
@@ -60,6 +62,12 @@ worktrees currently in flight.
   blocker links do not count as observed run evidence; real scenario evidence
   still has to attach screenshots, UI trees, metrics, accessibility audits,
   logs, cassettes, and revalidation IDs.
+  The current report also publishes the NMP architecture scanner artifact from
+  `docs/testing/evidence/nmp-architecture-scan-20260707T230200Z.json`: 735
+  findings, including 46 hard errors (39 D8/no-polling and 7 D3 hardcoded
+  relay findings). This scan is static triage, not proof of compliance, and
+  the NMP/Chirp parity gate remains blocked until the hard-error count reaches
+  zero and the report is regenerated.
   Remaining parity debt lives in `App/Sources/` Swift policy/fallback code plus
   the listed platform/AI gaps. Agent chat title generation now routes prompt
   construction, message filtering/truncation, selected model, and JSON title
