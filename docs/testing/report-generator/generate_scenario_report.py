@@ -43,7 +43,7 @@ PRESERVED_RECORD_FIELDS = [
     "issues",
     "next_actions",
 ]
-PRESERVED_OUTPUT_NAMES = {".git", ".gitignore", ".nojekyll", "CNAME", "assets"}
+PRESERVED_OUTPUT_NAMES = {".git", ".gitignore", ".nojekyll", "CNAME", "assets", "data", "revalidation", "screenshots", "workstreams"}
 
 
 def write_site(records: list[dict[str, Any]], out: Path, catalog: Path, repo: Path | None = None, evidence: Path | None = None) -> None:

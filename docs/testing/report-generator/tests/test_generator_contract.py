@@ -136,9 +136,16 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             (out / ".git").write_text("gitdir: ../.git/worktrees/site\n")
             (out / ".nojekyll").write_text("")
             (out / "stale.html").write_text("stale")
+            legacy_page = out / "workstreams" / "index.html"
+            legacy_page.parent.mkdir(parents=True)
+            legacy_page.write_text("legacy workstream page")
+            legacy_screenshot_page = out / "screenshots" / "index.html"
+            legacy_screenshot_page.parent.mkdir(parents=True)
+            legacy_screenshot_page.write_text("legacy screenshot page")
             old_issues = {"issues": [{"id": "ISSUE-1", "url": "https://example.test/1"}], "counts": {"open": 1, "fixed": 0}}
             (out / "data").mkdir()
             (out / "data" / "issues.json").write_text(json.dumps(old_issues))
+            (out / "data" / "workstreams.json").write_text(json.dumps({"status": "legacy"}))
 
             records = build_records(catalog, root)
             old_record = copy.deepcopy(records[0])
@@ -291,6 +298,9 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertEqual((out / ".git").read_text(), "gitdir: ../.git/worktrees/site\n")
             self.assertTrue((out / ".nojekyll").exists())
             self.assertFalse((out / "stale.html").exists())
+            self.assertEqual(legacy_page.read_text(), "legacy workstream page")
+            self.assertEqual(legacy_screenshot_page.read_text(), "legacy screenshot page")
+            self.assertEqual(json.loads((out / "data" / "workstreams.json").read_text()), {"status": "legacy"})
             issue_index = json.loads((out / "data" / "issues.json").read_text())
             self.assertEqual(issue_index["counts"], {"open": 9})
             indexed_issues = {(item["scenario_id"], item["id"]): item for item in issue_index["issues"]}
