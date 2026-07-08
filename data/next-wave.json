@@ -23,13 +23,13 @@
     "qodex-ai/ai-agent-skills@mobile-app-interface"
   ],
   "mapped_count": 8,
-  "not_run_count": 8,
+  "not_run_count": 7,
   "scenarios": [
     {
       "catalog_status": "mapped",
       "category": "Foundation And First Run",
       "data_url": "scenarios/fnd-001/data.json",
-      "execution_status": "not_run",
+      "execution_status": "fail",
       "issue_filing_gates": [
         {
           "affected_dimensions": [
@@ -53,12 +53,8 @@
         }
       ],
       "missing_evidence": [
-        "accessibility_audit",
-        "command_output",
-        "log",
         "metric_trace",
-        "screenshot",
-        "ui_tree"
+        "accessibility_audit"
       ],
       "performance_metrics": [
         {
@@ -70,7 +66,7 @@
         }
       ],
       "priority": 1,
-      "readiness": "incomplete",
+      "readiness": "blocked",
       "runbook": "Erase simulator/app-group data, launch Pod0, and stop on the first onboarding page before tapping any primary action.",
       "scenario_id": "FND-001",
       "scenario_url": "scenarios/fnd-001/",
@@ -127,7 +123,7 @@
           ]
         }
       ],
-      "verdict": "incomplete"
+      "verdict": "fail"
     },
     {
       "catalog_status": "mapped",

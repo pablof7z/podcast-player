@@ -19,20 +19,36 @@
     <header class="hero">
       <p class="eyebrow">Pod0 Validation</p>
       <h1>Screenshot Evidence</h1>
-      <p>58 published image assets are visible here. This page is an evidence index, not a completion claim: only 4 of 320 scenario records currently have screenshot evidence attached.</p>
+      <p>62 published image assets are visible here. This page is an evidence index, not a completion claim: only 5 scenario records currently have screenshot evidence attached.</p>
     </header>
 
     <section class="stats" aria-label="Screenshot evidence totals">
-      <div><strong>58</strong><span>published image assets</span></div>
-      <div><strong>13</strong><span>scenario-run screenshots</span></div>
-      <div><strong>15</strong><span>live report verification screenshots</span></div>
-      <div><strong>4</strong><span>scenario records with screenshot evidence</span></div>
+      <div><strong>62</strong><span>published image assets</span></div>
+      <div><strong>14</strong><span>scenario-run screenshots</span></div>
+      <div><strong>19</strong><span>live report verification screenshots</span></div>
+      <div><strong>5</strong><span>scenario records with screenshot evidence</span></div>
     </section>
 
     <section id="live-report-verification">
       <h2>Live Report Verification</h2>
-      <p class="muted">These screenshots prove the generated GitHub Pages report itself was loaded and checked after the #739 next-wave publish at commit 7098b7d9, the issue-backed scenario publish at commit 29169f27, plus earlier queue, 320-page, launch-template, and provider-cassette publishes.</p>
+      <p class="muted">These screenshots prove the generated GitHub Pages report itself was loaded and checked after the #742 architecture-scan publish and #744 FND-001 evidence publish at commit c7f5e793, plus earlier queue, 320-page, launch-template, issue-backed scenario, and provider-cassette publishes.</p>
       <div class="screenshot-gallery">
+        <figure>
+          <img src="../assets/live-verification/20260708T005900Z-architecture-scan-desktop-c7f5e793.png" alt="Desktop viewport of the generated NMP Architecture Scan page showing 46 hard errors and 735 scanner findings.">
+          <figcaption><strong>Architecture scan desktop</strong> Generated report showing NMP scanner counts, linked issues, and hard-error findings after #742 merged.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260708T005900Z-fnd-001-evidence-desktop-c7f5e793.png" alt="Desktop viewport of the generated FND-001 scenario page showing fail verdict, issue link, and evidence sections.">
+          <figcaption><strong>FND-001 evidence page</strong> Generated scenario page showing real evidence, fail verdict, #743, UI/UX polish sections, metrics, and follow-up gates after #744 merged.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260708T005900Z-workstreams-zero-prs-after-744-desktop-c7f5e793.png" alt="Desktop viewport of the workstreams page showing zero open PRs after pull requests 742 and 744 merged.">
+          <figcaption><strong>Workstreams after #744 desktop</strong> Generated report showing zero open PRs and recently resolved #742/#744 work.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/live-verification/20260708T005900Z-workstreams-zero-prs-after-744-mobile-c7f5e793.png" alt="Mobile viewport of the workstreams page showing zero open PRs after pull requests 742 and 744 merged.">
+          <figcaption><strong>Workstreams after #744 mobile</strong> Mobile report view showing the same zero-open-PR state.</figcaption>
+        </figure>
         <figure>
           <img src="../assets/live-verification/20260707T225700Z-workstreams-zero-prs-after-739-desktop-7098b7d9.png" alt="Desktop viewport of the generated workstreams page showing zero open PRs after pull request 739 merged.">
           <figcaption><strong>Workstreams final desktop</strong> Generated report showing zero open PRs after #739 merged and all required lanes cleared.</figcaption>
@@ -100,6 +116,10 @@
       <h2>Evidence-Backed Scenario Runs</h2>
       <p class="muted">These screenshots are linked from scenario pages that have at least partial run evidence.</p>
       <div class="screenshot-gallery">
+        <figure>
+          <img src="../assets/scenarios/fnd-001-first-run-gate/20260707T231200Z-first-onboarding.jpg" alt="Pod0 first onboarding screen with headline, subtitle, feature chips, page dots, and Get Started button.">
+          <figcaption><strong>FND-001</strong> First onboarding page from an erased simulator run; the scenario fails because hidden main-shell controls remain exposed in the UI tree.</figcaption>
+        </figure>
         <figure>
           <img src="../assets/scenarios/c1-view-library/20260705T193400Z-all-podcasts.jpg" alt="All Podcasts library screen showing This American Life and the Followed state.">
           <figcaption><strong>LIB-001</strong> All Podcasts library state.</figcaption>

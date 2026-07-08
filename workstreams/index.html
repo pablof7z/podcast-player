@@ -28,7 +28,7 @@
       <div><strong>0</strong><span>open PRs</span></div>
       <div><strong>0</strong><span>required lanes running or queued</span></div>
       <div><strong>0</strong><span>red required builds in current runs</span></div>
-      <div><strong>4</strong><span>merged today</span></div>
+      <div><strong>6</strong><span>merged today</span></div>
     </section>
 
     <section id="active-prs">
@@ -45,7 +45,7 @@
         </thead>
         <tbody>
           <tr>
-            <td data-label="PR" colspan="4">No open pull requests remain after merging <a href="https://github.com/pablof7z/podcast-player/pull/739">#739</a>. The next validation work should open new PRs only when a focused scenario wave, evidence ingestion fix, or product defect fix is ready for review.</td>
+            <td data-label="PR" colspan="4">No open pull requests remain after merging <a href="https://github.com/pablof7z/podcast-player/pull/742">#742</a> and <a href="https://github.com/pablof7z/podcast-player/pull/744">#744</a>. The next validation work should open new PRs only when a focused scenario wave, evidence ingestion fix, or product defect fix is ready for review.</td>
           </tr>
         </tbody>
       </table>
@@ -64,6 +64,16 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td data-label="Item"><a href="https://github.com/pablof7z/podcast-player/pull/744">#744</a> FND-001 onboarding evidence</td>
+            <td data-label="Status"><span class="badge badge-pass">merged to main</span></td>
+            <td data-label="Follow-Up"><a href="../scenarios/fnd-001/">FND-001</a> now has a real first-run screenshot, UI tree, logs, a fail verdict, and linked defect <a href="https://github.com/pablof7z/podcast-player/issues/743">#743</a> for hidden main-shell controls exposed behind onboarding.</td>
+          </tr>
+          <tr>
+            <td data-label="Item"><a href="https://github.com/pablof7z/podcast-player/pull/742">#742</a> NMP architecture scan report</td>
+            <td data-label="Status"><span class="badge badge-pass">merged to main</span></td>
+            <td data-label="Follow-Up">The generated report now includes an <a href="../architecture-scan/">NMP Architecture Scan</a> page with 735 findings, 46 hard errors, and D8/D3 burn-down links to <a href="https://github.com/pablof7z/podcast-player/issues/740">#740</a> and <a href="https://github.com/pablof7z/podcast-player/issues/741">#741</a>.</td>
+          </tr>
           <tr>
             <td data-label="Item"><a href="https://github.com/pablof7z/podcast-player/pull/739">#739</a> Next-wave validation manifest</td>
             <td data-label="Status"><span class="badge badge-pass">merged to main</span></td>
@@ -135,8 +145,8 @@
 
     <section id="site-evidence">
       <h2>Published Evidence Status</h2>
-      <p>The live site now exposes 320 per-scenario pages, a screenshot gallery, launch-readiness sections, missing-evidence placeholders, provider cassette links, issue-backed blockers on every generated scenario page, and the first 8-scenario next execution wave. The evidence count remains intentionally strict: only 4 of 320 scenario records currently have screenshot evidence. The remaining scenarios stay incomplete until real runs attach screenshots, logs, metrics, UI trees, accessibility checks, and skill-grounded UI/UX critique.</p>
-      <p>Latest audit: 320/320 scenario pages still lack accessibility audit artifacts, 191 lack metric traces, and provider cassette coverage is now mapped to 11 generated scenario refs with 0 unmapped refs. Tracking issues are <a href="https://github.com/pablof7z/podcast-player/issues/730">#730</a>, <a href="https://github.com/pablof7z/podcast-player/issues/731">#731</a>, <a href="https://github.com/pablof7z/podcast-player/issues/732">#732</a>, and <a href="https://github.com/pablof7z/podcast-player/issues/733">#733</a>. See <a href="../data/audit-gaps.json">raw audit gap JSON</a>.</p>
+      <p>The live site now exposes 320 per-scenario pages, a screenshot gallery, launch-readiness sections, missing-evidence placeholders, provider cassette links, issue-backed blockers on every generated scenario page, the first 8-scenario next execution wave, and an NMP architecture scan. The evidence count remains intentionally strict: only 5 scenario records currently have screenshot evidence. The remaining scenarios stay incomplete until real runs attach screenshots, logs, metrics, UI trees, accessibility checks, and skill-grounded UI/UX critique.</p>
+      <p>Latest audit: 320/320 scenario pages still lack accessibility audit artifacts, 191 lack metric traces, provider cassette coverage is mapped to 11 generated scenario refs with 0 unmapped refs, and the NMP scanner reports 46 hard errors across 735 findings. Tracking issues are <a href="https://github.com/pablof7z/podcast-player/issues/730">#730</a>, <a href="https://github.com/pablof7z/podcast-player/issues/731">#731</a>, <a href="https://github.com/pablof7z/podcast-player/issues/732">#732</a>, <a href="https://github.com/pablof7z/podcast-player/issues/733">#733</a>, <a href="https://github.com/pablof7z/podcast-player/issues/740">#740</a>, and <a href="https://github.com/pablof7z/podcast-player/issues/741">#741</a>. See <a href="../data/audit-gaps.json">raw audit gap JSON</a> and <a href="../data/architecture-scan.json">architecture scan JSON</a>.</p>
     </section>
   </main>
 </body>

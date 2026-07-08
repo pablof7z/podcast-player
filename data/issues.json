@@ -1,68 +1,22 @@
 {
   "counts": {
-    "open": 1369
+    "open": 1480
   },
   "issues": [
     {
       "affected_dimensions": [
-        "artifacts",
-        "ui_polish",
         "ux_polish",
-        "liquid_glass_ios_primitives"
-      ],
-      "id": "GH-702",
-      "owner": "review-agent",
-      "scenario_id": "FND-001",
-      "scenario_slug": "fnd-001",
-      "severity": "major",
-      "status": "open",
-      "title": "Populate gh-pages report with screenshot-level UX critique",
-      "url": "https://github.com/pablof7z/podcast-player/issues/702"
-    },
-    {
-      "affected_dimensions": [
         "accessibility_dynamic_type",
-        "touch_ergonomics",
-        "device_os_matrix"
+        "navigation_state_restoration"
       ],
-      "id": "GH-730",
-      "owner": "validation-agent",
+      "id": "#743",
+      "owner": "app-team",
       "scenario_id": "FND-001",
       "scenario_slug": "fnd-001",
       "severity": "major",
       "status": "open",
-      "title": "Add accessibility audit evidence for every scenario cluster",
-      "url": "https://github.com/pablof7z/podcast-player/issues/730"
-    },
-    {
-      "affected_dimensions": [
-        "evidence_provenance",
-        "revalidation_status",
-        "observability"
-      ],
-      "id": "GH-733",
-      "owner": "validation-agent",
-      "scenario_id": "FND-001",
-      "scenario_slug": "fnd-001",
-      "severity": "major",
-      "status": "open",
-      "title": "Automate xcresult evidence ingestion into scenario report overlays",
-      "url": "https://github.com/pablof7z/podcast-player/issues/733"
-    },
-    {
-      "affected_dimensions": [
-        "performance",
-        "reliability_flakiness",
-        "readiness_gates"
-      ],
-      "id": "GH-700",
-      "owner": "performance-agent",
-      "scenario_id": "FND-001",
-      "scenario_slug": "fnd-001",
-      "severity": "major",
-      "status": "open",
-      "title": "Publish per-scenario performance metrics in the Pod0 validation report",
-      "url": "https://github.com/pablof7z/podcast-player/issues/700"
+      "title": "FND-001: first onboarding page exposes hidden main-shell controls in UI tree",
+      "url": "https://github.com/pablof7z/podcast-player/issues/743"
     },
     {
       "affected_dimensions": [
@@ -308,6 +262,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "FND-005",
+      "scenario_slug": "fnd-005",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -663,6 +632,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "FND-011",
+      "scenario_slug": "fnd-011",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -844,6 +828,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "FND-014",
+      "scenario_slug": "fnd-014",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -1306,6 +1305,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "ID-007",
+      "scenario_slug": "id-007",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -1489,6 +1503,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "ID-010",
+      "scenario_slug": "id-010",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -1642,6 +1671,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "ID-013",
+      "scenario_slug": "id-013",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -1700,6 +1744,21 @@
       "status": "open",
       "title": "Normalize provider cassette IDs and fill cassette evidence gaps",
       "url": "https://github.com/pablof7z/podcast-player/issues/731"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "ID-014",
+      "scenario_slug": "id-014",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -2036,6 +2095,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "DISC-003",
+      "scenario_slug": "disc-003",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -2359,6 +2433,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "DISC-008",
+      "scenario_slug": "disc-008",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -2417,6 +2506,21 @@
       "status": "open",
       "title": "Publish per-scenario performance metrics in the Pod0 validation report",
       "url": "https://github.com/pablof7z/podcast-player/issues/700"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "DISC-009",
+      "scenario_slug": "disc-009",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -2494,6 +2598,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "DISC-010",
+      "scenario_slug": "disc-010",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -3245,6 +3364,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "LIB-006",
+      "scenario_slug": "lib-006",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -3853,6 +3987,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "LIB-016",
+      "scenario_slug": "lib-016",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -4604,6 +4753,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "PLAY-013",
+      "scenario_slug": "play-013",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -5121,6 +5285,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "QD-006",
+      "scenario_slug": "qd-006",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -5216,6 +5395,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "QD-007",
+      "scenario_slug": "qd-007",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -5336,6 +5530,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "QD-009",
+      "scenario_slug": "qd-009",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -5584,6 +5793,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "QD-013",
+      "scenario_slug": "qd-013",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -5658,6 +5882,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "QD-014",
+      "scenario_slug": "qd-014",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -6469,6 +6708,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "TR-010",
+      "scenario_slug": "tr-010",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -6607,6 +6861,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "TR-012",
+      "scenario_slug": "tr-012",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -6730,6 +6999,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "TR-014",
+      "scenario_slug": "tr-014",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -6804,6 +7088,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "TR-015",
+      "scenario_slug": "tr-015",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -7463,6 +7762,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "CLIP-010",
+      "scenario_slug": "clip-010",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -7536,6 +7850,21 @@
       "status": "open",
       "title": "Re-pin Pod0 past NMP publish/action-lifecycle fixes and expose terminal publish state",
       "url": "https://github.com/pablof7z/podcast-player/issues/707"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "CLIP-011",
+      "scenario_slug": "clip-011",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -8440,6 +8769,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "AG-010",
+      "scenario_slug": "ag-010",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -8532,6 +8876,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "AG-011",
+      "scenario_slug": "ag-011",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -8758,6 +9117,21 @@
       "status": "open",
       "title": "Automate xcresult evidence ingestion into scenario report overlays",
       "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "AG-015",
+      "scenario_slug": "ag-015",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -11123,6 +11497,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "WIKI-015",
+      "scenario_slug": "wiki-015",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -11197,6 +11586,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "WIKI-016",
+      "scenario_slug": "wiki-016",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -11537,6 +11941,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "VOICE-004",
+      "scenario_slug": "voice-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -11705,6 +12124,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "VOICE-006",
+      "scenario_slug": "voice-006",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -11779,6 +12213,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "VOICE-007",
+      "scenario_slug": "voice-007",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -11947,6 +12396,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "VOICE-009",
+      "scenario_slug": "voice-009",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -12469,6 +12933,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "VOICE-017",
+      "scenario_slug": "voice-017",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -12621,6 +13100,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-001",
+      "scenario_slug": "nostr-001",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -12679,6 +13173,21 @@
       "status": "open",
       "title": "Re-pin Pod0 past NMP publish/action-lifecycle fixes and expose terminal publish state",
       "url": "https://github.com/pablof7z/podcast-player/issues/707"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-002",
+      "scenario_slug": "nostr-002",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -12758,6 +13267,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-003",
+      "scenario_slug": "nostr-003",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -12816,6 +13340,21 @@
       "status": "open",
       "title": "Re-pin Pod0 past NMP publish/action-lifecycle fixes and expose terminal publish state",
       "url": "https://github.com/pablof7z/podcast-player/issues/707"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-004",
+      "scenario_slug": "nostr-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -12910,6 +13449,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-005",
+      "scenario_slug": "nostr-005",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -12986,6 +13540,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-006",
+      "scenario_slug": "nostr-006",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13062,6 +13631,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-007",
+      "scenario_slug": "nostr-007",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13138,6 +13722,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-008",
+      "scenario_slug": "nostr-008",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13214,6 +13813,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-009",
+      "scenario_slug": "nostr-009",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13275,6 +13889,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-010",
+      "scenario_slug": "nostr-010",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13333,6 +13962,21 @@
       "status": "open",
       "title": "Re-pin Pod0 past NMP publish/action-lifecycle fixes and expose terminal publish state",
       "url": "https://github.com/pablof7z/podcast-player/issues/707"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-011",
+      "scenario_slug": "nostr-011",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -13412,6 +14056,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-012",
+      "scenario_slug": "nostr-012",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13470,6 +14129,21 @@
       "status": "open",
       "title": "Re-pin Pod0 past NMP publish/action-lifecycle fixes and expose terminal publish state",
       "url": "https://github.com/pablof7z/podcast-player/issues/707"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-013",
+      "scenario_slug": "nostr-013",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -13534,6 +14208,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-014",
+      "scenario_slug": "nostr-014",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13595,6 +14284,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-015",
+      "scenario_slug": "nostr-015",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13653,6 +14357,21 @@
       "status": "open",
       "title": "Re-pin Pod0 past NMP publish/action-lifecycle fixes and expose terminal publish state",
       "url": "https://github.com/pablof7z/podcast-player/issues/707"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NOSTR-016",
+      "scenario_slug": "nostr-016",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -13732,6 +14451,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-001",
+      "scenario_slug": "soc-001",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13775,6 +14509,21 @@
       "status": "open",
       "title": "Automate xcresult evidence ingestion into scenario report overlays",
       "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-002",
+      "scenario_slug": "soc-002",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -13839,6 +14588,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-003",
+      "scenario_slug": "soc-003",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13900,6 +14664,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-004",
+      "scenario_slug": "soc-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -13958,6 +14737,21 @@
       "status": "open",
       "title": "Publish per-scenario performance metrics in the Pod0 validation report",
       "url": "https://github.com/pablof7z/podcast-player/issues/700"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-005",
+      "scenario_slug": "soc-005",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -14007,6 +14801,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-006",
+      "scenario_slug": "soc-006",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -14050,6 +14859,21 @@
       "status": "open",
       "title": "Automate xcresult evidence ingestion into scenario report overlays",
       "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-007",
+      "scenario_slug": "soc-007",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -14111,6 +14935,21 @@
       "status": "open",
       "title": "Publish per-scenario performance metrics in the Pod0 validation report",
       "url": "https://github.com/pablof7z/podcast-player/issues/700"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-008",
+      "scenario_slug": "soc-008",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -14175,6 +15014,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-009",
+      "scenario_slug": "soc-009",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -14236,6 +15090,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-010",
+      "scenario_slug": "soc-010",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -14282,6 +15151,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-011",
+      "scenario_slug": "soc-011",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -14325,6 +15209,21 @@
       "status": "open",
       "title": "Automate xcresult evidence ingestion into scenario report overlays",
       "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-012",
+      "scenario_slug": "soc-012",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -14404,6 +15303,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-013",
+      "scenario_slug": "soc-013",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -14447,6 +15361,21 @@
       "status": "open",
       "title": "Automate xcresult evidence ingestion into scenario report overlays",
       "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-014",
+      "scenario_slug": "soc-014",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -14511,6 +15440,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-015",
+      "scenario_slug": "soc-015",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -14569,6 +15513,21 @@
       "status": "open",
       "title": "Publish per-scenario performance metrics in the Pod0 validation report",
       "url": "https://github.com/pablof7z/podcast-player/issues/700"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SOC-016",
+      "scenario_slug": "soc-016",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -15123,6 +16082,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "SET-011",
+      "scenario_slug": "set-011",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -15322,6 +16296,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "SET-014",
+      "scenario_slug": "set-014",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -15903,6 +16892,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "XPLAT-008",
+      "scenario_slug": "xplat-008",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -15980,6 +16984,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "XPLAT-009",
+      "scenario_slug": "xplat-009",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -16054,6 +17073,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "XPLAT-010",
+      "scenario_slug": "xplat-010",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -16226,6 +17260,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "XPLAT-013",
+      "scenario_slug": "xplat-013",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -16380,6 +17429,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "XPLAT-016",
+      "scenario_slug": "xplat-016",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -16472,6 +17536,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "CHIRP-001",
+      "scenario_slug": "chirp-001",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -16640,6 +17719,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "CHIRP-003",
+      "scenario_slug": "chirp-003",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -16729,6 +17823,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "CHIRP-004",
+      "scenario_slug": "chirp-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -16839,6 +17948,36 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "CHIRP-005",
+      "scenario_slug": "chirp-005",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "CHIRP-005",
+      "scenario_slug": "chirp-005",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -17068,6 +18207,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "CHIRP-008",
+      "scenario_slug": "chirp-008",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -17126,6 +18280,21 @@
       "status": "open",
       "title": "Audit Pod0 against latest NMP and chirp-shipped fixes",
       "url": "https://github.com/pablof7z/podcast-player/issues/704"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-001",
+      "scenario_slug": "nmpm-001",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -17202,6 +18371,21 @@
       "status": "open",
       "title": "Audit Pod0 against latest NMP and chirp-shipped fixes",
       "url": "https://github.com/pablof7z/podcast-player/issues/704"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-002",
+      "scenario_slug": "nmpm-002",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -17297,6 +18481,36 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-003",
+      "scenario_slug": "nmpm-003",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-003",
+      "scenario_slug": "nmpm-003",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -17386,6 +18600,36 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-004",
+      "scenario_slug": "nmpm-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-004",
+      "scenario_slug": "nmpm-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -17465,6 +18709,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-005",
+      "scenario_slug": "nmpm-005",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -17526,6 +18785,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-006",
+      "scenario_slug": "nmpm-006",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -17584,6 +18858,21 @@
       "status": "open",
       "title": "Audit Pod0 against latest NMP and chirp-shipped fixes",
       "url": "https://github.com/pablof7z/podcast-player/issues/704"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-007",
+      "scenario_slug": "nmpm-007",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -17663,6 +18952,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NMPM-008",
+      "scenario_slug": "nmpm-008",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -17937,6 +19241,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "NIP05-003",
+      "scenario_slug": "nip05-003",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -18135,6 +19454,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "NIP05-005",
+      "scenario_slug": "nip05-005",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -18208,6 +19542,21 @@
       "status": "open",
       "title": "Adopt NMP pollable NIP-05 lookup state for Add Show/Add Friend",
       "url": "https://github.com/pablof7z/podcast-player/issues/708"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "NIP05-006",
+      "scenario_slug": "nip05-006",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -18896,6 +20245,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "PROJ-007",
+      "scenario_slug": "proj-007",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -19045,6 +20409,21 @@
       "status": "open",
       "title": "Audit Pod0 against latest NMP and chirp-shipped fixes",
       "url": "https://github.com/pablof7z/podcast-player/issues/704"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-001",
+      "scenario_slug": "offline-001",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -19155,6 +20534,36 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-002",
+      "scenario_slug": "offline-002",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-002",
+      "scenario_slug": "offline-002",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -19213,6 +20622,21 @@
       "status": "open",
       "title": "Audit Pod0 against latest NMP and chirp-shipped fixes",
       "url": "https://github.com/pablof7z/podcast-player/issues/704"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-003",
+      "scenario_slug": "offline-003",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -19308,6 +20732,36 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-004",
+      "scenario_slug": "offline-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-004",
+      "scenario_slug": "offline-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -19366,6 +20820,21 @@
       "status": "open",
       "title": "Audit Pod0 against latest NMP and chirp-shipped fixes",
       "url": "https://github.com/pablof7z/podcast-player/issues/704"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-005",
+      "scenario_slug": "offline-005",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -19442,6 +20911,21 @@
       "status": "open",
       "title": "Audit Pod0 against latest NMP and chirp-shipped fixes",
       "url": "https://github.com/pablof7z/podcast-player/issues/704"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-006",
+      "scenario_slug": "offline-006",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     },
     {
       "affected_dimensions": [
@@ -19521,6 +21005,21 @@
     },
     {
       "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-007",
+      "scenario_slug": "offline-007",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -19628,6 +21127,36 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-008",
+      "scenario_slug": "offline-008",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "scenario_id": "OFFLINE-008",
+      "scenario_slug": "offline-008",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -19915,6 +21444,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "VIS-004",
+      "scenario_slug": "vis-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -20269,6 +21813,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "D8-001",
+      "scenario_slug": "d8-001",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -20361,6 +21920,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "D8-002",
+      "scenario_slug": "d8-002",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -20453,6 +22027,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "D8-003",
+      "scenario_slug": "d8-003",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -20545,6 +22134,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "D8-004",
+      "scenario_slug": "d8-004",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -20634,6 +22238,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "D8-005",
+      "scenario_slug": "d8-005",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     },
     {
       "affected_dimensions": [
@@ -20744,6 +22363,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "D8-006",
+      "scenario_slug": "d8-006",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -20836,6 +22470,21 @@
     },
     {
       "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "D8-007",
+      "scenario_slug": "d8-007",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
+    },
+    {
+      "affected_dimensions": [
         "artifacts",
         "ui_polish",
         "ux_polish",
@@ -20910,6 +22559,21 @@
       "status": "open",
       "title": "Remove Task.sleep polling paths from haptics, press feedback, and CarPlay startup",
       "url": "https://github.com/pablof7z/podcast-player/issues/734"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "nmp_architecture",
+        "reliability_flakiness"
+      ],
+      "id": "GH-740",
+      "owner": "architecture-agent",
+      "scenario_id": "D8-008",
+      "scenario_slug": "d8-008",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Burn down all D8 no-polling scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/740"
     }
   ]
 }

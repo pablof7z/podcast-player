@@ -935,8 +935,8 @@
   ],
   "page": {
     "assets_base": "assets/scenarios/play-001/",
-    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/play-001/",
-    "generated_at": "2026-07-07T22:55:51Z",
+    "canonical_url": "/podcast-player/scenarios/play-001/",
+    "generated_at": "2026-07-08T00:55:02Z",
     "navigation": {
       "category_url": "../playback/",
       "next_url": "../play-002/",
@@ -1382,7 +1382,7 @@
       "PLAY-005"
     ],
     "slug": "play-001",
-    "source_path": "docs/testing/scenarios/catalog/02-playback-downloads-transcripts-clips.md:7",
+    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/02-playback-downloads-transcripts-clips.md:7",
     "tags": [
       "catalog-scaffold",
       "d7",

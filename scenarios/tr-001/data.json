@@ -650,14 +650,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-07T22:55:51Z",
+        "completed_at": "2026-07-08T00:55:02Z",
         "evidence_refs": [
           "catalog:tr-001"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-07T22:55:51Z",
+        "started_at": "2026-07-08T00:55:02Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -1070,8 +1070,8 @@
   ],
   "page": {
     "assets_base": "assets/scenarios/tr-001/",
-    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/tr-001/",
-    "generated_at": "2026-07-07T22:55:51Z",
+    "canonical_url": "/podcast-player/scenarios/tr-001/",
+    "generated_at": "2026-07-08T00:55:02Z",
     "navigation": {
       "category_url": "../transcripts/",
       "next_url": "../tr-002/",
@@ -1488,7 +1488,7 @@
         "redaction_hash": "pending-redaction-hash"
       }
     ],
-    "completed_at": "2026-07-07T22:55:51Z",
+    "completed_at": "2026-07-08T00:55:02Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1509,9 +1509,9 @@
     "generator_version": "scenario-report-generator/0.4.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "blocked",
-    "run_id": "catalog-scaffold-20260707T225551Z-tr-001",
-    "source_commit": "7098b7d9ec69f121fc3bd4024cd1813ef01a3eca",
-    "started_at": "2026-07-07T22:55:51Z"
+    "run_id": "catalog-scaffold-20260708T005502Z-tr-001",
+    "source_commit": "c7f5e79342f836e29597a727b4dece73c486a2d7",
+    "started_at": "2026-07-08T00:55:02Z"
   },
   "scenario": {
     "bdd": {
@@ -1537,7 +1537,7 @@
       "TR-005"
     ],
     "slug": "tr-001",
-    "source_path": "docs/testing/scenarios/catalog/02-playback-downloads-transcripts-clips.md:49",
+    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/02-playback-downloads-transcripts-clips.md:49",
     "tags": [
       "cassette-required",
       "catalog-scaffold",

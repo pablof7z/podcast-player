@@ -25,30 +25,40 @@
         "cross-flow state continuity"
       ],
       "evidence_refs": [
-        "catalog:fnd-001",
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog",
+        "fnd001-ui-tree",
         "rubric:review-skill-grounding"
       ],
       "gaps": [
         "Review adjacent scenario pages as a cluster before promoting group coherence."
       ],
       "status": "incomplete",
-      "summary": "Group-level coherence for Foundation And First Run is unproven until adjacent scenarios are reviewed together."
+      "summary": "Foundation And First Run cluster coherence remains incomplete until adjacent scenarios are judged together; FND-001 now contributes current evidence and linked defects to that group view."
     },
     "individual_judgment": {
       "checks": [
-        "scenario-level UI polish",
-        "scenario-level UX polish",
-        "scenario-level performance/accessibility evidence",
+        "observed scenario-level UI polish",
+        "observed scenario-level UX polish",
+        "observed performance/accessibility evidence",
         "scenario-level product fit"
       ],
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog",
+        "fnd001-ui-tree",
+        "rubric:review-skill-grounding"
       ],
       "gaps": [
-        "Attach observed behavior before making an individual product-coherence judgment."
+        "metric_trace",
+        "accessibility_audit"
       ],
-      "status": "incomplete",
-      "summary": "FND-001 has not been judged in isolation because observed product behavior is missing."
+      "status": "fail",
+      "summary": "FND-001 has current run evidence and currently fails its scenario-level product job; linked defects and revalidation remain required."
     },
     "themes": [
       "Does the flow preserve the same product mental model as adjacent scenarios?",
@@ -59,19 +69,25 @@
   "dimension_scores": {
     "accessibility_dynamic_type": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "fnd001-ui-tree"
       ],
-      "rationale": "Accessibility And Dynamic Type has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#743"
+      ],
+      "rationale": "Hidden main-shell controls remain in the accessibility/automation tree behind onboarding.",
+      "score": 1,
+      "status": "fail"
     },
     "actual_result": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-ui-tree"
       ],
-      "rationale": "Actual Result has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#743"
+      ],
+      "rationale": "The first page appears visually, but the semantic gate fails because hidden main-shell controls are present in the UI tree.",
+      "score": 1,
+      "status": "fail"
     },
     "analytics_privacy_boundaries": {
       "evidence_refs": [
@@ -83,12 +99,13 @@
     },
     "artifacts": {
       "evidence_refs": [
-        "catalog:fnd-001",
-        "rubric:review-skill-grounding"
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-ui-tree",
+        "fnd001-build-run-tail"
       ],
-      "rationale": "Artifacts, Screenshots, Video has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Screenshot, UI tree, build/log references are attached; launch metric and full accessibility audit are missing.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "attempted_test": {
       "evidence_refs": [
@@ -140,11 +157,14 @@
     },
     "defects_issues_filed": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-ui-tree"
       ],
-      "rationale": "Defects And Issues Filed has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#743"
+      ],
+      "rationale": "The actionable FND-001 defect is filed as #743 with evidence paths.",
+      "score": 4,
+      "status": "pass"
     },
     "device_os_matrix": {
       "evidence_refs": [
@@ -172,11 +192,13 @@
     },
     "evidence_confidence": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-ui-tree",
+        "fnd001-build-run-tail"
       ],
-      "rationale": "Evidence Confidence has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Artifacts are current and tied to source commit/device/tooling; timing evidence remains blocked.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "evidence_provenance": {
       "evidence_refs": [
@@ -230,11 +252,11 @@
     },
     "liquid_glass_ios_primitives": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "fnd001-first-onboarding-screenshot"
       ],
-      "rationale": "Liquid Glass And iOS Primitives has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "Visible glass-like chrome is restrained and readable in light mode; Reduce Transparency and dark mode were not audited.",
+      "score": 2,
+      "status": "pass_with_issues"
     },
     "localization_content_quality": {
       "evidence_refs": [
@@ -312,11 +334,12 @@
     },
     "performance": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-build-run-tail",
+        "fnd001-launch-console-log"
       ],
-      "rationale": "Performance Metrics has not been validated with current run evidence.",
+      "rationale": "The required cold-launch metric was not captured because the MCP build/run call timed out at 300s.",
       "score": 0,
-      "status": "incomplete"
+      "status": "blocked"
     },
     "persona_acceptance": {
       "evidence_refs": [
@@ -442,28 +465,37 @@
     },
     "ui_polish": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-ui-tree"
       ],
-      "rationale": "UI Polish Report has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#743"
+      ],
+      "rationale": "Visible first page is visually coherent in light mode, but hidden shell semantics block a clean UI pass.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "ux_polish": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "fnd001-ui-tree"
       ],
-      "rationale": "UX Polish Report has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#743"
+      ],
+      "rationale": "A first-run gate cannot expose underlying app actions to automation/accessibility before onboarding completion.",
+      "score": 1,
+      "status": "fail"
     },
     "verdict": {
       "evidence_refs": [
-        "catalog:fnd-001",
-        "rubric:review-skill-grounding"
+        "fnd001-ui-tree"
       ],
-      "rationale": "Verdict has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "issue_refs": [
+        "#743"
+      ],
+      "rationale": "FND-001 cannot pass while the semantic UI tree exposes hidden main-shell controls.",
+      "score": 1,
+      "status": "fail"
     }
   },
   "evidence": {
@@ -487,95 +519,105 @@
         },
         "required": true,
         "type": "source_doc"
+      },
+      {
+        "alt": "Pod0 first onboarding screen with headline, subtitle, three feature chips, page dots, and Get Started button.",
+        "caption": "Visible first-run onboarding page is present and visually clean.",
+        "captured_at": "2026-07-07T23:12:00Z",
+        "description": "Fresh-install first onboarding page before tapping any visible primary action.",
+        "device": "iPhone 17",
+        "height": 800,
+        "id": "fnd001-first-onboarding-screenshot",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/fnd-001-first-run-gate/20260707T231200Z-first-onboarding.jpg",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "9ba4d800332f382cfa9f08de96f2905c2859228090792cb2c0dc3e3eefc4ecd0",
+        "step_id": "step-02-action",
+        "type": "screenshot",
+        "width": 368
+      },
+      {
+        "captured_at": "2026-07-07T23:12:00Z",
+        "description": "XcodeBuildMCP semantic UI-tree excerpt showing onboarding controls plus hidden main-shell targets.",
+        "device": "iPhone 17",
+        "id": "fnd001-ui-tree",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/fnd-001-first-run-gate/20260707T231200Z-ui-tree-excerpt.json",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "45194e24b3427fadca41ca6f4bb5b92778f97d7cb11bf24a748ded0ec3fdf83d",
+        "step_id": "step-03-result",
+        "type": "ui_tree"
+      },
+      {
+        "captured_at": "2026-07-07T23:11:56Z",
+        "description": "Tail of the XcodeBuildMCP build/run log proving the retry build succeeded after Tuist and Rust prerequisites.",
+        "device": "iPhone 17",
+        "id": "fnd001-build-run-tail",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/fnd-001-first-run-gate/20260707T230655Z-build-run-tail.log",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "a184a0afcf211e7c9be623f1d0ba3fe868327738a39830543bf750c016301f2b",
+        "type": "log"
+      },
+      {
+        "captured_at": "2026-07-07T23:09:58Z",
+        "description": "XcodeBuildMCP launch console log for io.f7z.podcast on the dedicated simulator.",
+        "device": "iPhone 17",
+        "id": "fnd001-launch-console-log",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/fnd-001-first-run-gate/20260707T230958Z-launch-console.log",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "sha256": "2e1ee26d5f214fe33c14ae6b30e931fe5a6c4e3262aef1bacd32925ce4b31248",
+        "type": "log"
+      },
+      {
+        "captured_at": "2026-07-07T23:11:56Z",
+        "description": "Runtime OSLog stream captured by XcodeBuildMCP for the fresh-install run.",
+        "device": "iPhone 17",
+        "id": "fnd001-runtime-oslog",
+        "os_version": "iOS 26.2",
+        "path": "assets/scenarios/fnd-001-first-run-gate/20260707T231156Z-runtime-oslog.log",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": false,
+        "sha256": "23f652fe03dcbdfea96fdc2bbb9da66f25b21876b1bded3c16d423c3e52d6c3d",
+        "type": "log"
       }
     ],
     "missing": [
       {
         "blocks_dimensions": [
-          "accessibility_dynamic_type",
-          "touch_ergonomics"
-        ],
-        "kind": "accessibility_audit",
-        "reason": "Apple HIG evidence is required before accessibility can pass.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "attempted_test",
-          "execution_attempts"
-        ],
-        "kind": "command_output",
-        "reason": "Attempt commands or manual/tool notes are required for reproducibility.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "observability",
-          "reliability_flakiness"
-        ],
-        "kind": "log",
-        "reason": "Failures and state transitions need diagnostic context.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
           "performance"
         ],
         "kind": "metric_trace",
-        "reason": "Catalog performance requirement is unmeasured: cold launch metric.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "actual_result",
-          "ui_polish",
-          "content_hierarchy"
-        ],
-        "kind": "screenshot",
-        "reason": "Every meaningful user-visible step needs a screenshot.",
+        "reason": "Cold launch to first onboarding frame is not measured.",
         "required": true
       },
       {
         "blocks_dimensions": [
           "accessibility_dynamic_type",
-          "information_architecture"
+          "touch_ergonomics",
+          "liquid_glass_ios_primitives"
         ],
-        "kind": "ui_tree",
-        "reason": "Accessibility labels, hierarchy, and Dynamic Type behavior need UI-tree evidence.",
+        "kind": "accessibility_audit",
+        "reason": "VoiceOver, Dynamic Type, contrast, Reduce Motion, and Reduce Transparency were not audited.",
         "required": true
       }
     ],
     "placeholders": [
-      {
-        "blocks_dimensions": [
-          "accessibility_dynamic_type",
-          "touch_ergonomics"
-        ],
-        "id": "placeholder:accessibility_audit",
-        "kind": "accessibility_audit",
-        "message": "Missing required accessibility audit evidence is blocking this report area.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "attempted_test",
-          "execution_attempts"
-        ],
-        "id": "placeholder:command_output",
-        "kind": "command_output",
-        "message": "Missing required command output evidence is blocking this report area.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
-          "observability",
-          "reliability_flakiness"
-        ],
-        "id": "placeholder:log",
-        "kind": "log",
-        "message": "Missing required log evidence is blocking this report area.",
-        "required": true
-      },
       {
         "blocks_dimensions": [
           "performance"
@@ -587,73 +629,79 @@
       },
       {
         "blocks_dimensions": [
-          "actual_result",
-          "ui_polish",
-          "content_hierarchy"
-        ],
-        "id": "placeholder:screenshot",
-        "kind": "screenshot",
-        "message": "Missing required screenshot evidence is blocking this report area.",
-        "required": true
-      },
-      {
-        "blocks_dimensions": [
           "accessibility_dynamic_type",
-          "information_architecture"
+          "touch_ergonomics",
+          "liquid_glass_ios_primitives"
         ],
-        "id": "placeholder:ui_tree",
-        "kind": "ui_tree",
-        "message": "Missing required ui tree evidence is blocking this report area.",
+        "id": "placeholder:accessibility_audit",
+        "kind": "accessibility_audit",
+        "message": "Missing required accessibility audit evidence is blocking this report area.",
         "required": true
       }
     ],
-    "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
+    "redaction_summary": "Fresh-install screenshots, UI tree, and logs contain no private account, key, provider token, feed, transcript, or audio material.",
     "required_kinds": [
-      "accessibility_audit",
-      "command_output",
+      "source_doc",
+      "screenshot",
+      "ui_tree",
       "log",
       "metric_trace",
-      "screenshot",
-      "source_doc",
-      "ui_tree"
+      "accessibility_audit"
     ]
   },
   "execution": {
     "attempts": [
       {
-        "branches": [
-          {
-            "expected": "onboarding page 1 appears and no main-tab state is reachable behind it",
-            "id": "happy-path",
-            "status": "not_run",
-            "trigger": "Pod0 launches"
-          }
+        "commands": [
+          "build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=[]"
         ],
-        "commands": [],
-        "completed_at": "2026-07-07T22:55:51Z",
-        "evidence_refs": [
-          "catalog:fnd-001"
-        ],
-        "executor": "validation-agent",
+        "completed_at": "2026-07-07T23:04:27Z",
+        "executor": "Codex via XcodeBuildMCP",
         "id": "attempt-001",
-        "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-07T22:55:51Z",
-        "status": "not_run",
+        "notes": "Initial build failed because Derived/Sources/TuistAssets+Podcastr.swift and TuistBundle+Podcastr.swift were missing in the fresh worktree.",
+        "started_at": "2026-07-07T23:04:03Z",
+        "status": "blocked",
         "tools": [
-          "not-run"
+          "mcp__xcode.build_run_sim"
+        ]
+      },
+      {
+        "commands": [
+          "tuist generate --no-open",
+          "cargo build --target aarch64-apple-ios-sim -p nmp-app-podcast",
+          "build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=[]"
+        ],
+        "completed_at": "2026-07-07T23:12:00Z",
+        "executor": "Codex via XcodeBuildMCP",
+        "id": "attempt-002",
+        "notes": "The second build/run hit the MCP 300s timeout, but the app installed and launched. Screenshot showed onboarding; UI tree exposed hidden main-shell controls behind onboarding. Hidden Settings tap probe returned SUCCEEDED but did not navigate.",
+        "started_at": "2026-07-07T23:06:55Z",
+        "status": "fail",
+        "tools": [
+          "mcp__xcode.build_run_sim",
+          "mcp__xcode.wait_for_ui",
+          "mcp__xcode.snapshot_ui",
+          "mcp__xcode.screenshot",
+          "mcp__xcode.tap"
         ]
       }
     ],
     "branch_coverage": [
       {
-        "expected": "onboarding page 1 appears and no main-tab state is reachable behind it",
-        "id": "happy-path",
-        "status": "not_run",
-        "trigger": "Pod0 launches"
+        "expected": "First onboarding page appears before primary action.",
+        "id": "fresh-install-first-page",
+        "status": "pass",
+        "trigger": "Erase dedicated simulator and launch without --UITestSeed."
+      },
+      {
+        "expected": "No main-shell controls are exposed behind onboarding.",
+        "id": "main-shell-hidden-from-ui-tree",
+        "status": "fail",
+        "trigger": "Capture semantic UI tree on first onboarding page."
       }
     ],
-    "retry_policy": "Record every retry as a separate attempt with cause, changed fixture/state, and whether the retry invalidates earlier evidence.",
-    "status": "not_run"
+    "retry_policy": "Fix #743, then re-run FND-001 from an erased simulator and capture launch metric, screenshot, UI tree, and logs.",
+    "status": "fail"
   },
   "flow_steps": [
     {
@@ -809,216 +857,114 @@
   "instrumentation_gaps": [
     {
       "affected_dimensions": [
-        "artifacts",
-        "ui_polish",
-        "actual_result"
+        "performance",
+        "observability"
       ],
-      "id": "screenshots",
+      "id": "fnd001-cold-launch-metric-missing",
       "owner": "validation-agent",
       "severity": "major",
       "status": "open",
-      "summary": "No step-by-step screenshots are attached."
+      "summary": "No defensible launch-to-first-frame metric was captured due to MCP build_run_sim timeout."
     },
     {
       "affected_dimensions": [
         "accessibility_dynamic_type",
-        "actual_result"
-      ],
-      "id": "ui-tree",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No accessibility/UI tree snapshot is attached."
-    },
-    {
-      "affected_dimensions": [
-        "observability",
-        "reliability_flakiness"
-      ],
-      "id": "logs",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No structured logs or command outputs are attached."
-    },
-    {
-      "affected_dimensions": [
-        "accessibility_dynamic_type",
+        "liquid_glass_ios_primitives",
         "touch_ergonomics"
       ],
-      "id": "accessibility",
+      "id": "fnd001-accessibility-settings-audit-missing",
       "owner": "validation-agent",
       "severity": "major",
       "status": "open",
-      "summary": "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or Reduce Transparency evidence is attached."
-    },
-    {
-      "affected_dimensions": [
-        "data_integrity_state_sync",
-        "actual_result"
-      ],
-      "id": "state-integrity",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "No persistence, projection, or data-integrity evidence is attached."
-    },
-    {
-      "affected_dimensions": [
-        "device_viewport_coverage",
-        "device_os_matrix"
-      ],
-      "id": "viewport-coverage",
-      "owner": "validation-agent",
-      "severity": "minor",
-      "status": "open",
-      "summary": "No generated-page viewport or device coverage evidence is attached."
-    },
-    {
-      "affected_dimensions": [
-        "performance",
-        "reliability_flakiness"
-      ],
-      "id": "performance-metrics",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "summary": "Catalog requires performance evidence, but no trace or metric is attached."
+      "summary": "VoiceOver traversal, Dynamic Type, dark mode, Reduce Motion, and Reduce Transparency were not fully audited."
     }
   ],
   "issues": [
     {
       "affected_dimensions": [
-        "artifacts",
-        "ui_polish",
         "ux_polish",
-        "liquid_glass_ios_primitives"
-      ],
-      "id": "GH-702",
-      "owner": "review-agent",
-      "severity": "major",
-      "status": "open",
-      "title": "Populate gh-pages report with screenshot-level UX critique",
-      "url": "https://github.com/pablof7z/podcast-player/issues/702"
-    },
-    {
-      "affected_dimensions": [
         "accessibility_dynamic_type",
-        "touch_ergonomics",
-        "device_os_matrix"
+        "navigation_state_restoration"
       ],
-      "id": "GH-730",
-      "owner": "validation-agent",
+      "id": "#743",
+      "owner": "app-team",
       "severity": "major",
       "status": "open",
-      "title": "Add accessibility audit evidence for every scenario cluster",
-      "url": "https://github.com/pablof7z/podcast-player/issues/730"
-    },
-    {
-      "affected_dimensions": [
-        "evidence_provenance",
-        "revalidation_status",
-        "observability"
-      ],
-      "id": "GH-733",
-      "owner": "validation-agent",
-      "severity": "major",
-      "status": "open",
-      "title": "Automate xcresult evidence ingestion into scenario report overlays",
-      "url": "https://github.com/pablof7z/podcast-player/issues/733"
-    },
-    {
-      "affected_dimensions": [
-        "performance",
-        "reliability_flakiness",
-        "readiness_gates"
-      ],
-      "id": "GH-700",
-      "owner": "performance-agent",
-      "severity": "major",
-      "status": "open",
-      "title": "Publish per-scenario performance metrics in the Pod0 validation report",
-      "url": "https://github.com/pablof7z/podcast-player/issues/700"
+      "title": "FND-001: first onboarding page exposes hidden main-shell controls in UI tree",
+      "url": "https://github.com/pablof7z/podcast-player/issues/743"
     }
   ],
   "launch_assessment": {
-    "accessibility_status": "incomplete",
+    "accessibility_status": "fail",
     "blocking_gates": [
-      "required_evidence",
-      "skill_grounding",
-      "score_integrity",
       "product_coherence",
-      "defect_tracking",
       "release_readiness"
     ],
-    "dependency_posture": "not_run",
-    "evidence_quality": "incomplete",
-    "individual_judgment": "FND-001 has not been judged in isolation because observed product behavior is missing.",
+    "dependency_posture": "none",
+    "evidence_quality": "pass_with_issues",
+    "individual_judgment": "FND-001 has current run evidence and currently fails its scenario-level product job; linked defects and revalidation remain required.",
     "issue_refs": [
-      "GH-702",
-      "GH-730",
-      "GH-733",
-      "GH-700"
+      "#743"
     ],
-    "launch_readiness": "incomplete",
+    "launch_readiness": "blocked",
     "missing_evidence": [
-      "accessibility_audit",
-      "command_output",
-      "log",
       "metric_trace",
-      "screenshot",
-      "ui_tree"
+      "accessibility_audit"
     ],
-    "product_judgment": "Not launch-ready. The page has a complete review structure, but product judgment remains blocked until current evidence supports individual and whole-product coherence.",
+    "product_judgment": "FND-001 fails the semantic first-run gate: the visible onboarding page appears, but the UI tree exposes hidden main-shell controls behind it.",
     "regression_coverage": "incomplete",
     "risk_classification": "major",
     "scenario_owner": "validation-agent",
-    "scenario_status": "not_run",
-    "whole_product_judgment": "Group-level coherence for Foundation And First Run is unproven until adjacent scenarios are reviewed together."
+    "scenario_status": "fail",
+    "whole_product_judgment": "Foundation And First Run cluster coherence remains incomplete until adjacent scenarios are judged together; FND-001 now contributes current evidence and linked defects to that group view."
   },
-  "metrics": [],
+  "metrics": [
+    {
+      "budget": "Informational",
+      "evidence_refs": [
+        "fnd001-ui-tree"
+      ],
+      "id": "fnd001-ui-tree-node-count",
+      "method": "XcodeBuildMCP snapshot_ui",
+      "name": "First onboarding UI-tree node count",
+      "status": "pass",
+      "unit": "nodes",
+      "value": 112
+    },
+    {
+      "budget": "<= 1500 ms",
+      "evidence_refs": [
+        "fnd001-build-run-tail",
+        "fnd001-launch-console-log"
+      ],
+      "id": "fnd001-cold-launch-first-onboarding-frame-ms",
+      "method": "Required launch timestamp was unavailable because build_run_sim timed out at 300s after the app had built/launched.",
+      "name": "Cold launch to first onboarding frame",
+      "status": "blocked",
+      "unit": "",
+      "value": "not captured"
+    }
+  ],
   "next_actions": [
     {
-      "id": "run-scenario",
+      "id": "fix-fnd001-hidden-main-shell-semantics",
+      "owner": "app-team",
+      "status": "open",
+      "title": "Hide or unmount main-shell accessibility/hit-test targets while onboarding is presented.",
+      "url": "https://github.com/pablof7z/podcast-player/issues/743"
+    },
+    {
+      "id": "rerun-fnd001-after-743",
       "owner": "validation-agent",
-      "status": "open",
-      "title": "Execute FND-001 on the target simulator/device."
-    },
-    {
-      "id": "attach-evidence",
-      "owner": "validation-agent",
-      "status": "open",
-      "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, and redaction metadata."
-    },
-    {
-      "id": "score-dimensions",
-      "owner": "review-agent",
-      "status": "open",
-      "title": "Score every individual and grouped dimension from evidence."
-    },
-    {
-      "id": "file-defects",
-      "owner": "review-agent",
-      "status": "open",
-      "title": "File GitHub issues for every actionable defect before leaving incomplete."
-    },
-    {
-      "id": "revalidate-defects",
-      "owner": "validation-agent",
-      "status": "open",
-      "title": "Re-run this scenario after each fix PR and attach revalidation run IDs."
-    },
-    {
-      "id": "assign-owners",
-      "owner": "review-agent",
-      "status": "open",
-      "title": "Assign owner and status for every blocker, gate, action, defect, and revalidation item."
+      "status": "blocked",
+      "title": "Re-run FND-001 from erased simulator and capture screenshot, UI tree, logs, and cold-launch metric.",
+      "url": "https://github.com/pablof7z/podcast-player/issues/743"
     }
   ],
   "page": {
     "assets_base": "assets/scenarios/fnd-001/",
-    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/fnd-001/",
-    "generated_at": "2026-07-07T22:55:51Z",
+    "canonical_url": "/podcast-player/scenarios/fnd-001/",
+    "generated_at": "2026-07-08T00:55:02Z",
     "navigation": {
       "category_url": "../foundation-and-first-run/",
       "next_url": "../fnd-002/",
@@ -1231,23 +1177,25 @@
   },
   "readiness": {
     "blocking_reasons": [
-      "No current execution evidence is attached.",
-      "Product-quality judgments are scaffolded, not observed.",
-      "Linked validation blocker(s): GH-702, GH-730, GH-733, GH-700."
+      "Current run evidence contains a functional failure that must be fixed and revalidated.",
+      "Linked open defect(s): #743.",
+      "Remaining missing evidence: metric_trace, accessibility_audit.",
+      "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
     ],
     "gates": [
       {
         "evidence_refs": [
-          "catalog:fnd-001",
-          "GH-702",
-          "GH-730",
-          "GH-733",
-          "GH-700"
+          "fnd001-build-run-tail",
+          "fnd001-first-onboarding-screenshot",
+          "fnd001-launch-console-log",
+          "fnd001-runtime-oslog",
+          "fnd001-ui-tree",
+          "rubric:review-skill-grounding"
         ],
         "id": "required_evidence",
         "owner": "validation-agent",
         "requirement": "Screenshots/UI trees/logs/cassettes/metrics required by the scenario are attached and redacted.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
@@ -1256,44 +1204,58 @@
         "id": "skill_grounding",
         "owner": "validation-agent",
         "requirement": "UI, UX, accessibility, performance, and product judgments cite the loaded review skills or local doctrine.",
-        "status": "blocked"
+        "status": "pass"
       },
       {
         "evidence_refs": [
+          "fnd001-build-run-tail",
+          "fnd001-first-onboarding-screenshot",
+          "fnd001-launch-console-log",
+          "fnd001-runtime-oslog",
+          "fnd001-ui-tree",
           "rubric:review-skill-grounding"
         ],
         "id": "score_integrity",
         "owner": "validation-agent",
         "requirement": "Every dimension and group score follows the evidence gates and matches the final verdict.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
+          "fnd001-build-run-tail",
+          "fnd001-first-onboarding-screenshot",
+          "fnd001-launch-console-log",
+          "fnd001-runtime-oslog",
+          "fnd001-ui-tree",
           "rubric:review-skill-grounding"
         ],
         "id": "product_coherence",
         "owner": "validation-agent",
         "requirement": "Individual scenario judgment and related-scenario group judgment are both present.",
-        "status": "blocked"
+        "status": "incomplete"
       },
       {
         "evidence_refs": [
-          "GH-702",
-          "GH-730",
-          "GH-733",
-          "GH-700"
+          "fnd001-build-run-tail",
+          "fnd001-first-onboarding-screenshot",
+          "fnd001-launch-console-log",
+          "fnd001-runtime-oslog",
+          "fnd001-ui-tree",
+          "rubric:review-skill-grounding"
         ],
         "id": "defect_tracking",
         "owner": "validation-agent",
         "requirement": "Every actionable defect has severity, owner, GitHub issue link, and fix/revalidation state.",
-        "status": "blocked"
+        "status": "pass_with_issues"
       },
       {
         "evidence_refs": [
-          "GH-702",
-          "GH-730",
-          "GH-733",
-          "GH-700"
+          "fnd001-build-run-tail",
+          "fnd001-first-onboarding-screenshot",
+          "fnd001-launch-console-log",
+          "fnd001-runtime-oslog",
+          "fnd001-ui-tree",
+          "rubric:review-skill-grounding"
         ],
         "id": "release_readiness",
         "owner": "validation-agent",
@@ -1301,7 +1263,7 @@
         "status": "blocked"
       }
     ],
-    "ship_gate": "incomplete"
+    "ship_gate": "blocked"
   },
   "review_grounding": {
     "all_considered": [
@@ -1422,33 +1384,38 @@
     }
   ],
   "run": {
-    "app_build": "not-built-catalog-scaffold",
-    "branch": "",
+    "app_build": "Pod0 1.0.0 build 202606011109",
+    "branch": "codex/fnd-wave001-evidence",
     "cassettes": [],
-    "completed_at": "2026-07-07T22:55:51Z",
+    "completed_at": "2026-07-07T23:12:00Z",
     "device_matrix": [
       {
-        "form_factor": "other",
-        "name": "not-run",
-        "os_version": "not-run"
+        "form_factor": "iphone",
+        "name": "Pod0 FND Wave001 Codex",
+        "os_version": "iOS 26.2",
+        "udid": "4C35CC31-67B0-411F-B4DA-A571CF307DFE"
       }
     ],
     "environment": {
-      "appearance": "unspecified",
+      "appearance": "light",
+      "dynamic_type": "unspecified",
       "launch_arguments": [],
-      "locale": "unspecified",
-      "network_condition": "not-run"
+      "locale": "simulator default",
+      "network_condition": "local simulator default",
+      "reduce_motion": false,
+      "reduce_transparency": false
     },
-    "executor": "static catalog generator",
+    "executor": "Codex via XcodeBuildMCP",
     "fixtures": [
-      "erased sim"
+      "fresh erased simulator",
+      "no --UITestSeed launch argument"
     ],
     "generator_version": "scenario-report-generator/0.4.0",
-    "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
+    "live_dependency_rationale": "FND-001 used no provider, relay, STT, TTS, or LLM dependency.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260707T225551Z-fnd-001",
-    "source_commit": "7098b7d9ec69f121fc3bd4024cd1813ef01a3eca",
-    "started_at": "2026-07-07T22:55:51Z"
+    "run_id": "pod0-local-20260707T230221Z-fnd-001",
+    "source_commit": "7098b7d9ec69",
+    "started_at": "2026-07-07T23:02:21Z"
   },
   "scenario": {
     "bdd": {
@@ -1474,7 +1441,7 @@
       "FND-005"
     ],
     "slug": "fnd-001",
-    "source_path": "docs/testing/scenarios/catalog/01-foundation-identity-discovery-library.md:7",
+    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/01-foundation-identity-discovery-library.md:7",
     "tags": [
       "catalog-scaffold",
       "d1",
@@ -1490,19 +1457,20 @@
   "sections": {
     "accessibility_dynamic_type": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "fnd001-ui-tree"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires VoiceOver/UI tree labels, Dynamic Type, contrast, Reduce Motion/Transparency, and touch target evidence."
+      "summary": "The captured accessibility tree exposes the visible Get Started button and onboarding text, but also exposes hidden main-shell controls. Dynamic Type, VoiceOver traversal, contrast, Reduce Motion, and Reduce Transparency were not fully audited."
     },
     "actual_result": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-ui-tree"
       ],
       "notes": [
-        "Attach step-by-step observed behavior before changing this verdict."
+        "Filed https://github.com/pablof7z/podcast-player/issues/743."
       ],
-      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete."
+      "summary": "The visible first onboarding page appears. The UI tree also exposes hidden main-shell text and targets including Home, Add Show, Search, Open Agent, Settings, and Start voice conversation."
     },
     "analytics_privacy_boundaries": {
       "evidence_refs": [
@@ -1513,25 +1481,39 @@
     },
     "artifacts": {
       "evidence_refs": [
-        "catalog:fnd-001",
-        "rubric:review-skill-grounding"
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-ui-tree",
+        "fnd001-build-run-tail",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog"
       ],
       "notes": [],
-      "summary": "Required visual/raw evidence from the catalog: launch page and UI tree. Only the source catalog and rubric metadata exist right now."
+      "summary": "Attached a current screenshot, semantic UI-tree excerpt, build/run log tail, launch console log, and runtime OSLog."
     },
     "attempted_test": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-ui-tree",
+        "fnd001-build-run-tail",
+        "fnd001-launch-console-log"
       ],
       "notes": [],
-      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete. A simulator, manual, or automation run must execute scenario FND-001."
+      "summary": "Executed FND-001 on an erased dedicated iPhone 17 simulator with no --UITestSeed argument. Captured first page screenshot, UI tree, build log, launch log, and OSLog."
     },
     "before_after_deltas": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog",
+        "fnd001-ui-tree",
+        "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. Capture the before state, user action, after state, expected delta, unexpected regression, and screenshot pair for every visible product change."
+      "notes": [
+        "metric_trace",
+        "accessibility_audit"
+      ],
+      "summary": "Current evidence must be read as before/action/after deltas across the flow steps; any missing pair remains listed in instrumentation gaps."
     },
     "content_hierarchy": {
       "evidence_refs": [
@@ -1563,10 +1545,12 @@
     },
     "defects_issues_filed": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-ui-tree"
       ],
-      "notes": [],
-      "summary": "No defects have been observed yet because the scenario has not run. Any actionable defect found later must link a GitHub issue before the page can leave incomplete."
+      "notes": [
+        "https://github.com/pablof7z/podcast-player/issues/743"
+      ],
+      "summary": "Filed #743 for the hidden main-shell semantic exposure behind onboarding."
     },
     "device_os_matrix": {
       "evidence_refs": [
@@ -1598,11 +1582,18 @@
     },
     "evidence_provenance": {
       "evidence_refs": [
-        "catalog:fnd-001",
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog",
+        "fnd001-ui-tree",
         "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. Every artifact must identify its source command/tool, capture context, source commit, branch, device/OS, SHA/path, redaction state, freshness, and whether it is live, replayed, generated, or copied from prior evidence."
+      "notes": [
+        "metric_trace",
+        "accessibility_audit"
+      ],
+      "summary": "6 non-catalog artifact(s) are attached with their published IDs, paths, redaction metadata, and run context."
     },
     "execution_attempts": {
       "evidence_refs": [
@@ -1642,10 +1633,11 @@
     },
     "liquid_glass_ios_primitives": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-ui-tree"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires evidence that iOS primitives and glass-like materials are used as functional chrome, with accessibility fallbacks."
+      "summary": "Visible glass-like treatment is restrained to the app icon/feature chips/CTA chrome and preserves contrast in light mode. Hidden shell exposure prevents a clean pass."
     },
     "localization_content_quality": {
       "evidence_refs": [
@@ -1707,17 +1699,28 @@
     },
     "owner_status": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog",
+        "fnd001-ui-tree",
+        "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Default ownership is validation-agent for evidence and review-agent for scoring/defects until a human or agent owner is assigned. Every blocker, gate, action, defect, and revalidation item must carry owner and status."
+      "notes": [
+        "Current run evidence contains a functional failure that must be fixed and revalidated.",
+        "Linked open defect(s): #743.",
+        "Remaining missing evidence: metric_trace, accessibility_audit.",
+        "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
+      ],
+      "summary": "Readiness gates, instrumentation gaps, risks, issues, and next actions carry owner/status fields for follow-through."
     },
     "performance_metrics": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-build-run-tail",
+        "fnd001-launch-console-log"
       ],
       "notes": [],
-      "summary": "Not measured. Required performance evidence: cold launch metric."
+      "summary": "Cold launch to first onboarding frame was not measured. The MCP build/run retry timed out at 300s even though the app later launched, so no defensible launch-to-first-frame metric is attached."
     },
     "persona_job_acceptance": {
       "evidence_refs": [
@@ -1735,26 +1738,49 @@
     },
     "product_cluster_coherence": {
       "evidence_refs": [
-        "catalog:fnd-001",
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog",
+        "fnd001-ui-tree",
         "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. Related scenarios must be judged as a group so UI/UX/product coherence does not pass in isolation while the cluster remains inconsistent."
+      "notes": [
+        "Review adjacent scenario pages as a cluster before promoting group coherence."
+      ],
+      "summary": "Foundation And First Run cluster coherence remains incomplete until adjacent scenarios are judged together; FND-001 now contributes current evidence and linked defects to that group view."
     },
     "product_coherence_in_context": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog",
+        "fnd001-ui-tree",
+        "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "Not assessed. The page must explain how this flow fits nearby Pod0 surfaces such as library, player, transcript, agent, settings, and Nostr/social state."
+      "notes": [
+        "metric_trace",
+        "accessibility_audit"
+      ],
+      "summary": "FND-001 has current run evidence and currently fails its scenario-level product job; linked defects and revalidation remain required."
     },
     "readiness_gates": {
       "evidence_refs": [
-        "catalog:fnd-001",
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog",
+        "fnd001-ui-tree",
         "rubric:review-skill-grounding"
       ],
-      "notes": [],
-      "summary": "All readiness gates are blocked until evidence, skill-grounded scoring, product-cluster coherence, defect tracking, and release readiness are populated."
+      "notes": [
+        "Current run evidence contains a functional failure that must be fixed and revalidated.",
+        "Linked open defect(s): #743.",
+        "Remaining missing evidence: metric_trace, accessibility_audit.",
+        "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
+      ],
+      "summary": "Ship gate is blocked; gates now reflect attached evidence, remaining missing evidence, linked defects, and cluster-level follow-up."
     },
     "regression_risk": {
       "evidence_refs": [
@@ -1779,19 +1805,28 @@
     },
     "revalidation_status": {
       "evidence_refs": [
-        "catalog:fnd-001"
-      ],
-      "notes": [],
-      "summary": "No fix or revalidation cycle exists yet. Every fixed defect must link the fix PR, revalidation run ID, rerun commit, affected dimensions, and remaining open gaps."
-    },
-    "review_skill_grounding": {
-      "evidence_refs": [
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-launch-console-log",
+        "fnd001-runtime-oslog",
+        "fnd001-ui-tree",
         "rubric:review-skill-grounding"
       ],
       "notes": [
-        "Selected skills: vabole/apple-skills@ios-liquid-glass, vabole/apple-skills@hig, qodex-ai/ai-agent-skills@mobile-app-interface."
+        "#743"
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass restraint, HIG factual checks, safe areas, Dynamic Type, touch targets, accessibility settings, native navigation, material fallbacks, and performance-as-UX review."
+      "summary": "0 fixed issue(s) and 1 open issue(s) are linked; fixed issues require revalidation run IDs before closure is considered proven."
+    },
+    "review_skill_grounding": {
+      "evidence_refs": [
+        "fnd001-ui-tree"
+      ],
+      "notes": [
+        "npx skills search \"iOS mobile UI UX liquid glass native polish validation\" returned ios-liquid-glass and mobile-app-interface among the selected results.",
+        "Applied Liquid Glass guidance: glass belongs on controls/chrome, not dense hidden content; accessibility settings must remain legible.",
+        "Applied HIG/mobile guidance: safe areas, Dynamic Type, 44x44 pt controls, semantic labels, and onboarding should be brief and not expose contradictory app state."
+      ],
+      "summary": "This review used the requested skills search and grounded critique in vabole/apple-skills@ios-liquid-glass, vabole/apple-skills@hig, and qodex-ai/ai-agent-skills@mobile-app-interface."
     },
     "risks_follow_up": {
       "evidence_refs": [
@@ -1830,30 +1865,32 @@
     },
     "ui_polish_report": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "fnd001-first-onboarding-screenshot"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires annotated screenshots for layout, spacing, typography, color, symbols, component state, and platform-native finish."
+      "summary": "The visible first page is well composed in light mode: centered icon, clear headline, readable copy, restrained feature chips, progress dots, and a bottom Get Started control above the home indicator."
     },
     "ux_polish_report": {
       "evidence_refs": [
-        "rubric:review-skill-grounding"
+        "fnd001-ui-tree"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires notes on task clarity, user effort, feedback, interruption/resume, recovery, and cognitive load."
+      "summary": "The visible UX gives a clear first action, but the semantic tree contradicts the first-run gate by leaking main-shell actions behind onboarding."
     },
     "verdict": {
       "evidence_refs": [
-        "catalog:fnd-001",
-        "rubric:review-skill-grounding"
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-ui-tree"
       ],
       "notes": [],
-      "summary": "Overall verdict is incomplete because required screenshots, metrics, cassettes, accessibility evidence, critique, and issue back-links are missing."
+      "summary": "Fail for FND-001 until #743 is fixed and the semantic UI tree proves no main-shell controls are exposed behind first-run onboarding."
     }
   },
   "verdict": {
-    "overall": "incomplete",
-    "score_gate_explanation": "Every dimension is scored 0, so the mechanical verdict is incomplete.",
-    "summary": "Generated catalog scaffold only. Required execution evidence and critique are missing."
+    "overall": "fail",
+    "reviewed_at": "2026-07-07T23:12:00Z",
+    "reviewer": "Codex",
+    "score_gate_explanation": "The screenshot satisfies the first-page visual requirement, but the required UI-tree gate is contradicted by hidden Home/Add Show/Search/Settings/Agent targets.",
+    "summary": "FND-001 fails the semantic first-run gate: the visible onboarding page appears, but the UI tree exposes hidden main-shell controls behind it."
   }
 }

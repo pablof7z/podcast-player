@@ -972,8 +972,8 @@
   ],
   "page": {
     "assets_base": "assets/scenarios/set-001/",
-    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/set-001/",
-    "generated_at": "2026-07-07T22:55:51Z",
+    "canonical_url": "/podcast-player/scenarios/set-001/",
+    "generated_at": "2026-07-08T00:55:02Z",
     "navigation": {
       "category_url": "../settings-and-storage/",
       "next_url": "../set-002/",
@@ -1417,7 +1417,7 @@
       "SET-005"
     ],
     "slug": "set-001",
-    "source_path": "docs/testing/scenarios/catalog/04-nostr-settings-platform-regression.md:49",
+    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/04-nostr-settings-platform-regression.md:49",
     "tags": [
       "catalog-scaffold",
       "d4",

@@ -1,15 +1,31 @@
 {
-  "generated_at": "2026-07-07T22:56:27Z",
+  "generated_at": "2026-07-08T00:52:00Z",
   "counts": {
     "open_prs": 0,
     "required_builds_running_or_queued": 0,
     "blocked_by_required_checks": 0,
     "red_required_builds": 0,
-    "merged_today": 4,
+    "merged_today": 6,
     "closed_superseded": 0
   },
   "items": [],
   "recently_resolved": [
+    {
+      "id": "#744",
+      "title": "[codex] Add FND-001 onboarding evidence",
+      "url": "https://github.com/pablof7z/podcast-player/pull/744",
+      "status": "merged_to_main",
+      "merge_commit": "c7f5e793",
+      "follow_up": "FND-001 now has a real screenshot, UI tree, build/run logs, OSLog evidence, a fail verdict, and linked defect #743 for hidden main-shell controls behind onboarding."
+    },
+    {
+      "id": "#742",
+      "title": "[codex] Add NMP architecture scan report",
+      "url": "https://github.com/pablof7z/podcast-player/pull/742",
+      "status": "merged_to_main",
+      "merge_commit": "f14510aa",
+      "follow_up": "The report now includes an NMP Architecture Scan page with 735 findings, 46 hard errors, and linked D8/D3 burn-down issues #740 and #741."
+    },
     {
       "id": "#739",
       "title": "[codex] Add foundation next-wave validation manifest",

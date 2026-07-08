@@ -624,14 +624,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-07T22:55:51Z",
+        "completed_at": "2026-07-08T00:55:02Z",
         "evidence_refs": [
           "catalog:soc-002"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-07T22:55:51Z",
+        "started_at": "2026-07-08T00:55:02Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -920,6 +920,19 @@
       "status": "open",
       "title": "Automate xcresult evidence ingestion into scenario report overlays",
       "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    },
+    {
+      "affected_dimensions": [
+        "nmp_architecture",
+        "privacy_security",
+        "replayability_cassette_provenance"
+      ],
+      "id": "GH-741",
+      "owner": "architecture-agent",
+      "severity": "blocker",
+      "status": "open",
+      "title": "Remove D3 hardcoded relay URLs from scanner hard errors",
+      "url": "https://github.com/pablof7z/podcast-player/issues/741"
     }
   ],
   "launch_assessment": {
@@ -938,7 +951,8 @@
     "issue_refs": [
       "GH-702",
       "GH-730",
-      "GH-733"
+      "GH-733",
+      "GH-741"
     ],
     "launch_readiness": "incomplete",
     "missing_evidence": [
@@ -950,7 +964,7 @@
     ],
     "product_judgment": "Not launch-ready. The page has a complete review structure, but product judgment remains blocked until current evidence supports individual and whole-product coherence.",
     "regression_coverage": "incomplete",
-    "risk_classification": "major",
+    "risk_classification": "blocker",
     "scenario_owner": "validation-agent",
     "scenario_status": "not_run",
     "whole_product_judgment": "Group-level coherence for Social, Friends, Feedback is unproven until adjacent scenarios are reviewed together."
@@ -996,8 +1010,8 @@
   ],
   "page": {
     "assets_base": "assets/scenarios/soc-002/",
-    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/soc-002/",
-    "generated_at": "2026-07-07T22:55:51Z",
+    "canonical_url": "/podcast-player/scenarios/soc-002/",
+    "generated_at": "2026-07-08T00:55:02Z",
     "navigation": {
       "category_url": "../social-friends-feedback/",
       "next_url": "../soc-003/",
@@ -1212,7 +1226,7 @@
     "blocking_reasons": [
       "No current execution evidence is attached.",
       "Product-quality judgments are scaffolded, not observed.",
-      "Linked validation blocker(s): GH-702, GH-730, GH-733."
+      "Linked validation blocker(s): GH-702, GH-730, GH-733, GH-741."
     ],
     "gates": [
       {
@@ -1220,7 +1234,8 @@
           "catalog:soc-002",
           "GH-702",
           "GH-730",
-          "GH-733"
+          "GH-733",
+          "GH-741"
         ],
         "id": "required_evidence",
         "owner": "validation-agent",
@@ -1258,7 +1273,8 @@
         "evidence_refs": [
           "GH-702",
           "GH-730",
-          "GH-733"
+          "GH-733",
+          "GH-741"
         ],
         "id": "defect_tracking",
         "owner": "validation-agent",
@@ -1269,7 +1285,8 @@
         "evidence_refs": [
           "GH-702",
           "GH-730",
-          "GH-733"
+          "GH-733",
+          "GH-741"
         ],
         "id": "release_readiness",
         "owner": "validation-agent",
@@ -1390,7 +1407,7 @@
     "app_build": "not-built-catalog-scaffold",
     "branch": "",
     "cassettes": [],
-    "completed_at": "2026-07-07T22:55:51Z",
+    "completed_at": "2026-07-08T00:55:02Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1411,9 +1428,9 @@
     "generator_version": "scenario-report-generator/0.4.0",
     "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260707T225551Z-soc-002",
-    "source_commit": "7098b7d9ec69f121fc3bd4024cd1813ef01a3eca",
-    "started_at": "2026-07-07T22:55:51Z"
+    "run_id": "catalog-scaffold-20260708T005502Z-soc-002",
+    "source_commit": "c7f5e79342f836e29597a727b4dece73c486a2d7",
+    "started_at": "2026-07-08T00:55:02Z"
   },
   "scenario": {
     "bdd": {
@@ -1439,7 +1456,7 @@
       "SOC-005"
     ],
     "slug": "soc-002",
-    "source_path": "docs/testing/scenarios/catalog/04-nostr-settings-platform-regression.md:29",
+    "source_path": "/Users/customer/Work/podcast-player-gh-pages-source/docs/testing/scenarios/catalog/04-nostr-settings-platform-regression.md:29",
     "tags": [
       "catalog-scaffold",
       "d6",

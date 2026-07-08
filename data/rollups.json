@@ -3,25 +3,25 @@
     "accessibility_dynamic_type": 0.0,
     "actual_result": 0.03,
     "analytics_privacy_boundaries": 0.0,
-    "artifacts": 0.04,
+    "artifacts": 0.05,
     "attempted_test": 0.04,
     "before_after_deltas": 0.0,
     "content_hierarchy": 0.0,
     "controls_gestures_audio": 0.0,
     "cross_screen_continuity": 0.0,
     "data_integrity_state_sync": 0.0,
-    "defects_issues_filed": 0.03,
+    "defects_issues_filed": 0.04,
     "device_os_matrix": 0.0,
     "device_viewport_coverage": 0.0,
     "error_recovery": 0.0,
-    "evidence_confidence": 0.02,
+    "evidence_confidence": 0.03,
     "evidence_provenance": 0.0,
     "execution_attempts": 0.0,
     "expected_behavior": 0.0,
     "flow": 0.0,
     "information_architecture": 0.0,
     "instrumentation_gaps": 0.0,
-    "liquid_glass_ios_primitives": 0.0,
+    "liquid_glass_ios_primitives": 0.01,
     "localization_content_quality": 0.0,
     "media_session_background_continuity": 0.0,
     "motion_haptics": 0.0,
@@ -47,7 +47,7 @@
     "sister_app_nmp_chirp_comparison": 0.0,
     "states_resilience": 0.0,
     "touch_ergonomics": 0.0,
-    "ui_polish": 0.03,
+    "ui_polish": 0.04,
     "ux_polish": 0.02,
     "verdict": 0.03
   },
@@ -84,15 +84,15 @@
     "Wiki, RAG, Knowledge, And Briefings": 18
   },
   "by_evidence_quality": {
-    "incomplete": 316,
-    "pass_with_issues": 4
+    "incomplete": 315,
+    "pass_with_issues": 5
   },
   "by_group_coherence": {
     "incomplete": 320
   },
   "by_launch_readiness": {
-    "blocked": 1,
-    "incomplete": 319
+    "blocked": 2,
+    "incomplete": 318
   },
   "by_nmp_boundary": {
     "d0": 2,
@@ -137,12 +137,12 @@
     "none": 243
   },
   "by_readiness": {
-    "blocked": 1,
-    "incomplete": 319
+    "blocked": 2,
+    "incomplete": 318
   },
   "by_risk_classification": {
-    "blocker": 81,
-    "major": 238,
+    "blocker": 116,
+    "major": 203,
     "minor": 1
   },
   "by_tag": {
@@ -212,47 +212,49 @@
     "xplat": 16
   },
   "by_verdict": {
-    "fail": 1,
-    "incomplete": 317,
+    "fail": 2,
+    "incomplete": 316,
     "pass_with_issues": 2
   },
   "instrumentation_gaps": {
-    "accessibility": 316,
+    "accessibility": 315,
     "c1-accessibility-audit-missing": 1,
     "cassettes": 77,
     "d1-accessibility-audit-missing": 1,
     "d1-resume-fixture-blocked": 1,
+    "fnd001-accessibility-settings-audit-missing": 1,
+    "fnd001-cold-launch-metric-missing": 1,
     "i3-picker-coverage-missing": 1,
     "i3-relaunch-persistence-missing": 1,
     "i4-clear-all-data-skipped": 1,
     "i4-storage-accounting-defect": 1,
-    "logs": 316,
-    "performance-metrics": 191,
-    "screenshots": 316,
-    "state-integrity": 316,
-    "ui-tree": 316,
-    "viewport-coverage": 316
+    "logs": 315,
+    "performance-metrics": 190,
+    "screenshots": 315,
+    "state-integrity": 315,
+    "ui-tree": 315,
+    "viewport-coverage": 315
   },
   "issues_by_severity": {
-    "blocker": 85,
-    "major": 1284
+    "blocker": 199,
+    "major": 1281
   },
   "missing_evidence": {
     "accessibility_audit": 320,
     "cassette": 77,
     "clear-all-data-teardown": 1,
-    "command_output": 316,
-    "log": 316,
+    "command_output": 315,
+    "log": 315,
     "metric_trace": 191,
     "picker-change-coverage": 1,
     "relaunch-persistence": 1,
     "resume-fixture": 1,
-    "screenshot": 316,
-    "ui_tree": 316
+    "screenshot": 315,
+    "ui_tree": 315
   },
   "open_issues_by_severity": {
-    "blocker": 85,
-    "major": 1284
+    "blocker": 199,
+    "major": 1281
   },
   "performance_required": 194,
   "scenario_count": 320,
