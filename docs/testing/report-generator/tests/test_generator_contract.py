@@ -126,6 +126,13 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             old_asset = out / "assets" / "scenarios" / "smoke-001" / "old-shot.jpg"
             old_asset.parent.mkdir(parents=True)
             old_asset.write_bytes(b"old image")
+            old_live_asset = out / "assets" / "live-verification" / "old-live-check.png"
+            old_live_asset.parent.mkdir(parents=True)
+            old_live_asset.write_bytes(b"old live screenshot")
+            evidence_root = root / "evidence"
+            new_evidence_asset = evidence_root / "assets" / "scenarios" / "smoke-002" / "new-shot.jpg"
+            new_evidence_asset.parent.mkdir(parents=True)
+            new_evidence_asset.write_bytes(b"new image")
             (out / ".git").write_text("gitdir: ../.git/worktrees/site\n")
             (out / ".nojekyll").write_text("")
             (out / "stale.html").write_text("stale")
@@ -276,9 +283,11 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             previous_record_path.parent.mkdir(parents=True)
             previous_record_path.write_text(json.dumps(old_record))
 
-            write_site(records, out, catalog, root)
+            write_site(records, out, catalog, root, evidence_root)
 
             self.assertEqual(old_asset.read_bytes(), b"old image")
+            self.assertEqual(old_live_asset.read_bytes(), b"old live screenshot")
+            self.assertEqual((out / "assets" / "scenarios" / "smoke-002" / "new-shot.jpg").read_bytes(), b"new image")
             self.assertEqual((out / ".git").read_text(), "gitdir: ../.git/worktrees/site\n")
             self.assertTrue((out / ".nojekyll").exists())
             self.assertFalse((out / "stale.html").exists())
