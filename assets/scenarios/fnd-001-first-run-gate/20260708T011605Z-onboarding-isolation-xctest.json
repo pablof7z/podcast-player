@@ -1,0 +1,50 @@
+{
+  "id": "fnd001-onboarding-isolation-xctest",
+  "captured_at": "2026-07-08T01:16:05Z",
+  "status": "pass",
+  "source_commit": "c470dcbebc4570348d84a76b54b26c264dda2c59",
+  "pull_request": "https://github.com/pablof7z/podcast-player/pull/745",
+  "issue": "https://github.com/pablof7z/podcast-player/issues/743",
+  "device": {
+    "name": "iPhone 17 Pro",
+    "os_version": "iOS 26.2",
+    "udid": "0FD3A849-B299-4537-B3C1-BAB688D8BBDB"
+  },
+  "commands": [
+    "tuist generate",
+    "cargo build -p nmp-app-podcast --lib --target aarch64-apple-ios-sim",
+    "build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=--UITestSeed --UITestSeedOnboardingRequired",
+    "test_sim -skipPackagePluginValidation -only-testing:PodcastrUITests/OnboardingIsolationUITests/testFirstLaunchOnboardingHidesMainShellControls",
+    "test_sim -skipPackagePluginValidation -only-testing:PodcastrUITests/P1SettingsUITests/testP1_OnboardingNotShownAgain"
+  ],
+  "xctest_assertions": {
+    "visible": [
+      "Get Started"
+    ],
+    "absent_buttons": [
+      "Open sidebar",
+      "Settings",
+      "Search",
+      "Open Agent",
+      "Add Show",
+      "Browse categories",
+      "Conversations",
+      "Home",
+      "Library"
+    ],
+    "absent_text": [
+      "Your shows live here"
+    ],
+    "absent_identifiers": [
+      "tab-home",
+      "tab-library",
+      "home-search-button",
+      "agent.open"
+    ]
+  },
+  "result": "The focused first-launch XCTest passed: onboarding is visible and the known hidden main-shell controls are not exposed in the accessibility automation tree.",
+  "limitations": [
+    "Full GitHub Apple Build and Test gate was still running when this evidence artifact was created.",
+    "Cold-launch-to-first-frame metric and full VoiceOver/Dynamic Type audit remain missing evidence."
+  ]
+}

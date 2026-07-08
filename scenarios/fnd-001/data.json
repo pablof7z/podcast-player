@@ -595,6 +595,39 @@
         "required": false,
         "sha256": "23f652fe03dcbdfea96fdc2bbb9da66f25b21876b1bded3c16d423c3e52d6c3d",
         "type": "log"
+      },
+      {
+        "id": "fnd001-onboarding-isolated-screenshot",
+        "type": "screenshot",
+        "path": "assets/scenarios/fnd-001-first-run-gate/20260708T012100Z-onboarding-isolated.jpg",
+        "description": "Post-fix first-launch onboarding screen after clean app uninstall/reinstall with onboarding-required seed.",
+        "captured_at": "2026-07-08T01:21:00Z",
+        "device": "iPhone 17 Pro",
+        "os_version": "iOS 26.2",
+        "width": 368,
+        "height": 800,
+        "step_id": "revalidation",
+        "required": true,
+        "sha256": "354aa874b61fde55d28cf66e29ee69b85651b92d83b801079bbf7a714ffd5463",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "alt": "Post-fix Pod0 first onboarding screen with no Home toolbar visible.",
+        "caption": "Post-fix first-run onboarding remains visually correct while the main shell is unmounted."
+      },
+      {
+        "id": "fnd001-onboarding-isolation-xctest",
+        "type": "test_result",
+        "path": "assets/scenarios/fnd-001-first-run-gate/20260708T011605Z-onboarding-isolation-xctest.json",
+        "description": "Focused XCTest proof that known hidden main-shell controls are absent while onboarding is visible.",
+        "captured_at": "2026-07-08T01:16:05Z",
+        "device": "iPhone 17 Pro",
+        "os_version": "iOS 26.2",
+        "required": true,
+        "sha256": "29b448247062a1bb38ff834097ac43254cebf287e9f80cf30b860b8b840da6b9",
+        "redaction": {
+          "status": "not_needed"
+        }
       }
     ],
     "missing": [
@@ -684,6 +717,25 @@
           "mcp__xcode.screenshot",
           "mcp__xcode.tap"
         ]
+      },
+      {
+        "id": "attempt-003-fix-revalidation",
+        "status": "pass",
+        "executor": "Codex via XcodeBuildMCP",
+        "started_at": "2026-07-08T01:10:00Z",
+        "completed_at": "2026-07-08T01:21:00Z",
+        "tools": [
+          "mcp__xcode.build_run_sim",
+          "mcp__xcode.test_sim",
+          "mcp__xcode.screenshot"
+        ],
+        "commands": [
+          "cargo build -p nmp-app-podcast --lib --target aarch64-apple-ios-sim",
+          "build_run_sim extraArgs=-skipPackagePluginValidation launchArgs=--UITestSeed --UITestSeedOnboardingRequired",
+          "test_sim -skipPackagePluginValidation -only-testing:PodcastrUITests/OnboardingIsolationUITests/testFirstLaunchOnboardingHidesMainShellControls",
+          "test_sim -skipPackagePluginValidation -only-testing:PodcastrUITests/P1SettingsUITests/testP1_OnboardingNotShownAgain"
+        ],
+        "notes": "Focused post-fix revalidation passed locally: onboarding is visible and known hidden main-shell controls are absent from the XCTest accessibility automation tree. Full GitHub Apple Build and Test gate remained in progress at page-prep time."
       }
     ],
     "branch_coverage": [
@@ -694,9 +746,9 @@
         "trigger": "Erase dedicated simulator and launch without --UITestSeed."
       },
       {
-        "expected": "No main-shell controls are exposed behind onboarding.",
+        "expected": "No main-shell controls are exposed behind onboarding; focused XCTest passed locally, pending full CI merge confirmation.",
         "id": "main-shell-hidden-from-ui-tree",
-        "status": "fail",
+        "status": "pass_local_pending_ci",
         "trigger": "Capture semantic UI tree on first onboarding page."
       }
     ],
@@ -1892,5 +1944,17 @@
     "reviewer": "Codex",
     "score_gate_explanation": "The screenshot satisfies the first-page visual requirement, but the required UI-tree gate is contradicted by hidden Home/Add Show/Search/Settings/Agent targets.",
     "summary": "FND-001 fails the semantic first-run gate: the visible onboarding page appears, but the UI tree exposes hidden main-shell controls behind it."
+  },
+  "revalidation_update": {
+    "status": "local_pass_pending_full_ci",
+    "prepared_at": "2026-07-08T02:07:00Z",
+    "source_commit": "c470dcbebc4570348d84a76b54b26c264dda2c59",
+    "pull_request": "https://github.com/pablof7z/podcast-player/pull/745",
+    "issue": "https://github.com/pablof7z/podcast-player/issues/743",
+    "summary": "Focused local revalidation passed after structural onboarding gate fix; full GitHub Apple Build and Test gate was still running when this artifact was prepared.",
+    "evidence_refs": [
+      "fnd001-onboarding-isolated-screenshot",
+      "fnd001-onboarding-isolation-xctest"
+    ]
   }
 }
