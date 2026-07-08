@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from catalog import Scenario
+from cassettes import cassette_artifacts, cassettes_for_scenario, effective_provider_mode, run_cassette_records
 from contract import (
     GENERATOR_VERSION,
     GROUPS,
@@ -45,12 +46,15 @@ def build_report(scenario: Scenario, scenarios: list[Scenario], repo: Path, gene
     skill_ref = "rubric:review-skill-grounding"
     previous = scenarios[scenario.order - 2] if scenario.order > 1 else None
     next_scenario = scenarios[scenario.order] if scenario.order < len(scenarios) else None
-    sections = section_text(scenario)
-    evidence_inventory = evidence_inventory_for(scenario)
+    scenario_cassettes = cassettes_for_scenario(repo, scenario.scenario_id)
+    cassette_available = bool(scenario_cassettes)
+    provider_mode = effective_provider_mode(scenario.provider_mode, scenario_cassettes)
+    sections = section_text(scenario, scenario_cassettes)
+    evidence_inventory = evidence_inventory_for(scenario, cassette_available)
     coherence = coherence_for(scenario, scenarios)
     issues = issues_for_scenario(scenario)
     readiness = readiness_for(scenario, issues)
-    risks = risks_for(scenario, scenarios)
+    risks = risks_for(scenario, scenarios, cassette_available)
     dimensions = {
         dimension: {
             "score": 0,
@@ -63,13 +67,13 @@ def build_report(scenario: Scenario, scenarios: list[Scenario], repo: Path, gene
     return {
         "schema_version": SCHEMA_VERSION,
         "scenario": scenario_identity(scenario, scenarios),
-        "run": run_record(scenario, generated_at, commit, branch),
+        "run": run_record(scenario, generated_at, commit, branch, scenario_cassettes, provider_mode),
         "page": page_record(scenario, generated_at, previous, next_scenario, site_base),
         "product_context": product_context_for(scenario, scenarios),
         "flow_steps": flow_steps_for(scenario),
         "execution": execution_for(scenario, generated_at),
         "review_grounding": review_grounding_for(),
-        "launch_assessment": launch_assessment_for(scenario, evidence_inventory, coherence, readiness, risks, issues),
+        "launch_assessment": launch_assessment_for(scenario, evidence_inventory, coherence, readiness, risks, issues, provider_mode),
         "verdict": {
             "overall": "incomplete",
             "summary": "Generated catalog scaffold only. Required execution evidence and critique are missing.",
@@ -81,12 +85,12 @@ def build_report(scenario: Scenario, scenarios: list[Scenario], repo: Path, gene
         "quality_review": quality_review_for(scenario),
         "coherence": coherence,
         "readiness": readiness,
-        "evidence": {"artifacts": artifacts_for(scenario, source_ref, skill_ref), **evidence_inventory},
+        "evidence": {"artifacts": artifacts_for(scenario, source_ref, skill_ref, scenario_cassettes), **evidence_inventory},
         "metrics": [],
-        "instrumentation_gaps": instrumentation_gaps_for(scenario),
+        "instrumentation_gaps": instrumentation_gaps_for(scenario, cassette_available),
         "risks": risks,
         "issues": issues,
-        "next_actions": next_actions_for(scenario),
+        "next_actions": next_actions_for(scenario, cassette_available),
     }
 
 
@@ -104,7 +108,14 @@ def scenario_identity(scenario: Scenario, scenarios: list[Scenario]) -> dict[str
     }
 
 
-def run_record(scenario: Scenario, generated_at: str, commit: str, branch: str) -> dict[str, Any]:
+def run_record(
+    scenario: Scenario,
+    generated_at: str,
+    commit: str,
+    branch: str,
+    scenario_cassettes: list[dict[str, Any]],
+    provider_mode: str,
+) -> dict[str, Any]:
     return {
         "run_id": f"catalog-scaffold-{generated_at.replace(':', '').replace('-', '')}-{scenario.slug}",
         "source_commit": commit,
@@ -114,12 +125,13 @@ def run_record(scenario: Scenario, generated_at: str, commit: str, branch: str) 
         "completed_at": generated_at,
         "executor": "static catalog generator",
         "generator_version": GENERATOR_VERSION,
-        "provider_mode": scenario.provider_mode,
+        "provider_mode": provider_mode,
         "device_matrix": [{"name": "not-run", "os_version": "not-run", "form_factor": "other"}],
         "environment": {"locale": "unspecified", "appearance": "unspecified", "network_condition": "not-run", "launch_arguments": []},
         "fixtures": scenario.dependencies,
-        "cassettes": [{"id": cassette, "provider": provider_from(cassette), "mode": "blocked", "redaction_hash": "pending-redaction-hash"} for cassette in scenario.cassettes],
-        "live_dependency_rationale": "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached.",
+        "cassettes": run_cassette_records(scenario_cassettes)
+        or [{"id": cassette, "provider": provider_from(cassette), "mode": "blocked", "redaction_hash": "pending-redaction-hash"} for cassette in scenario.cassettes],
+        "live_dependency_rationale": live_dependency_rationale(scenario, scenario_cassettes),
     }
 
 
@@ -138,7 +150,7 @@ def page_record(scenario: Scenario, generated_at: str, previous: Scenario | None
     }
 
 
-def section_text(scenario: Scenario) -> dict[str, dict[str, Any]]:
+def section_text(scenario: Scenario, scenario_cassettes: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     source_ref = f"catalog:{scenario.scenario_id.lower()}"
     skill_ref = "rubric:review-skill-grounding"
     deps = scenario.evidence.get("deps", "none")
@@ -146,11 +158,18 @@ def section_text(scenario: Scenario) -> dict[str, dict[str, Any]]:
     screenshots = scenario.evidence.get("ss", "none")
     boundary = scenario.evidence.get("boundary", "none")
     missing = "No run evidence has been attached yet; this generated page is intentionally incomplete."
+    cassette_ids = [cassette["id"] for cassette in scenario_cassettes]
+    cassette_refs = [f"cassette:{cassette_id}" for cassette_id in cassette_ids]
+    cassette_summary = (
+        f"Replay fixture(s) mapped to this scenario: {', '.join(cassette_ids)}."
+        if cassette_ids
+        else f"Declared dependencies: {deps}. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
+    )
     return {
         "persona_job_acceptance": s(f"Persona: {product_context_for(scenario, [scenario])['persona']} Acceptance criteria are the scenario Given/When/Then plus the declared architecture boundary {boundary}.", [source_ref]),
         "flow": s(f"Catalog flow for {scenario.category}: Given {scenario.bdd['given'][0]}, when {scenario.bdd['when'][0]}, then {scenario.bdd['then'][0]}.", [source_ref]),
         "attempted_test": s(f"{missing} A simulator, manual, or automation run must execute scenario {scenario.scenario_id}.", [source_ref]),
-        "scenario_setup": s(f"Declared setup dependencies: {deps}. Provider mode is {scenario.provider_mode} until validation attaches fixtures or cassettes.", [source_ref]),
+        "scenario_setup": s(f"Declared setup dependencies: {deps}. Provider mode is {effective_provider_mode(scenario.provider_mode, scenario_cassettes)}; {cassette_summary}", [source_ref, *cassette_refs]),
         "execution_attempts": s("No attempts, retries, or branch executions have run. The page reserves structured attempt records for manual, simulator, CI, and replay executions.", [source_ref]),
         "expected_behavior": s(f"Expected behavior from BDD: {scenario.bdd['then'][0]}. NMP/RMP boundary declared by the catalog: {boundary}.", [source_ref]),
         "actual_result": s(missing, [source_ref], ["Attach step-by-step observed behavior before changing this verdict."]),
@@ -193,7 +212,7 @@ def section_text(scenario: Scenario) -> dict[str, dict[str, Any]]:
         "content_hierarchy": s("Not assessed. Verify podcast/show/episode/transcript/agent content outranks chrome and does not truncate critical meaning.", [skill_ref]),
         "observability": s("Not assessed. Attach structured logs, metric IDs, provider/request IDs, relay IDs, and redacted traces needed to diagnose failures.", [source_ref]),
         "analytics_privacy_boundaries": s("Not assessed. Confirm useful event boundaries without PII, private keys, raw transcripts/audio, or provider secrets.", [source_ref]),
-        "replayability_cassette_provenance": s(f"Not assessed. Declared dependencies: {deps}. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence.", [source_ref]),
+        "replayability_cassette_provenance": s(f"Not executed yet. {cassette_summary}", [source_ref, *cassette_refs]),
         "evidence_confidence": s("Evidence confidence is zero until a current build, device/OS, rerun count, freshness, and flake notes are attached.", [source_ref]),
         "device_os_matrix": s("No device/OS matrix has run. The first validation should record simulator/device, OS, locale, appearance, Dynamic Type, and network state.", [source_ref]),
         "sister_app_nmp_chirp_comparison": s("Not assessed. Review must compare applicable NMP doctrine and known Chirp/sister-app fixes before marking this flow cohesive.", [skill_ref]),
@@ -216,10 +235,11 @@ def provider_from(cassette: str) -> str:
     return "provider"
 
 
-def artifacts_for(scenario: Scenario, source_ref: str, skill_ref: str) -> list[dict[str, Any]]:
+def artifacts_for(scenario: Scenario, source_ref: str, skill_ref: str, scenario_cassettes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         {"id": source_ref, "type": "source_doc", "path": f"sources/catalog/{scenario.source_file}", "description": f"Catalog source row for {scenario.scenario_id} at line {scenario.source_line}.", "required": True, "redaction": {"status": "not_needed"}},
         {"id": skill_ref, "type": "source_doc", "path": "data/skill-grounding.json", "description": "Required review skills and skill-search terms for scenario critique.", "required": True, "redaction": {"status": "not_needed"}},
+        *cassette_artifacts(scenario_cassettes),
     ]
 
 
@@ -235,7 +255,7 @@ def group_scores() -> dict[str, dict[str, Any]]:
     }
 
 
-def next_actions_for(scenario: Scenario) -> list[dict[str, str]]:
+def next_actions_for(scenario: Scenario, cassette_available: bool = False) -> list[dict[str, str]]:
     actions = [
         {"id": "run-scenario", "title": f"Execute {scenario.scenario_id} on the target simulator/device.", "status": "open", "owner": "validation-agent"},
         {"id": "attach-evidence", "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, and redaction metadata.", "status": "open", "owner": "validation-agent"},
@@ -244,9 +264,20 @@ def next_actions_for(scenario: Scenario) -> list[dict[str, str]]:
         {"id": "revalidate-defects", "title": "Re-run this scenario after each fix PR and attach revalidation run IDs.", "status": "open", "owner": "validation-agent"},
         {"id": "assign-owners", "title": "Assign owner and status for every blocker, gate, action, defect, and revalidation item.", "status": "open", "owner": "review-agent"},
     ]
-    if scenario.cassettes or scenario.provider_mode == "blocked":
+    if (scenario.cassettes or scenario.provider_mode == "blocked") and cassette_available:
+        actions.append({"id": "execute-with-cassettes", "title": "Run this provider-backed scenario in deterministic replay mode with the mapped cassette fixture(s).", "status": "open", "owner": "validation-agent"})
+    elif scenario.cassettes or scenario.provider_mode == "blocked":
         actions.append({"id": "attach-cassettes", "title": "Attach deterministic provider, relay, STT, TTS, LLM, or network cassettes.", "status": "open", "owner": "validation-agent"})
     return actions
+
+
+def live_dependency_rationale(scenario: Scenario, scenario_cassettes: list[dict[str, Any]]) -> str:
+    if scenario_cassettes:
+        ids = ", ".join(cassette["id"] for cassette in scenario_cassettes)
+        return f"Replay fixture(s) are available for provider-backed validation: {ids}. The scenario still needs an execution run using those fixtures."
+    if scenario.provider_mode == "blocked" or scenario.cassettes:
+        return "No live run has been performed; dependencies are blocked until cassette or live-run evidence is attached."
+    return "No live provider dependency is declared for this catalog scaffold."
 
 
 def summary_for(record: dict[str, Any]) -> dict[str, Any]:

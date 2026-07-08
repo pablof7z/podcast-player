@@ -237,9 +237,11 @@ def copy_evidence_assets(evidence_root: Path, out: Path) -> None:
     if not source.exists():
         return
     target = out / "assets"
-    if target.exists():
-        shutil.rmtree(target)
-    shutil.copytree(source, target)
+    for path in source.rglob("*"):
+        if path.is_file():
+            destination = target / path.relative_to(source)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, destination)
 
 
 def enrich_screenshot_dimensions(artifact: dict[str, Any], evidence_root: Path) -> None:

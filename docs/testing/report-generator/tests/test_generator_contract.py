@@ -26,6 +26,7 @@ REQUIRED_SCENARIO_SECTIONS = [
     "What Was Attempted And Test Intent",
     "Launch Readiness Summary",
     "Flow Overview And Steps",
+    "Provider Replay Coverage",
     "Results And Verdict",
     "UI Polish Report",
     "UX Polish Report",
@@ -55,6 +56,7 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             catalog = write_catalog(root / "catalog")
+            write_provider_cassette(root, ["SMOKE-001"])
             out = root / "site"
 
             records = build_records(catalog, root)
@@ -106,9 +108,15 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
                 ],
             )
             self.assertEqual(data["launch_assessment"]["launch_readiness"], "incomplete")
-            self.assertEqual(data["launch_assessment"]["issue_refs"], ["GH-702", "GH-730", "GH-733", "GH-700"])
+            self.assertEqual(data["launch_assessment"]["issue_refs"], ["GH-702", "GH-730", "GH-733", "GH-700", "GH-731"])
+            self.assertEqual(data["run"]["provider_mode"], "replay")
+            self.assertEqual(data["run"]["cassettes"][0]["id"], "smoke-provider")
+            self.assertIn("cassette:smoke-provider", {item["id"] for item in data["evidence"]["artifacts"]})
+            self.assertNotIn("cassette", {item["kind"] for item in data["evidence"]["missing"]})
             self.assertIn("placeholder:screenshot", {item["id"] for item in data["evidence"]["placeholders"]})
             self.assertIn("GH-702", {issue["id"] for issue in data["issues"]})
+            self.assertIn("Replay fixtures mapped to this scenario", scenario_page)
+            self.assertIn("smoke-provider", scenario_page)
 
     def test_preserves_existing_pages_assets_and_issue_index(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -118,12 +126,26 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             old_asset = out / "assets" / "scenarios" / "smoke-001" / "old-shot.jpg"
             old_asset.parent.mkdir(parents=True)
             old_asset.write_bytes(b"old image")
+            old_live_asset = out / "assets" / "live-verification" / "old-live-check.png"
+            old_live_asset.parent.mkdir(parents=True)
+            old_live_asset.write_bytes(b"old live screenshot")
+            evidence_root = root / "evidence"
+            new_evidence_asset = evidence_root / "assets" / "scenarios" / "smoke-002" / "new-shot.jpg"
+            new_evidence_asset.parent.mkdir(parents=True)
+            new_evidence_asset.write_bytes(b"new image")
             (out / ".git").write_text("gitdir: ../.git/worktrees/site\n")
             (out / ".nojekyll").write_text("")
             (out / "stale.html").write_text("stale")
+            legacy_page = out / "workstreams" / "index.html"
+            legacy_page.parent.mkdir(parents=True)
+            legacy_page.write_text("legacy workstream page")
+            legacy_screenshot_page = out / "screenshots" / "index.html"
+            legacy_screenshot_page.parent.mkdir(parents=True)
+            legacy_screenshot_page.write_text("legacy screenshot page")
             old_issues = {"issues": [{"id": "ISSUE-1", "url": "https://example.test/1"}], "counts": {"open": 1, "fixed": 0}}
             (out / "data").mkdir()
             (out / "data" / "issues.json").write_text(json.dumps(old_issues))
+            (out / "data" / "workstreams.json").write_text(json.dumps({"status": "legacy"}))
 
             records = build_records(catalog, root)
             old_record = copy.deepcopy(records[0])
@@ -260,21 +282,31 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             old_record["next_actions"] = [
                 item for item in old_record["next_actions"] if item["id"] not in {"revalidate-defects", "assign-owners"}
             ]
+            old_record["revalidation_update"] = {
+                "status": "historical_extension",
+                "summary": "Published page carried an additive field from a manual revalidation note.",
+            }
             previous_record_path = out / "scenarios" / "smoke-001" / "data.json"
             previous_record_path.parent.mkdir(parents=True)
             previous_record_path.write_text(json.dumps(old_record))
 
-            write_site(records, out, catalog, root)
+            write_site(records, out, catalog, root, evidence_root)
 
             self.assertEqual(old_asset.read_bytes(), b"old image")
+            self.assertEqual(old_live_asset.read_bytes(), b"old live screenshot")
+            self.assertEqual((out / "assets" / "scenarios" / "smoke-002" / "new-shot.jpg").read_bytes(), b"new image")
             self.assertEqual((out / ".git").read_text(), "gitdir: ../.git/worktrees/site\n")
             self.assertTrue((out / ".nojekyll").exists())
             self.assertFalse((out / "stale.html").exists())
+            self.assertEqual(legacy_page.read_text(), "legacy workstream page")
+            self.assertEqual(legacy_screenshot_page.read_text(), "legacy screenshot page")
+            self.assertEqual(json.loads((out / "data" / "workstreams.json").read_text()), {"status": "legacy"})
             issue_index = json.loads((out / "data" / "issues.json").read_text())
-            self.assertEqual(issue_index["counts"], {"open": 8})
+            self.assertEqual(issue_index["counts"], {"open": 9})
             indexed_issues = {(item["scenario_id"], item["id"]): item for item in issue_index["issues"]}
             self.assertIn(("SMOKE-001", "ISSUE-1"), indexed_issues)
             self.assertIn(("SMOKE-001", "GH-700"), indexed_issues)
+            self.assertIn(("SMOKE-001", "GH-731"), indexed_issues)
             self.assertIn(("SMOKE-002", "GH-702"), indexed_issues)
             self.assertEqual(indexed_issues[("SMOKE-001", "ISSUE-1")]["scenario_slug"], "smoke-001")
             merged = json.loads(previous_record_path.read_text())
@@ -282,6 +314,7 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertEqual(merged["verdict"]["overall"], "pass_with_issues")
             self.assertEqual(merged["coherence"]["group_judgment"]["status"], "pass_with_issues")
             self.assertEqual(merged["metrics"][0]["id"], "metric-screen-settle")
+            self.assertNotIn("revalidation_update", merged)
             self.assertIn("artifact:old-shot", {artifact["id"] for artifact in merged["evidence"]["artifacts"]})
             self.assertEqual(
                 [skill["name"] for skill in merged["review_grounding"]["selected_skills"]],
@@ -306,8 +339,8 @@ class ScenarioReportGeneratorTests(unittest.TestCase):
             self.assertEqual(rollups["average_dimension_scores"]["actual_result"], 1.5)
             self.assertEqual(rollups["average_dimension_scores"]["ui_polish"], 1)
             self.assertEqual(rollups["average_group_scores"]["functional_correctness"], 1.5)
-            self.assertEqual(rollups["issues_by_severity"], {"major": 8})
-            self.assertEqual(rollups["open_issues_by_severity"], {"major": 8})
+            self.assertEqual(rollups["issues_by_severity"], {"major": 9})
+            self.assertEqual(rollups["open_issues_by_severity"], {"major": 9})
             scenario_page = previous_record_path.with_name("index.html").read_text()
             home = (out / "index.html").read_text()
             self.assertIn("Screenshot Evidence", scenario_page)
@@ -430,7 +463,7 @@ def write_catalog(catalog: Path) -> Path:
                 "",
                 "| ID | Scenario | Evidence |",
                 "|---|---|---|",
-                "| SMOKE-001 | Given a seeded library, when the listener opens Library, then subscribed shows render with stable navigation. | ss: library screenshot; perf: screen settle metric; deps: seeded library; boundary: D1,D5. |",
+                "| SMOKE-001 | Given a seeded library, when the listener opens Library, then subscribed shows render with stable navigation. | ss: library screenshot; perf: screen settle metric; deps: seeded library plus OpenRouter provider cassette; boundary: D1,D5. |",
                 "| SMOKE-002 | Given offline mode, when the listener opens a cached show, then cached episodes remain available. | ss: offline screenshot; perf: none; deps: offline fixture; boundary: D5. |",
             ]
         )
@@ -442,6 +475,28 @@ def write_catalog(catalog: Path) -> Path:
 def build_records(catalog: Path, repo: Path) -> list[dict[str, object]]:
     scenarios = parse_catalog(catalog)
     return [build_report(scenario, scenarios, repo, GENERATED_AT, SITE_BASE) for scenario in scenarios]
+
+
+def write_provider_cassette(root: Path, refs: list[str]) -> None:
+    cassette_dir = root / "tests" / "fixtures" / "provider_cassettes"
+    cassette_dir.mkdir(parents=True, exist_ok=True)
+    (cassette_dir / "smoke-provider.json").write_text(
+        json.dumps(
+            {
+                "id": "smoke-provider",
+                "provider": "openrouter",
+                "operation": "chat_completion",
+                "scenario_refs": refs,
+                "nmp_rules": ["D7"],
+                "metrics": {
+                    "recorded_latency_ms": 100,
+                    "replay_latency_ms": 2,
+                    "budget_ms": 500,
+                    "acceptable_for_2026_premium": True,
+                },
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

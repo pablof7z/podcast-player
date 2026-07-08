@@ -105,6 +105,9 @@ Every scenario page must include:
 - Source runbook/catalog link back to `docs/testing/scenarios/`.
 - Revalidation links from a defect page back to the scenario evidence that closed
   the issue.
+- Provider replay coverage that names any mapped cassette fixture IDs and links
+  the redacted fixture artifacts, or explicitly states that provider-backed
+  validation is blocked by missing replay coverage.
 
 ## JSON Record Overview
 
@@ -232,6 +235,15 @@ Cassettes:
 - Store or link redacted cassette fixtures by provider and scenario.
 - Include provider, model, request class, redaction hash, recorded-at timestamp,
   and whether the scenario used live, replay, or mixed mode.
+- Scenario pages must surface mapped cassette fixtures directly from
+  `tests/fixtures/provider_cassettes/`, copy them to
+  `assets/cassettes/provider_cassettes/`, and register them as `cassette`
+  artifacts so provider-backed flows are visibly runnable without live
+  credentials.
+- A scenario with mapped replay fixtures may mark the cassette fixture itself as
+  present, but it still remains incomplete until an execution attempt proves the
+  app used replay mode and captured screenshots, UI tree, logs, metrics, and
+  UX/UI critique.
 
 Missing evidence:
 
