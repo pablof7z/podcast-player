@@ -30,13 +30,15 @@
         "fnd001-launch-console-log",
         "fnd001-runtime-oslog",
         "fnd001-ui-tree",
-        "rubric:review-skill-grounding"
+        "rubric:review-skill-grounding",
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "gaps": [
         "Review adjacent scenario pages as a cluster before promoting group coherence."
       ],
       "status": "incomplete",
-      "summary": "Foundation And First Run cluster coherence remains incomplete until adjacent scenarios are judged together; FND-001 now contributes current evidence and linked defects to that group view."
+      "summary": "Foundation And First Run cluster coherence remains incomplete until adjacent scenarios are judged together; FND-001 now contributes closed-defect evidence and remaining evidence gaps to that group view."
     },
     "individual_judgment": {
       "checks": [
@@ -51,14 +53,16 @@
         "fnd001-launch-console-log",
         "fnd001-runtime-oslog",
         "fnd001-ui-tree",
-        "rubric:review-skill-grounding"
+        "rubric:review-skill-grounding",
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "gaps": [
         "metric_trace",
         "accessibility_audit"
       ],
-      "status": "fail",
-      "summary": "FND-001 has current run evidence and currently fails its scenario-level product job; linked defects and revalidation remain required."
+      "status": "blocked",
+      "summary": "FND-001 has post-fix proof that onboarding no longer exposes the known main-shell controls behind first-run setup. Launch readiness remains blocked until the cold-launch metric, accessibility-settings audit, and adjacent Foundation flow checks are complete."
     },
     "themes": [
       "Does the flow preserve the same product mental model as adjacent scenarios?",
@@ -69,25 +73,27 @@
   "dimension_scores": {
     "accessibility_dynamic_type": {
       "evidence_refs": [
-        "fnd001-ui-tree"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "issue_refs": [
         "#743"
       ],
-      "rationale": "Hidden main-shell controls remain in the accessibility/automation tree behind onboarding.",
-      "score": 1,
-      "status": "fail"
+      "rationale": "Focused XCTest proves the known hidden controls are absent after the fix. VoiceOver traversal, Dynamic Type, contrast, Reduce Motion, and Reduce Transparency still need a complete audit.",
+      "score": 2,
+      "status": "pass_with_issues"
     },
     "actual_result": {
       "evidence_refs": [
-        "fnd001-ui-tree"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "issue_refs": [
         "#743"
       ],
-      "rationale": "The first page appears visually, but the semantic gate fails because hidden main-shell controls are present in the UI tree.",
-      "score": 1,
-      "status": "fail"
+      "rationale": "Post-fix focused revalidation proves the first onboarding page is visible and the known main-shell controls are absent from XCTest accessibility automation. Full launch metric and accessibility-settings evidence are still missing.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "analytics_privacy_boundaries": {
       "evidence_refs": [
@@ -409,11 +415,15 @@
     },
     "revalidation_status": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
-      "rationale": "Revalidation Status has not been validated with current run evidence.",
-      "score": 0,
-      "status": "incomplete"
+      "rationale": "PR #745 merged after all required GitHub checks passed; issue #743 closed with focused screenshot and XCTest evidence attached to this page.",
+      "score": 4,
+      "status": "pass",
+      "issue_refs": [
+        "#743"
+      ]
     },
     "review_skill_grounding": {
       "evidence_refs": [
@@ -466,36 +476,40 @@
     "ui_polish": {
       "evidence_refs": [
         "fnd001-first-onboarding-screenshot",
-        "fnd001-ui-tree"
+        "fnd001-ui-tree",
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "issue_refs": [
         "#743"
       ],
-      "rationale": "Visible first page is visually coherent in light mode, but hidden shell semantics block a clean UI pass.",
+      "rationale": "Visible first page remains visually coherent, and the post-fix screenshot shows no exposed main-shell chrome. Dark mode, Reduce Transparency, and larger accessibility sizes still need audit coverage.",
       "score": 3,
       "status": "pass_with_issues"
     },
     "ux_polish": {
       "evidence_refs": [
-        "fnd001-ui-tree"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "issue_refs": [
         "#743"
       ],
-      "rationale": "A first-run gate cannot expose underlying app actions to automation/accessibility before onboarding completion.",
-      "score": 1,
-      "status": "fail"
+      "rationale": "The structural onboarding gate now prevents the known underlying app actions from being exposed before onboarding completion. Full first-run rerun and cluster checks remain open.",
+      "score": 3,
+      "status": "pass_with_issues"
     },
     "verdict": {
       "evidence_refs": [
-        "fnd001-ui-tree"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "issue_refs": [
         "#743"
       ],
-      "rationale": "FND-001 cannot pass while the semantic UI tree exposes hidden main-shell controls.",
-      "score": 1,
-      "status": "fail"
+      "rationale": "The specific semantic gate defect is fixed and revalidated, but the scenario remains blocked by missing metric/accessibility evidence and cluster coherence work.",
+      "score": 3,
+      "status": "blocked"
     }
   },
   "evidence": {
@@ -735,7 +749,7 @@
           "test_sim -skipPackagePluginValidation -only-testing:PodcastrUITests/OnboardingIsolationUITests/testFirstLaunchOnboardingHidesMainShellControls",
           "test_sim -skipPackagePluginValidation -only-testing:PodcastrUITests/P1SettingsUITests/testP1_OnboardingNotShownAgain"
         ],
-        "notes": "Focused post-fix revalidation passed locally: onboarding is visible and known hidden main-shell controls are absent from the XCTest accessibility automation tree. Full GitHub Apple Build and Test gate remained in progress at page-prep time."
+        "notes": "Focused post-fix revalidation passed locally: onboarding is visible and known hidden main-shell controls are absent from the XCTest accessibility automation tree. All required GitHub checks later passed and PR #745 merged."
       }
     ],
     "branch_coverage": [
@@ -746,9 +760,9 @@
         "trigger": "Erase dedicated simulator and launch without --UITestSeed."
       },
       {
-        "expected": "No main-shell controls are exposed behind onboarding; focused XCTest passed locally, pending full CI merge confirmation.",
+        "expected": "No main-shell controls are exposed behind onboarding; focused XCTest passed locally and PR #745 merged after required GitHub checks passed.",
         "id": "main-shell-hidden-from-ui-tree",
-        "status": "pass_local_pending_ci",
+        "status": "pass",
         "trigger": "Capture semantic UI tree on first onboarding page."
       }
     ],
@@ -941,20 +955,26 @@
       "id": "#743",
       "owner": "app-team",
       "severity": "major",
-      "status": "open",
+      "status": "closed",
       "title": "FND-001: first onboarding page exposes hidden main-shell controls in UI tree",
-      "url": "https://github.com/pablof7z/podcast-player/issues/743"
+      "url": "https://github.com/pablof7z/podcast-player/issues/743",
+      "closed_at": "2026-07-08T02:23:18Z",
+      "fixed_by_pr": "https://github.com/pablof7z/podcast-player/pull/745",
+      "revalidated_by": [
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
+      ]
     }
   ],
   "launch_assessment": {
-    "accessibility_status": "fail",
+    "accessibility_status": "pass_with_issues",
     "blocking_gates": [
       "product_coherence",
       "release_readiness"
     ],
     "dependency_posture": "none",
     "evidence_quality": "pass_with_issues",
-    "individual_judgment": "FND-001 has current run evidence and currently fails its scenario-level product job; linked defects and revalidation remain required.",
+    "individual_judgment": "FND-001 has post-fix proof that onboarding no longer exposes the known main-shell controls behind first-run setup. Launch readiness remains blocked until the cold-launch metric, accessibility-settings audit, and adjacent Foundation flow checks are complete.",
     "issue_refs": [
       "#743"
     ],
@@ -963,12 +983,12 @@
       "metric_trace",
       "accessibility_audit"
     ],
-    "product_judgment": "FND-001 fails the semantic first-run gate: the visible onboarding page appears, but the UI tree exposes hidden main-shell controls behind it.",
+    "product_judgment": "Post-fix evidence shows first-run onboarding is visible and no known main-shell controls are exposed behind it. The scenario is still blocked for launch readiness because required metric_trace and accessibility_audit evidence are missing.",
     "regression_coverage": "incomplete",
     "risk_classification": "major",
     "scenario_owner": "validation-agent",
-    "scenario_status": "fail",
-    "whole_product_judgment": "Foundation And First Run cluster coherence remains incomplete until adjacent scenarios are judged together; FND-001 now contributes current evidence and linked defects to that group view."
+    "scenario_status": "blocked",
+    "whole_product_judgment": "Foundation And First Run cluster coherence remains incomplete until adjacent scenarios are judged together; FND-001 now contributes closed-defect evidence and remaining evidence gaps to that group view."
   },
   "metrics": [
     {
@@ -1001,15 +1021,15 @@
     {
       "id": "fix-fnd001-hidden-main-shell-semantics",
       "owner": "app-team",
-      "status": "open",
-      "title": "Hide or unmount main-shell accessibility/hit-test targets while onboarding is presented.",
+      "status": "closed",
+      "title": "Hide or unmount main-shell accessibility/hit-test targets while onboarding is presented. Fixed by PR #745.",
       "url": "https://github.com/pablof7z/podcast-player/issues/743"
     },
     {
       "id": "rerun-fnd001-after-743",
       "owner": "validation-agent",
-      "status": "blocked",
-      "title": "Re-run FND-001 from erased simulator and capture screenshot, UI tree, logs, and cold-launch metric.",
+      "status": "open",
+      "title": "Complete full FND-001 rerun with screenshot, UI tree, logs, cold-launch metric, accessibility audit, and adjacent Foundation flow spot checks.",
       "url": "https://github.com/pablof7z/podcast-player/issues/743"
     }
   ],
@@ -1229,8 +1249,7 @@
   },
   "readiness": {
     "blocking_reasons": [
-      "Current run evidence contains a functional failure that must be fixed and revalidated.",
-      "Linked open defect(s): #743.",
+      "Issue #743 is fixed and revalidated by focused screenshot/XCTest evidence, but the full scenario rerun is not complete.",
       "Remaining missing evidence: metric_trace, accessibility_audit.",
       "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
     ],
@@ -1509,20 +1528,21 @@
   "sections": {
     "accessibility_dynamic_type": {
       "evidence_refs": [
-        "fnd001-ui-tree"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [],
-      "summary": "The captured accessibility tree exposes the visible Get Started button and onboarding text, but also exposes hidden main-shell controls. Dynamic Type, VoiceOver traversal, contrast, Reduce Motion, and Reduce Transparency were not fully audited."
+      "summary": "Focused XCTest proves the known hidden main-shell controls are absent after the fix. Dynamic Type, VoiceOver traversal, contrast, Reduce Motion, and Reduce Transparency still require a full audit."
     },
     "actual_result": {
       "evidence_refs": [
-        "fnd001-first-onboarding-screenshot",
-        "fnd001-ui-tree"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [
-        "Filed https://github.com/pablof7z/podcast-player/issues/743."
+        "PR #745 merged and closed https://github.com/pablof7z/podcast-player/issues/743."
       ],
-      "summary": "The visible first onboarding page appears. The UI tree also exposes hidden main-shell text and targets including Home, Add Show, Search, Open Agent, Settings, and Start voice conversation."
+      "summary": "Post-fix focused revalidation shows the visible first onboarding page and no known main-shell controls exposed behind it in XCTest accessibility automation."
     },
     "analytics_privacy_boundaries": {
       "evidence_refs": [
@@ -1597,12 +1617,14 @@
     },
     "defects_issues_filed": {
       "evidence_refs": [
-        "fnd001-ui-tree"
+        "fnd001-ui-tree",
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [
         "https://github.com/pablof7z/podcast-player/issues/743"
       ],
-      "summary": "Filed #743 for the hidden main-shell semantic exposure behind onboarding."
+      "summary": "Filed #743 for the hidden main-shell semantic exposure behind onboarding; PR #745 fixed it and closed the issue after required GitHub checks passed."
     },
     "device_os_matrix": {
       "evidence_refs": [
@@ -1649,10 +1671,14 @@
     },
     "execution_attempts": {
       "evidence_refs": [
-        "catalog:fnd-001"
+        "fnd001-build-run-tail",
+        "fnd001-first-onboarding-screenshot",
+        "fnd001-ui-tree",
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [],
-      "summary": "No attempts, retries, or branch executions have run. The page reserves structured attempt records for manual, simulator, CI, and replay executions."
+      "summary": "Three attempts are recorded: the initial build-shape failure, the original FND-001 semantic failure, and the post-fix focused revalidation that passed before PR #745 merged."
     },
     "expected_behavior": {
       "evidence_refs": [
@@ -1686,10 +1712,11 @@
     "liquid_glass_ios_primitives": {
       "evidence_refs": [
         "fnd001-first-onboarding-screenshot",
-        "fnd001-ui-tree"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [],
-      "summary": "Visible glass-like treatment is restrained to the app icon/feature chips/CTA chrome and preserves contrast in light mode. Hidden shell exposure prevents a clean pass."
+      "summary": "Visible glass-like treatment is restrained to the app icon/feature chips/CTA chrome and preserves contrast in light mode. Post-fix proof shows no main-shell chrome exposed behind onboarding; Reduce Transparency and dark mode still need audit coverage."
     },
     "localization_content_quality": {
       "evidence_refs": [
@@ -1756,11 +1783,12 @@
         "fnd001-launch-console-log",
         "fnd001-runtime-oslog",
         "fnd001-ui-tree",
-        "rubric:review-skill-grounding"
+        "rubric:review-skill-grounding",
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [
-        "Current run evidence contains a functional failure that must be fixed and revalidated.",
-        "Linked open defect(s): #743.",
+        "Issue #743 is fixed and revalidated by focused screenshot/XCTest evidence, but the full scenario rerun is not complete.",
         "Remaining missing evidence: metric_trace, accessibility_audit.",
         "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
       ],
@@ -1795,12 +1823,14 @@
         "fnd001-launch-console-log",
         "fnd001-runtime-oslog",
         "fnd001-ui-tree",
-        "rubric:review-skill-grounding"
+        "rubric:review-skill-grounding",
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [
         "Review adjacent scenario pages as a cluster before promoting group coherence."
       ],
-      "summary": "Foundation And First Run cluster coherence remains incomplete until adjacent scenarios are judged together; FND-001 now contributes current evidence and linked defects to that group view."
+      "summary": "Foundation And First Run cluster coherence remains incomplete until adjacent scenarios are judged together; FND-001 now contributes closed-defect evidence and remaining evidence gaps to that group view."
     },
     "product_coherence_in_context": {
       "evidence_refs": [
@@ -1809,13 +1839,15 @@
         "fnd001-launch-console-log",
         "fnd001-runtime-oslog",
         "fnd001-ui-tree",
-        "rubric:review-skill-grounding"
+        "rubric:review-skill-grounding",
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [
         "metric_trace",
         "accessibility_audit"
       ],
-      "summary": "FND-001 has current run evidence and currently fails its scenario-level product job; linked defects and revalidation remain required."
+      "summary": "FND-001 has post-fix proof that onboarding no longer exposes the known main-shell controls behind first-run setup. Launch readiness remains blocked until the cold-launch metric, accessibility-settings audit, and adjacent Foundation flow checks are complete."
     },
     "readiness_gates": {
       "evidence_refs": [
@@ -1824,15 +1856,16 @@
         "fnd001-launch-console-log",
         "fnd001-runtime-oslog",
         "fnd001-ui-tree",
-        "rubric:review-skill-grounding"
+        "rubric:review-skill-grounding",
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [
-        "Current run evidence contains a functional failure that must be fixed and revalidated.",
-        "Linked open defect(s): #743.",
+        "Issue #743 is fixed and revalidated by focused screenshot/XCTest evidence, but the full scenario rerun is not complete.",
         "Remaining missing evidence: metric_trace, accessibility_audit.",
         "Related scenario cluster coherence remains incomplete until adjacent pages are reviewed together."
       ],
-      "summary": "Ship gate is blocked; gates now reflect attached evidence, remaining missing evidence, linked defects, and cluster-level follow-up."
+      "summary": "Ship gate remains blocked by missing metric/accessibility evidence and cluster follow-up, not by the closed #743 semantic gate defect."
     },
     "regression_risk": {
       "evidence_refs": [
@@ -1857,17 +1890,14 @@
     },
     "revalidation_status": {
       "evidence_refs": [
-        "fnd001-build-run-tail",
-        "fnd001-first-onboarding-screenshot",
-        "fnd001-launch-console-log",
-        "fnd001-runtime-oslog",
-        "fnd001-ui-tree",
-        "rubric:review-skill-grounding"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [
-        "#743"
+        "#743 closed",
+        "PR #745 merged"
       ],
-      "summary": "0 fixed issue(s) and 1 open issue(s) are linked; fixed issues require revalidation run IDs before closure is considered proven."
+      "summary": "1 fixed issue and 0 open scenario defects are linked. Focused screenshot and XCTest proof show the known hidden main-shell controls are absent after the structural onboarding gate fix."
     },
     "review_skill_grounding": {
       "evidence_refs": [
@@ -1924,37 +1954,43 @@
     },
     "ux_polish_report": {
       "evidence_refs": [
-        "fnd001-ui-tree"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [],
-      "summary": "The visible UX gives a clear first action, but the semantic tree contradicts the first-run gate by leaking main-shell actions behind onboarding."
+      "summary": "The first-run gate now behaves coherently for the known failure: onboarding is the only exposed app surface until setup is complete. Full accessibility settings and adjacent-flow coverage remain open."
     },
     "verdict": {
       "evidence_refs": [
-        "fnd001-first-onboarding-screenshot",
-        "fnd001-ui-tree"
+        "fnd001-onboarding-isolated-screenshot",
+        "fnd001-onboarding-isolation-xctest"
       ],
       "notes": [],
-      "summary": "Fail for FND-001 until #743 is fixed and the semantic UI tree proves no main-shell controls are exposed behind first-run onboarding."
+      "summary": "The #743 semantic gate defect is fixed and revalidated. FND-001 remains blocked for launch readiness until metric_trace, accessibility_audit, and adjacent Foundation flow coverage are complete."
     }
   },
   "verdict": {
-    "overall": "fail",
-    "reviewed_at": "2026-07-07T23:12:00Z",
+    "overall": "blocked",
+    "reviewed_at": "2026-07-08T02:25:00Z",
     "reviewer": "Codex",
-    "score_gate_explanation": "The screenshot satisfies the first-page visual requirement, but the required UI-tree gate is contradicted by hidden Home/Add Show/Search/Settings/Agent targets.",
-    "summary": "FND-001 fails the semantic first-run gate: the visible onboarding page appears, but the UI tree exposes hidden main-shell controls behind it."
+    "score_gate_explanation": "The #743 semantic gate defect is fixed and revalidated by focused XCTest/screenshot evidence; launch readiness remains blocked by missing metric_trace, accessibility_audit, and cluster revalidation evidence.",
+    "summary": "FND-001 is post-fix blocked, not defect-failed: the known hidden main-shell controls are absent after PR #745, but required launch/accessibility evidence is still missing."
   },
   "revalidation_update": {
-    "status": "local_pass_pending_full_ci",
+    "status": "merged_full_ci_pass",
     "prepared_at": "2026-07-08T02:07:00Z",
     "source_commit": "c470dcbebc4570348d84a76b54b26c264dda2c59",
     "pull_request": "https://github.com/pablof7z/podcast-player/pull/745",
     "issue": "https://github.com/pablof7z/podcast-player/issues/743",
-    "summary": "Focused local revalidation passed after structural onboarding gate fix; full GitHub Apple Build and Test gate was still running when this artifact was prepared.",
+    "summary": "Focused local revalidation passed after the structural onboarding gate fix; all required GitHub checks passed, PR #745 merged, and issue #743 closed.",
     "evidence_refs": [
       "fnd001-onboarding-isolated-screenshot",
       "fnd001-onboarding-isolation-xctest"
-    ]
+    ],
+    "finalized_at": "2026-07-08T02:25:00Z",
+    "merge_commit": "2e945af1c00a09aed016e0179377bfaf070a431c",
+    "merged_at": "2026-07-08T02:23:17Z",
+    "issue_status": "closed",
+    "github_final_gate": "passed"
   }
 }
