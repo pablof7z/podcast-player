@@ -31,6 +31,23 @@ The verifier checks schema version, unique IDs, required scenario references,
 NMP doctrine coverage tags, deterministic request body hashes, deterministic
 request fingerprints, redaction markers, and premium-app latency budgets.
 
+## Report Integration
+
+The scenario report generator indexes `tests/fixtures/provider_cassettes/*.json`
+by `scenario_refs`. When a cassette references a current catalog scenario, that
+scenario page shows a `Provider Replay Coverage` section, lists the replay
+fixture in `run.cassettes`, and publishes a redacted `cassette` artifact under:
+
+```text
+assets/cassettes/provider_cassettes/<fixture>.json
+```
+
+Mapped replay fixtures remove the cassette-fixture gap for that scenario, but
+they do not make the scenario pass by themselves. The scenario still needs a
+real execution run using `POD0_PROVIDER_CASSETTE_DIR`, plus screenshots, UI-tree
+evidence, logs, metrics, accessibility evidence, and screenshot-level UX/UI
+critique.
+
 ## Replay Contract
 
 Each cassette uses this matching key:

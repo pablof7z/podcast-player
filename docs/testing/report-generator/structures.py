@@ -63,8 +63,8 @@ def execution_for(scenario: Scenario, generated_at: str) -> dict[str, Any]:
     }
 
 
-def evidence_inventory_for(scenario: Scenario) -> dict[str, Any]:
-    required = required_evidence_kinds(scenario)
+def evidence_inventory_for(scenario: Scenario, cassette_available: bool = False) -> dict[str, Any]:
+    required = required_evidence_kinds(scenario, cassette_available)
     missing = [
         {
             "kind": kind,
@@ -183,10 +183,11 @@ def launch_assessment_for(
     readiness: dict[str, Any],
     risks: list[dict[str, Any]],
     issues: list[dict[str, Any]],
+    provider_mode: str | None = None,
 ) -> dict[str, Any]:
     missing = [item["kind"] for item in evidence_inventory["missing"]]
     blocked_gates = [gate["id"] for gate in readiness["gates"] if gate["status"] in {"blocked", "incomplete"}]
-    dependency_posture = "blocked" if scenario.provider_mode == "blocked" or scenario.cassettes else "not_run"
+    dependency_posture = provider_mode or ("blocked" if scenario.provider_mode == "blocked" or scenario.cassettes else "not_run")
     risk_source = issues or risks
     return {
         "launch_readiness": readiness["ship_gate"],
@@ -214,7 +215,7 @@ def evidence_refs_for_gate(gate_id: str, scenario: Scenario, issue_refs: list[st
     return ["rubric:review-skill-grounding"]
 
 
-def instrumentation_gaps_for(scenario: Scenario) -> list[dict[str, Any]]:
+def instrumentation_gaps_for(scenario: Scenario, cassette_available: bool = False) -> list[dict[str, Any]]:
     gaps = [
         gap("screenshots", "major", "No step-by-step screenshots are attached.", ["artifacts", "ui_polish", "actual_result"]),
         gap("ui-tree", "major", "No accessibility/UI tree snapshot is attached.", ["accessibility_dynamic_type", "actual_result"]),
@@ -225,12 +226,12 @@ def instrumentation_gaps_for(scenario: Scenario) -> list[dict[str, Any]]:
     ]
     if scenario.performance_required:
         gaps.append(gap("performance-metrics", "major", "Catalog requires performance evidence, but no trace or metric is attached.", ["performance", "reliability_flakiness"]))
-    if scenario.cassettes or scenario.provider_mode == "blocked":
+    if (scenario.cassettes or scenario.provider_mode == "blocked") and not cassette_available:
         gaps.append(gap("cassettes", "major", "Provider, relay, network, STT, TTS, or LLM replay data is missing or blocked.", ["replayability_cassette_provenance", "privacy_security"]))
     return gaps
 
 
-def risks_for(scenario: Scenario, scenarios: list[Scenario]) -> list[dict[str, Any]]:
+def risks_for(scenario: Scenario, scenarios: list[Scenario], cassette_available: bool = False) -> list[dict[str, Any]]:
     related = related_for(scenario, scenarios, limit=4)
     risks = [
         {
@@ -254,6 +255,8 @@ def risks_for(scenario: Scenario, scenarios: list[Scenario]) -> list[dict[str, A
     ]
     if scenario.performance_required:
         risks.append({"id": "risk-performance-budget", "severity": "major", "priority": "p1", "status": "open", "title": "Performance budget is declared but unmeasured.", "affected_dimensions": ["performance"], "mitigation": "Attach metric trace with budget, value, unit, method, and status."})
+    if (scenario.cassettes or scenario.provider_mode == "blocked") and not cassette_available:
+        risks.append({"id": "risk-missing-cassette", "severity": "major", "priority": "p0", "status": "open", "title": "Provider-backed scenario lacks mapped replay cassette coverage.", "affected_dimensions": ["replayability_cassette_provenance", "privacy_security", "observability"], "mitigation": "Attach a redacted provider, relay, STT, TTS, LLM, search, or network cassette before execution."})
     return risks
 
 
@@ -262,11 +265,11 @@ def highest_risk(risks: list[dict[str, Any]]) -> str:
     return max((risk["severity"] for risk in risks), key=lambda value: order.get(value, 0), default="none")
 
 
-def required_evidence_kinds(scenario: Scenario) -> list[str]:
+def required_evidence_kinds(scenario: Scenario, cassette_available: bool = False) -> list[str]:
     kinds = {"source_doc", "screenshot", "ui_tree", "log", "accessibility_audit", "command_output"}
     if scenario.performance_required:
         kinds.add("metric_trace")
-    if scenario.cassettes or scenario.provider_mode == "blocked":
+    if (scenario.cassettes or scenario.provider_mode == "blocked") and not cassette_available:
         kinds.add("cassette")
     return sorted(kinds)
 

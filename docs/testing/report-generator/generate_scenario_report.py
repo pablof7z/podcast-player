@@ -13,6 +13,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from architecture_scan_report import architecture_scan_data, render_architecture_scan_page  # noqa: E402
+from cassettes import CASSETTE_ASSET_ROOT, CASSETTE_FIXTURE_DIR  # noqa: E402
 from catalog import parse_catalog, slugify  # noqa: E402
 from contract import GENERATOR_VERSION, SCHEMA_VERSION, SITE_BASE, SKILL_GROUNDING  # noqa: E402
 from evidence import apply_evidence_overlays, copy_evidence_assets, load_evidence_overlays  # noqa: E402
@@ -114,6 +115,9 @@ def copy_repo_assets(repo: Path, out: Path) -> None:
     screenshots = scenarios / "screenshots"
     if screenshots.exists():
         copy_tree_contents(screenshots, out / "assets" / "scenario-screenshots")
+    cassettes = repo / CASSETTE_FIXTURE_DIR
+    if cassettes.exists():
+        copy_tree_contents(cassettes, out / CASSETTE_ASSET_ROOT)
 
 
 def copy_tree_contents(source: Path, target: Path) -> None:
@@ -158,7 +162,9 @@ def read_previous_records(out: Path) -> dict[str, dict[str, Any]]:
 
 
 def merge_previous_record(current: dict[str, Any], previous: dict[str, Any] | None) -> dict[str, Any]:
-    if not previous or set(previous) != set(current) or previous.get("schema_version") != current["schema_version"]:
+    if not previous or previous.get("schema_version") != current["schema_version"]:
+        return current
+    if not set(current).issubset(previous):
         return current
     if not has_observed_data(previous):
         return current

@@ -79,6 +79,7 @@ def render_scenario_page(record: dict[str, Any], depth: int, next_wave: dict[str
         section("What Was Attempted And Test Intent", test_intent_block(record)),
         section("Flow Overview And Steps", bdd_block(scenario["bdd"]) + flow_step_table(record["flow_steps"])),
         section("Data And Control-Plane Setup", control_plane_block(record)),
+        section("Provider Replay Coverage", provider_replay_block(record, depth)),
         section("Preconditions, Fixtures, Cassettes, And Runtime Metadata", key_values(metadata_for(record)) + device_table(record["run"]["device_matrix"]) + cassette_table(record["run"].get("cassettes", []))),
         section("Execution Attempts, Retries, And Branches", attempts_block(record["execution"])),
         section("Results And Verdict", p(record["verdict"]["summary"]) + key_values({"Overall": record["verdict"]["overall"], "Gate explanation": record["verdict"]["score_gate_explanation"]})),
@@ -193,6 +194,42 @@ def control_plane_block(record: dict[str, Any]) -> str:
         "Launch arguments": ", ".join(environment.get("launch_arguments", [])) or "none",
     }
     return key_values(values) + p(record["sections"]["scenario_setup"]["summary"])
+
+
+def provider_replay_block(record: dict[str, Any], depth: int) -> str:
+    cassettes = record["run"].get("cassettes", [])
+    provider_mode = record["run"]["provider_mode"]
+    if not cassettes:
+        if provider_mode == "none":
+            return p("This scenario declares no provider, relay, STT, TTS, LLM, search, or replay dependency.")
+        return p("No replay cassette is mapped yet. Provider-backed validation remains blocked until a redacted fixture is attached or a live-only rationale is approved.")
+    artifact_by_id = {artifact["id"]: artifact for artifact in record["evidence"]["artifacts"]}
+    rows = []
+    for item in cassettes:
+        artifact = artifact_by_id.get(f"cassette:{item['id']}")
+        artifact_link = (
+            f"<a href=\"{rel(artifact['path'], depth)}\">fixture JSON</a>"
+            if artifact
+            else "pending fixture artifact"
+        )
+        rows.append(
+            "<tr>"
+            f"<td>{e(item['id'])}</td>"
+            f"<td>{e(item['provider'])}</td>"
+            f"<td>{badge(item['mode'])}</td>"
+            f"<td>{e(item['redaction_hash'])}</td>"
+            f"<td>{artifact_link}</td>"
+            "</tr>"
+        )
+    table = (
+        "<table><caption>Replay fixtures mapped to this scenario</caption>"
+        "<thead><tr><th>Cassette</th><th>Provider</th><th>Mode</th><th>Redaction hash</th><th>Artifact</th></tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table>"
+    )
+    return (
+        p("Replay coverage is available for this scenario. The scenario still needs an execution run with POD0_PROVIDER_CASSETTE_DIR so the screenshots, UI tree, logs, and metrics prove the provider-backed flow.")
+        + table
+    )
 
 
 def flow_step_table(steps: list[dict[str, Any]]) -> str:
