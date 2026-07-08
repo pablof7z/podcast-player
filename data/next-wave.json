@@ -18,9 +18,11 @@
     "Every actionable defect found during execution must be filed before a scenario can leave incomplete."
   ],
   "loaded_skills": [
-    "vabole/apple-skills@ios-liquid-glass",
-    "vabole/apple-skills@hig",
-    "qodex-ai/ai-agent-skills@mobile-app-interface"
+    "casper-studios/casper-marketplace@liquid-glass",
+    "charleswiltgen/axiom@axiom-design",
+    "charleswiltgen/axiom@axiom-accessibility",
+    "charleswiltgen/axiom@axiom-performance",
+    "phazurlabs/ux-ui-mastery@mobile ux design"
   ],
   "mapped_count": 8,
   "not_run_count": 7,
@@ -54,7 +56,8 @@
       ],
       "missing_evidence": [
         "metric_trace",
-        "accessibility_audit"
+        "accessibility_audit",
+        "report_viewport"
       ],
       "performance_metrics": [
         {
@@ -110,8 +113,8 @@
           "check": "Onboarding behaves as a true first-run gate with no navigable app state behind it.",
           "id": "fnd001-first-run-gate",
           "skill_refs": [
-            "vabole/apple-skills@hig",
-            "qodex-ai/ai-agent-skills@mobile-app-interface"
+            "charleswiltgen/axiom@axiom-design",
+            "phazurlabs/ux-ui-mastery@mobile ux design"
           ]
         },
         {
@@ -119,7 +122,7 @@
           "check": "Any glass-like treatment is limited to chrome or controls and preserves contrast over the launch backdrop.",
           "id": "fnd001-chrome-restraint",
           "skill_refs": [
-            "vabole/apple-skills@ios-liquid-glass"
+            "casper-studios/casper-marketplace@liquid-glass"
           ]
         }
       ],
@@ -157,6 +160,7 @@
         "command_output",
         "log",
         "metric_trace",
+        "report_viewport",
         "screenshot",
         "ui_tree"
       ],
@@ -211,7 +215,7 @@
           "check": "Page order, progress, and back/skip behavior match the user's mental model and do not strand the user.",
           "id": "fnd002-progress-honesty",
           "skill_refs": [
-            "qodex-ai/ai-agent-skills@mobile-app-interface"
+            "phazurlabs/ux-ui-mastery@mobile ux design"
           ]
         },
         {
@@ -219,7 +223,7 @@
           "check": "Headlines, body copy, and buttons remain readable without truncating critical meaning.",
           "id": "fnd002-dynamic-text-fit",
           "skill_refs": [
-            "vabole/apple-skills@hig"
+            "charleswiltgen/axiom@axiom-design"
           ]
         }
       ],
@@ -256,6 +260,7 @@
         "accessibility_audit",
         "command_output",
         "log",
+        "report_viewport",
         "screenshot",
         "ui_tree"
       ],
@@ -308,7 +313,7 @@
           "check": "Skip copy explains consequences without making AI setup feel mandatory for library or playback.",
           "id": "fnd003-skip-copy-honesty",
           "skill_refs": [
-            "qodex-ai/ai-agent-skills@mobile-app-interface"
+            "phazurlabs/ux-ui-mastery@mobile ux design"
           ]
         },
         {
@@ -316,7 +321,7 @@
           "check": "Disconnected provider state is visible, stable, and not confused with a failure state.",
           "id": "fnd003-settings-state-clarity",
           "skill_refs": [
-            "vabole/apple-skills@hig"
+            "charleswiltgen/axiom@axiom-design"
           ]
         }
       ],
@@ -353,6 +358,7 @@
         "accessibility_audit",
         "command_output",
         "log",
+        "report_viewport",
         "screenshot",
         "ui_tree"
       ],
@@ -407,8 +413,8 @@
           "check": "Keyboard, field label, focus state, and primary action remain reachable and understandable.",
           "id": "fnd004-form-ergonomics",
           "skill_refs": [
-            "vabole/apple-skills@hig",
-            "qodex-ai/ai-agent-skills@mobile-app-interface"
+            "charleswiltgen/axiom@axiom-design",
+            "phazurlabs/ux-ui-mastery@mobile ux design"
           ]
         },
         {
@@ -416,7 +422,7 @@
           "check": "The name appears consistently across onboarding completion and Settings identity without native-side remapping.",
           "id": "fnd004-state-coherence",
           "skill_refs": [
-            "qodex-ai/ai-agent-skills@mobile-app-interface"
+            "phazurlabs/ux-ui-mastery@mobile ux design"
           ]
         }
       ],
@@ -455,6 +461,7 @@
         "command_output",
         "log",
         "metric_trace",
+        "report_viewport",
         "screenshot",
         "ui_tree"
       ],
@@ -510,7 +517,7 @@
           "check": "Subscription progress and success feedback are visible and do not require hidden refresh knowledge.",
           "id": "fnd005-subscribe-feedback",
           "skill_refs": [
-            "qodex-ai/ai-agent-skills@mobile-app-interface"
+            "phazurlabs/ux-ui-mastery@mobile ux design"
           ]
         },
         {
@@ -518,8 +525,8 @@
           "check": "The new Library row gives the show identity priority over decorative chrome.",
           "id": "fnd005-library-hierarchy",
           "skill_refs": [
-            "vabole/apple-skills@hig",
-            "vabole/apple-skills@ios-liquid-glass"
+            "charleswiltgen/axiom@axiom-design",
+            "casper-studios/casper-marketplace@liquid-glass"
           ]
         }
       ],
@@ -557,6 +564,7 @@
         "cassette",
         "command_output",
         "log",
+        "report_viewport",
         "screenshot",
         "ui_tree"
       ],
@@ -611,7 +619,7 @@
           "check": "Error copy is specific, placed near the field, and leaves a clear recovery path.",
           "id": "fnd006-error-recovery-clarity",
           "skill_refs": [
-            "qodex-ai/ai-agent-skills@mobile-app-interface"
+            "phazurlabs/ux-ui-mastery@mobile ux design"
           ]
         },
         {
@@ -619,7 +627,7 @@
           "check": "VoiceOver and focus order announce the invalid state without trapping the user.",
           "id": "fnd006-error-accessibility",
           "skill_refs": [
-            "vabole/apple-skills@hig"
+            "charleswiltgen/axiom@axiom-design"
           ]
         }
       ],
@@ -657,6 +665,7 @@
         "command_output",
         "log",
         "metric_trace",
+        "report_viewport",
         "screenshot",
         "ui_tree"
       ],
@@ -710,7 +719,7 @@
           "check": "The user returns to app state with no duplicate setup burden or contradictory welcome copy.",
           "id": "fnd007-restoration-honesty",
           "skill_refs": [
-            "qodex-ai/ai-agent-skills@mobile-app-interface"
+            "phazurlabs/ux-ui-mastery@mobile ux design"
           ]
         },
         {
@@ -718,7 +727,7 @@
           "check": "Restored main navigation chrome remains readable and does not ghost onboarding content behind glass.",
           "id": "fnd007-main-chrome",
           "skill_refs": [
-            "vabole/apple-skills@ios-liquid-glass"
+            "casper-studios/casper-marketplace@liquid-glass"
           ]
         }
       ],
@@ -755,6 +764,7 @@
         "accessibility_audit",
         "command_output",
         "log",
+        "report_viewport",
         "screenshot",
         "ui_tree"
       ],
@@ -809,7 +819,7 @@
           "check": "Restoration is understandable and avoids asking the user to redo irreversible identity work.",
           "id": "fnd008-interruption-recovery",
           "skill_refs": [
-            "qodex-ai/ai-agent-skills@mobile-app-interface"
+            "phazurlabs/ux-ui-mastery@mobile ux design"
           ]
         },
         {
@@ -817,14 +827,14 @@
           "check": "The current step and next action are visually obvious after relaunch.",
           "id": "fnd008-state-visibility",
           "skill_refs": [
-            "vabole/apple-skills@hig"
+            "charleswiltgen/axiom@axiom-design"
           ]
         }
       ],
       "verdict": "incomplete"
     }
   ],
-  "search_command": "npx skills search \"iOS mobile UI UX liquid glass native polish validation\"",
+  "search_command": "npx skills search \"UI UX mobile Liquid Glass design review accessibility\"",
   "status": "planned",
   "target_count": 8,
   "title": "Foundation Onboarding Screenshot Wave 001",

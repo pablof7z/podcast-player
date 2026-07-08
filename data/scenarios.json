@@ -8,7 +8,8 @@
     "launch_readiness": "blocked",
     "missing_evidence": [
       "metric_trace",
-      "accessibility_audit"
+      "accessibility_audit",
+      "report_viewport"
     ],
     "product_cluster": "foundation-and-first-run",
     "provider_mode": "none",
@@ -40,6 +41,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -71,6 +73,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -101,6 +104,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -134,6 +138,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -169,6 +174,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -202,6 +208,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -233,6 +240,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -265,6 +273,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -297,6 +306,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -328,6 +338,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -360,6 +371,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -391,6 +403,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -424,6 +437,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -456,6 +470,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -486,6 +501,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -516,6 +532,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -548,6 +565,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -580,6 +598,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -610,6 +629,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -642,6 +662,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -674,6 +695,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -706,6 +728,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -743,6 +766,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -776,6 +800,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -808,6 +833,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -840,6 +866,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -871,6 +898,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -904,6 +932,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -939,6 +968,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -971,6 +1001,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1002,6 +1033,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1036,6 +1068,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1070,6 +1103,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1103,6 +1137,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1136,6 +1171,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1168,6 +1204,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1200,6 +1237,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1233,6 +1271,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1266,6 +1305,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1301,6 +1341,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1336,6 +1377,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1370,7 +1412,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "discovery-and-search",
     "provider_mode": "replay",
@@ -1402,6 +1445,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1434,6 +1478,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1467,6 +1512,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1498,6 +1544,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1529,6 +1576,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1557,7 +1605,8 @@
     "id": "LIB-001",
     "launch_readiness": "incomplete",
     "missing_evidence": [
-      "accessibility_audit"
+      "accessibility_audit",
+      "report_viewport"
     ],
     "product_cluster": "library-and-episode-management",
     "provider_mode": "none",
@@ -1588,6 +1637,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1620,6 +1670,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1652,6 +1703,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1685,6 +1737,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1717,6 +1770,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1750,6 +1804,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1781,6 +1836,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1815,6 +1871,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1849,6 +1906,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1882,6 +1940,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1915,6 +1974,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1947,6 +2007,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -1977,6 +2038,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2010,6 +2072,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2043,6 +2106,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2074,7 +2138,8 @@
     "launch_readiness": "incomplete",
     "missing_evidence": [
       "resume-fixture",
-      "accessibility_audit"
+      "accessibility_audit",
+      "report_viewport"
     ],
     "product_cluster": "playback",
     "provider_mode": "none",
@@ -2106,6 +2171,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2139,6 +2205,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2171,6 +2238,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2204,6 +2272,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2237,6 +2306,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2270,6 +2340,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2303,6 +2374,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2335,6 +2407,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2366,6 +2439,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2399,6 +2473,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2432,6 +2507,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2465,6 +2541,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2498,6 +2575,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2530,6 +2608,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2561,6 +2640,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2593,6 +2673,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2626,6 +2707,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2657,6 +2739,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2688,6 +2771,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2720,6 +2804,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2751,6 +2836,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2786,6 +2872,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2820,6 +2907,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2851,6 +2939,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2884,6 +2973,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2917,6 +3007,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2948,6 +3039,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -2981,6 +3073,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3014,6 +3107,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3047,6 +3141,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3079,6 +3174,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3113,6 +3209,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3148,6 +3245,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3182,6 +3280,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3215,6 +3314,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3249,7 +3349,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "transcripts",
     "provider_mode": "replay",
@@ -3280,6 +3381,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3313,7 +3415,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "transcripts",
     "provider_mode": "replay",
@@ -3346,7 +3449,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "transcripts",
     "provider_mode": "replay",
@@ -3378,6 +3482,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3411,7 +3516,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "transcripts",
     "provider_mode": "replay",
@@ -3443,6 +3549,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3476,6 +3583,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3508,6 +3616,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3540,6 +3649,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3573,6 +3683,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3605,6 +3716,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3638,6 +3750,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3669,6 +3782,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3699,6 +3813,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3731,6 +3846,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3764,6 +3880,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3797,6 +3914,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3830,6 +3948,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3862,6 +3981,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3894,6 +4014,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3926,6 +4047,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3961,6 +4083,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -3995,6 +4118,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4026,6 +4150,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4058,6 +4183,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4090,6 +4216,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4120,6 +4247,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4152,6 +4280,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4185,6 +4314,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4218,6 +4348,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4249,6 +4380,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4281,6 +4413,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4314,6 +4447,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4346,6 +4480,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4380,6 +4515,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4413,6 +4549,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4445,6 +4582,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4481,6 +4619,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4515,6 +4654,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4547,6 +4687,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4580,6 +4721,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4612,6 +4754,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4644,6 +4787,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4676,6 +4820,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4709,6 +4854,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4744,6 +4890,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4776,6 +4923,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4809,6 +4957,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4843,6 +4992,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4878,6 +5028,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4910,6 +5061,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -4943,7 +5095,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "replay",
@@ -4976,6 +5129,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5010,6 +5164,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5043,6 +5198,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5076,7 +5232,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "replay",
@@ -5108,7 +5265,8 @@
       "command_output",
       "log",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "llm-provider-and-replay",
     "provider_mode": "replay",
@@ -5138,6 +5296,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5171,6 +5330,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5206,6 +5366,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5240,6 +5401,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5275,6 +5437,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5310,6 +5473,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5345,7 +5509,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "replay",
@@ -5378,6 +5543,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5412,6 +5578,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5446,6 +5613,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5477,6 +5645,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5509,6 +5678,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5543,6 +5713,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5575,6 +5746,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5607,6 +5779,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5640,6 +5813,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5672,6 +5846,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5707,6 +5882,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5741,6 +5917,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5774,6 +5951,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5807,7 +5985,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "wiki-rag-knowledge-and-briefings",
     "provider_mode": "replay",
@@ -5839,6 +6018,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5871,6 +6051,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5902,6 +6083,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5935,6 +6117,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5967,6 +6150,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -5997,6 +6181,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6029,6 +6214,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6063,6 +6249,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6097,6 +6284,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6130,6 +6318,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6164,6 +6353,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6198,6 +6388,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6232,6 +6423,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6265,6 +6457,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6300,6 +6493,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6335,6 +6529,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6367,6 +6562,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6398,6 +6594,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6430,6 +6627,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6462,6 +6660,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6496,6 +6695,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6530,6 +6730,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6564,6 +6765,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6598,6 +6800,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6631,6 +6834,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6665,6 +6869,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6700,6 +6905,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6734,6 +6940,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6768,6 +6975,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6801,6 +7009,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6834,6 +7043,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6865,6 +7075,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6898,6 +7109,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6931,6 +7143,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6962,6 +7175,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -6992,6 +7206,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7022,6 +7237,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7055,6 +7271,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7089,6 +7306,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7121,6 +7339,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7155,6 +7374,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7190,6 +7410,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7223,6 +7444,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7253,6 +7475,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7284,6 +7507,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7318,6 +7542,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7352,6 +7577,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7384,6 +7610,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7416,6 +7643,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7449,6 +7677,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7483,6 +7712,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7514,6 +7744,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7547,6 +7778,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7577,7 +7809,8 @@
     "missing_evidence": [
       "picker-change-coverage",
       "relaunch-persistence",
-      "accessibility_audit"
+      "accessibility_audit",
+      "report_viewport"
     ],
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
@@ -7608,6 +7841,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7641,6 +7875,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7671,6 +7906,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7700,7 +7936,8 @@
     "launch_readiness": "blocked",
     "missing_evidence": [
       "clear-all-data-teardown",
-      "accessibility_audit"
+      "accessibility_audit",
+      "report_viewport"
     ],
     "product_cluster": "settings-and-storage",
     "provider_mode": "none",
@@ -7731,6 +7968,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7764,6 +8002,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7795,6 +8034,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7826,6 +8066,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7859,6 +8100,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7891,6 +8133,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7925,6 +8168,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7958,6 +8202,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -7989,6 +8234,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8020,6 +8266,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8050,6 +8297,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8081,6 +8329,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8115,6 +8364,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8149,6 +8399,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8180,6 +8431,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8212,6 +8464,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8244,6 +8497,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8276,6 +8530,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8309,6 +8564,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8342,6 +8598,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8375,6 +8632,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8406,6 +8664,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8436,6 +8695,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8468,6 +8728,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8501,6 +8762,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8531,6 +8793,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8561,6 +8824,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8592,6 +8856,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8626,6 +8891,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8659,6 +8925,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8693,6 +8960,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8726,6 +8994,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8760,6 +9029,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8791,6 +9061,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8823,6 +9094,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8856,6 +9128,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8888,6 +9161,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8923,6 +9197,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8956,6 +9231,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -8988,6 +9264,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9019,6 +9296,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9051,6 +9329,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9083,6 +9362,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9115,6 +9395,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9149,6 +9430,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9182,6 +9464,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9214,6 +9497,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9248,6 +9532,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9280,6 +9565,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9311,6 +9597,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9342,6 +9629,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9373,6 +9661,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9406,6 +9695,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9439,6 +9729,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9472,6 +9763,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9506,6 +9798,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9539,6 +9832,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9571,6 +9865,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9603,6 +9898,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9636,6 +9932,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9670,6 +9967,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9704,6 +10002,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9736,6 +10035,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9768,6 +10068,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9800,6 +10101,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9833,6 +10135,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9867,7 +10170,8 @@
       "log",
       "metric_trace",
       "screenshot",
-      "ui_tree"
+      "ui_tree",
+      "report_viewport"
     ],
     "product_cluster": "offline-relay-and-replay-honesty",
     "provider_mode": "replay",
@@ -9901,6 +10205,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9933,6 +10238,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9965,6 +10271,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -9997,6 +10304,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10028,6 +10336,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10058,6 +10367,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10089,6 +10399,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10120,6 +10431,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10152,6 +10464,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10183,6 +10496,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10214,6 +10528,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10246,6 +10561,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10278,6 +10594,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10310,6 +10627,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10343,6 +10661,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10374,6 +10693,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10405,6 +10725,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10439,6 +10760,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10474,6 +10796,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10509,6 +10832,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10544,6 +10868,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10578,6 +10903,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10611,6 +10937,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10644,6 +10971,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10677,6 +11005,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10712,6 +11041,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10747,6 +11077,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10783,6 +11114,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10817,6 +11149,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10850,6 +11183,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10883,6 +11217,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10917,6 +11252,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10952,6 +11288,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -10984,6 +11321,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11019,6 +11357,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11054,6 +11393,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11087,6 +11427,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11119,6 +11460,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11152,6 +11494,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11186,6 +11529,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11220,6 +11564,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11253,6 +11598,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11286,6 +11632,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11320,6 +11667,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11353,6 +11701,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11386,6 +11735,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11418,6 +11768,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11452,6 +11803,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11485,6 +11837,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11520,6 +11873,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11555,6 +11909,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11588,6 +11943,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11622,6 +11978,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11655,6 +12012,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11689,6 +12047,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11722,6 +12081,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11755,6 +12115,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11787,6 +12148,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11820,6 +12182,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11853,6 +12216,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11887,6 +12251,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11920,6 +12285,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11954,6 +12320,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -11989,6 +12356,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12022,6 +12390,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12055,6 +12424,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12089,6 +12459,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12124,6 +12495,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12157,6 +12529,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12190,6 +12563,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12225,6 +12599,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12257,6 +12632,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12290,6 +12666,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12323,6 +12700,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12357,6 +12735,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12392,6 +12771,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12425,6 +12805,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12457,6 +12838,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12489,6 +12871,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12523,6 +12906,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12560,6 +12944,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12593,6 +12978,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12627,6 +13013,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12660,6 +13047,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12694,6 +13082,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12728,6 +13117,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12763,6 +13153,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12797,6 +13188,7 @@
       "cassette",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12830,6 +13222,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12864,6 +13257,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12899,6 +13293,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12932,6 +13327,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -12967,6 +13363,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13000,6 +13397,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13033,6 +13431,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13066,6 +13465,7 @@
       "accessibility_audit",
       "command_output",
       "log",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13098,6 +13498,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13132,6 +13533,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13166,6 +13568,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13200,6 +13603,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13234,6 +13638,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13268,6 +13673,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13301,6 +13707,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13336,6 +13743,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13370,6 +13778,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13402,6 +13811,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13437,6 +13847,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13471,6 +13882,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13504,6 +13916,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13536,6 +13949,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13570,6 +13984,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13603,6 +14018,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13636,6 +14052,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13669,6 +14086,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13703,6 +14121,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13736,6 +14155,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13770,6 +14190,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -13803,6 +14224,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],

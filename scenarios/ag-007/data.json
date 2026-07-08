@@ -527,6 +527,15 @@
       },
       {
         "blocks_dimensions": [
+          "device_viewport_coverage",
+          "evidence_confidence"
+        ],
+        "kind": "report_viewport",
+        "reason": "Generated scenario pages need desktop/mobile viewport smoke evidence so report-page layout is reviewable.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
           "actual_result",
           "ui_polish",
           "content_hierarchy"
@@ -587,6 +596,16 @@
       },
       {
         "blocks_dimensions": [
+          "device_viewport_coverage",
+          "evidence_confidence"
+        ],
+        "id": "placeholder:report_viewport",
+        "kind": "report_viewport",
+        "message": "Missing required report viewport evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
           "actual_result",
           "ui_polish",
           "content_hierarchy"
@@ -613,6 +632,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "source_doc",
       "ui_tree"
@@ -630,14 +650,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-08T05:25:29Z",
+        "completed_at": "2026-07-08T09:10:26Z",
         "evidence_refs": [
           "catalog:ag-007"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-08T05:25:29Z",
+        "started_at": "2026-07-08T09:10:26Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -695,6 +715,7 @@
         "command_output",
         "log",
         "metric_trace",
+        "report_viewport",
         "screenshot",
         "source_doc",
         "ui_tree"
@@ -966,6 +987,7 @@
       "command_output",
       "log",
       "metric_trace",
+      "report_viewport",
       "screenshot",
       "ui_tree"
     ],
@@ -988,7 +1010,7 @@
       "id": "attach-evidence",
       "owner": "validation-agent",
       "status": "open",
-      "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, and redaction metadata."
+      "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, generated-page viewport checks, and redaction metadata."
     },
     {
       "id": "score-dimensions",
@@ -1018,7 +1040,7 @@
   "page": {
     "assets_base": "assets/scenarios/ag-007/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/ag-007/",
-    "generated_at": "2026-07-08T05:25:29Z",
+    "generated_at": "2026-07-08T09:10:26Z",
     "navigation": {
       "category_url": "../agent-chat-and-tools/",
       "next_url": "../ag-008/",
@@ -1065,7 +1087,8 @@
         "Dynamic Type",
         "4.5:1 contrast",
         "44 pt targets",
-        "Reduce Motion/Transparency"
+        "Reduce Motion/Transparency",
+        "gesture alternatives"
       ],
       "evidence_refs": [
         "rubric:review-skill-grounding"
@@ -1150,6 +1173,7 @@
         "tap latency",
         "screen settle",
         "scroll hitches",
+        "memory/CPU/energy",
         "provider/audio/network latency"
       ],
       "evidence_refs": [
@@ -1199,7 +1223,7 @@
         "SF/system typography",
         "semantic color",
         "visual hierarchy",
-        "no overlapping text",
+        "glass only on chrome",
         "platform-native controls"
       ],
       "evidence_refs": [
@@ -1213,8 +1237,8 @@
     },
     "ux": {
       "checks": [
-        "clear user goal",
-        "low cognitive load",
+        "one primary action",
+        "thumb-zone reach",
         "visible feedback",
         "recoverable errors",
         "predictable navigation"
@@ -1306,45 +1330,51 @@
   "review_grounding": {
     "all_considered": [
       {
-        "coverage": "Liquid Glass hierarchy, harmony, consistency, native chrome usage, interactive glass restraint, safe-area-sensitive controls, and Reduce Motion/Transparency expectations.",
-        "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "coverage": "Search result with 283 installs. Loaded with npx skills use; grounds content-first Liquid Glass, glass-only navigation/control chrome, adaptive tinting, 8 pt spacing, 44 pt hit targets, SF Symbols, and Reduce Motion/Transparency expectations.",
+        "name": "casper-studios/casper-marketplace@liquid-glass",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
         "selected": true
       },
       {
-        "coverage": "Apple HIG factual checks for safe areas, system typography, Dynamic Type, accessibility, color/contrast, materials, navigation, controls, and 44 pt touch targets.",
-        "name": "vabole/apple-skills@hig",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "coverage": "Loaded from the charleswiltgen/axiom search result (221 installs). Grounds HIG, semantic colors, SF typography, Liquid Glass variant discipline, SF Symbols, platform navigation, and app composition checks.",
+        "name": "charleswiltgen/axiom@axiom-design",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
         "selected": true
       },
       {
-        "coverage": "Mobile app interface rules for safe areas, Dynamic Type, semantic colors, native navigation, haptics, accessibility labels, list performance, Liquid Glass overlays, and material fallbacks.",
-        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "coverage": "Loaded from the charleswiltgen/axiom search result (221 installs). Grounds VoiceOver labels, Dynamic Type, contrast, touch targets, Reduce Motion, Reduce Transparency, dismiss traps, dead ends, missing states, and gesture alternatives.",
+        "name": "charleswiltgen/axiom@axiom-accessibility",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
         "selected": true
       },
       {
-        "coverage": "Search result considered; the exact skill was not loadable from the package, so the package HIG skill was loaded instead for factual native iOS checks.",
-        "name": "vabole/apple-skills@ios-design-consultant",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
-        "selected": false
+        "coverage": "Loaded from the charleswiltgen/axiom search result (221 installs). Grounds measured performance review, launch/tap/screen-settle latency, scroll hitches, memory, CPU, energy, and measurement-before-optimization discipline.",
+        "name": "charleswiltgen/axiom@axiom-performance",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
+        "selected": true
       },
       {
-        "coverage": "Search result considered for mobile UX critique; qodex mobile-app-interface and Apple HIG coverage were enough for this focused manifest.",
+        "coverage": "Search result with 96 installs. Loaded with npx skills use; grounds mobile-first UX, one primary action per screen, thumb-zone reachability, interruption/resume behavior, visible gesture alternatives, 44 pt targets, 8 pt spacing, and latency-as-UX budgets.",
         "name": "phazurlabs/ux-ui-mastery@mobile ux design",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
-        "selected": false
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
+        "selected": true
       },
       {
-        "coverage": "Search result considered for SwiftUI Liquid Glass implementation detail; this pass plans evidence requirements rather than changing SwiftUI runtime code.",
+        "coverage": "Search result with 59 installs. npx skills use could not resolve swiftui-liquid-glass from this package in this environment; exact hit was cited but not used as loaded grounding.",
         "name": "openai/plugins@swiftui-liquid-glass",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
         "selected": false
       },
       {
-        "coverage": "Search result considered for Swift app implementation workflow; not needed because this change is report-generator planning data and rendering only.",
-        "name": "petekp/claude-code-setup@swift-apps",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "coverage": "Search result with 29 installs. Considered but not loaded because higher-install Liquid Glass and Axiom/HIG skills covered the template needs.",
+        "name": "ravnhq/ai-toolkit@liquid-glass-ios",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
+        "selected": false
+      },
+      {
+        "coverage": "Search result with 21 installs. Considered but not loaded because it was less directly tied to iOS UI/UX evidence gates than the selected skills.",
+        "name": "simota/agent-skills@native",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
         "selected": false
       },
       {
@@ -1354,31 +1384,45 @@
         "selected": false
       }
     ],
-    "search_command": "npx skills search \"iOS mobile UI UX liquid glass native polish validation\"",
+    "search_command": "npx skills search \"UI UX mobile Liquid Glass design review accessibility\"",
     "selected_skills": [
       {
-        "coverage": "Liquid Glass hierarchy, harmony, consistency, native chrome usage, interactive glass restraint, safe-area-sensitive controls, and Reduce Motion/Transparency expectations.",
-        "name": "vabole/apple-skills@ios-liquid-glass",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "coverage": "Search result with 283 installs. Loaded with npx skills use; grounds content-first Liquid Glass, glass-only navigation/control chrome, adaptive tinting, 8 pt spacing, 44 pt hit targets, SF Symbols, and Reduce Motion/Transparency expectations.",
+        "name": "casper-studios/casper-marketplace@liquid-glass",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
         "selected": true
       },
       {
-        "coverage": "Apple HIG factual checks for safe areas, system typography, Dynamic Type, accessibility, color/contrast, materials, navigation, controls, and 44 pt touch targets.",
-        "name": "vabole/apple-skills@hig",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "coverage": "Loaded from the charleswiltgen/axiom search result (221 installs). Grounds HIG, semantic colors, SF typography, Liquid Glass variant discipline, SF Symbols, platform navigation, and app composition checks.",
+        "name": "charleswiltgen/axiom@axiom-design",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
         "selected": true
       },
       {
-        "coverage": "Mobile app interface rules for safe areas, Dynamic Type, semantic colors, native navigation, haptics, accessibility labels, list performance, Liquid Glass overlays, and material fallbacks.",
-        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
-        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "coverage": "Loaded from the charleswiltgen/axiom search result (221 installs). Grounds VoiceOver labels, Dynamic Type, contrast, touch targets, Reduce Motion, Reduce Transparency, dismiss traps, dead ends, missing states, and gesture alternatives.",
+        "name": "charleswiltgen/axiom@axiom-accessibility",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
+        "selected": true
+      },
+      {
+        "coverage": "Loaded from the charleswiltgen/axiom search result (221 installs). Grounds measured performance review, launch/tap/screen-settle latency, scroll hitches, memory, CPU, energy, and measurement-before-optimization discipline.",
+        "name": "charleswiltgen/axiom@axiom-performance",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
+        "selected": true
+      },
+      {
+        "coverage": "Search result with 96 installs. Loaded with npx skills use; grounds mobile-first UX, one primary action per screen, thumb-zone reachability, interruption/resume behavior, visible gesture alternatives, 44 pt targets, 8 pt spacing, and latency-as-UX budgets.",
+        "name": "phazurlabs/ux-ui-mastery@mobile ux design",
+        "search_terms": "UI UX mobile Liquid Glass design review accessibility",
         "selected": true
       }
     ],
     "template_impact": [
-      "iOS Liquid Glass grounding drives restrained material judgment: glass belongs on navigation/control chrome, not dense content, with accessibility fallbacks.",
-      "Apple HIG grounding drives factual checks for safe areas, system typography, Dynamic Type, semantic color, 44 pt touch targets, navigation conventions, and accessibility.",
-      "Mobile app interface grounding drives user-goal framing, thumb reach, native navigation, purposeful haptics, list performance, material fallback checks, and performance-as-UX budgets.",
+      "Liquid Glass grounding drives restrained material judgment: glass belongs on navigation/control chrome, not dense content, with adaptive tinting and Reduce Motion/Transparency fallbacks.",
+      "Axiom design grounding drives factual HIG checks for safe areas, SF typography, semantic color, Dynamic Type, SF Symbols, navigation conventions, controls, and 44 pt touch targets.",
+      "Axiom accessibility grounding drives VoiceOver, contrast, Dynamic Type, touch-target, gesture-alternative, missing-state, dismiss-trap, and UX dead-end checks.",
+      "Axiom performance grounding drives measured launch, tap, screen-settle, scroll, memory, CPU, energy, provider, and audio latency evidence before any performance score can pass.",
+      "Mobile UX grounding drives one-primary-action review, thumb-zone reachability, interruption/resume behavior, platform navigation conventions, and latency-as-UX budgets.",
       "The generated page front-loads launch readiness, risk class, evidence quality, accessibility status, regression coverage, and dependency posture before detailed scores.",
       "The report separates individual dimensions from whole-product cluster judgment so an isolated pass cannot hide a weak or inconsistent product flow."
     ]
@@ -1423,9 +1467,9 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "codex/pod0-scenario-catalog-expansion",
+    "branch": "",
     "cassettes": [],
-    "completed_at": "2026-07-08T05:25:29Z",
+    "completed_at": "2026-07-08T09:10:26Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1443,12 +1487,12 @@
     "fixtures": [
       "tool result replay"
     ],
-    "generator_version": "scenario-report-generator/0.4.0",
+    "generator_version": "scenario-report-generator/0.5.0",
     "live_dependency_rationale": "No live provider dependency is declared for this catalog scaffold.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260708T052529Z-ag-007",
-    "source_commit": "7dd9a604e8ccd4cd361c5423d9a26503a2215ec2",
-    "started_at": "2026-07-08T05:25:29Z"
+    "run_id": "catalog-scaffold-20260708T091026Z-ag-007",
+    "source_commit": "e3e73682ad0523f156fba53fbeeaf2105833cd09",
+    "started_at": "2026-07-08T09:10:26Z"
   },
   "scenario": {
     "bdd": {
@@ -1645,7 +1689,7 @@
         "rubric:review-skill-grounding"
       ],
       "notes": [],
-      "summary": "Not assessed. Requires evidence that iOS primitives and glass-like materials are used as functional chrome, with accessibility fallbacks."
+      "summary": "Not assessed. Requires evidence that iOS primitives and glass-like materials are used as functional navigation/control chrome, not decorative content material, with semantic colors and accessibility fallbacks."
     },
     "localization_content_quality": {
       "evidence_refs": [
@@ -1789,9 +1833,9 @@
         "rubric:review-skill-grounding"
       ],
       "notes": [
-        "Selected skills: vabole/apple-skills@ios-liquid-glass, vabole/apple-skills@hig, qodex-ai/ai-agent-skills@mobile-app-interface."
+        "Selected skills: casper-studios/casper-marketplace@liquid-glass, charleswiltgen/axiom@axiom-design, charleswiltgen/axiom@axiom-accessibility, charleswiltgen/axiom@axiom-performance, phazurlabs/ux-ui-mastery@mobile ux design."
       ],
-      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass restraint, HIG factual checks, safe areas, Dynamic Type, touch targets, accessibility settings, native navigation, material fallbacks, and performance-as-UX review."
+      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass restraint, HIG factual checks, safe areas, SF typography, Dynamic Type, touch targets, accessibility settings, native navigation, mobile thumb-zone UX, material fallbacks, and measured performance-as-UX review."
     },
     "risks_follow_up": {
       "evidence_refs": [
