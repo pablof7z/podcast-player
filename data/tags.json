@@ -12,11 +12,11 @@
     "tag": "all-doctrine"
   },
   {
-    "count": 73,
+    "count": 95,
     "tag": "cassette-required"
   },
   {
-    "count": 320,
+    "count": 422,
     "tag": "catalog-scaffold"
   },
   {
@@ -28,7 +28,7 @@
     "tag": "chirp-fix-parity"
   },
   {
-    "count": 16,
+    "count": 24,
     "tag": "clip"
   },
   {
@@ -36,47 +36,51 @@
     "tag": "clips-highlights-and-sharing"
   },
   {
+    "count": 8,
+    "tag": "clips-highlights-and-sharing-expansion"
+  },
+  {
     "count": 2,
     "tag": "d0"
   },
   {
-    "count": 7,
+    "count": 12,
     "tag": "d1"
   },
   {
-    "count": 42,
+    "count": 68,
     "tag": "d10"
   },
   {
-    "count": 19,
+    "count": 21,
     "tag": "d3"
   },
   {
-    "count": 131,
+    "count": 179,
     "tag": "d4"
   },
   {
-    "count": 75,
+    "count": 103,
     "tag": "d5"
   },
   {
-    "count": 68,
+    "count": 102,
     "tag": "d6"
   },
   {
-    "count": 142,
+    "count": 200,
     "tag": "d7"
   },
   {
-    "count": 54,
+    "count": 72,
     "tag": "d8"
   },
   {
-    "count": 19,
+    "count": 24,
     "tag": "d9"
   },
   {
-    "count": 16,
+    "count": 20,
     "tag": "disc"
   },
   {
@@ -84,12 +88,20 @@
     "tag": "discovery-and-search"
   },
   {
-    "count": 16,
+    "count": 4,
+    "tag": "discovery-and-search-expansion"
+  },
+  {
+    "count": 24,
     "tag": "fnd"
   },
   {
     "count": 16,
     "tag": "foundation-and-first-run"
+  },
+  {
+    "count": 8,
+    "tag": "foundation-and-first-run-expansion"
   },
   {
     "count": 16,
@@ -100,12 +112,16 @@
     "tag": "identity-and-accounts"
   },
   {
-    "count": 16,
+    "count": 24,
     "tag": "lib"
   },
   {
     "count": 16,
     "tag": "library-and-episode-management"
+  },
+  {
+    "count": 8,
+    "tag": "library-and-episode-management-expansion"
   },
   {
     "count": 18,
@@ -116,7 +132,7 @@
     "tag": "llm-provider-and-replay"
   },
   {
-    "count": 14,
+    "count": 20,
     "tag": "native-render"
   },
   {
@@ -140,7 +156,7 @@
     "tag": "nostr"
   },
   {
-    "count": 34,
+    "count": 39,
     "tag": "nostr-or-relay"
   },
   {
@@ -148,8 +164,12 @@
     "tag": "nostr-publishing-and-protocol"
   },
   {
-    "count": 8,
+    "count": 24,
     "tag": "offline"
+  },
+  {
+    "count": 16,
+    "tag": "offline-and-replay-honesty-expansion"
   },
   {
     "count": 8,
@@ -160,7 +180,7 @@
     "tag": "performance-and-d8-no-polling-gates"
   },
   {
-    "count": 194,
+    "count": 289,
     "tag": "performance-required"
   },
   {
@@ -168,7 +188,7 @@
     "tag": "platform-parity-performance-regression"
   },
   {
-    "count": 16,
+    "count": 32,
     "tag": "play"
   },
   {
@@ -176,7 +196,11 @@
     "tag": "playback"
   },
   {
-    "count": 4,
+    "count": 16,
+    "tag": "playback-expansion"
+  },
+  {
+    "count": 5,
     "tag": "process"
   },
   {
@@ -188,7 +212,7 @@
     "tag": "projection-cache-and-stale-state-guards"
   },
   {
-    "count": 16,
+    "count": 24,
     "tag": "qd"
   },
   {
@@ -196,11 +220,15 @@
     "tag": "queue-and-downloads"
   },
   {
+    "count": 8,
+    "tag": "queue-and-downloads-expansion"
+  },
+  {
     "count": 1,
     "tag": "rmp"
   },
   {
-    "count": 16,
+    "count": 24,
     "tag": "set"
   },
   {
@@ -208,20 +236,32 @@
     "tag": "settings-and-storage"
   },
   {
-    "count": 16,
+    "count": 8,
+    "tag": "settings-and-storage-expansion"
+  },
+  {
+    "count": 24,
     "tag": "soc"
+  },
+  {
+    "count": 8,
+    "tag": "social-expansion"
   },
   {
     "count": 16,
     "tag": "social-friends-feedback"
   },
   {
-    "count": 16,
+    "count": 28,
     "tag": "tr"
   },
   {
     "count": 16,
     "tag": "transcripts"
+  },
+  {
+    "count": 12,
+    "tag": "transcripts-expansion"
   },
   {
     "count": 8,
@@ -232,16 +272,20 @@
     "tag": "visual-accessibility-and-liquid-glass-parity"
   },
   {
-    "count": 320,
+    "count": 422,
     "tag": "visual-evidence-required"
   },
   {
-    "count": 18,
+    "count": 24,
     "tag": "voice"
   },
   {
     "count": 18,
     "tag": "voice-and-generated-audio"
+  },
+  {
+    "count": 6,
+    "tag": "voice-expansion"
   },
   {
     "count": 18,

@@ -618,14 +618,14 @@
           }
         ],
         "commands": [],
-        "completed_at": "2026-07-08T02:59:41Z",
+        "completed_at": "2026-07-08T05:25:29Z",
         "evidence_refs": [
           "catalog:clip-016"
         ],
         "executor": "validation-agent",
         "id": "attempt-001",
         "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
-        "started_at": "2026-07-08T02:59:41Z",
+        "started_at": "2026-07-08T05:25:29Z",
         "status": "not_run",
         "tools": [
           "not-run"
@@ -999,7 +999,7 @@
   "page": {
     "assets_base": "assets/scenarios/clip-016/",
     "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/clip-016/",
-    "generated_at": "2026-07-08T02:59:41Z",
+    "generated_at": "2026-07-08T05:25:29Z",
     "navigation": {
       "category_url": "../clips-highlights-and-sharing/",
       "next_url": "../ag-001/",
@@ -1393,9 +1393,9 @@
   ],
   "run": {
     "app_build": "not-built-catalog-scaffold",
-    "branch": "codex/validation-report-cassettes",
+    "branch": "codex/pod0-scenario-catalog-expansion",
     "cassettes": [],
-    "completed_at": "2026-07-08T02:59:41Z",
+    "completed_at": "2026-07-08T05:25:29Z",
     "device_matrix": [
       {
         "form_factor": "other",
@@ -1416,9 +1416,9 @@
     "generator_version": "scenario-report-generator/0.4.0",
     "live_dependency_rationale": "No live provider dependency is declared for this catalog scaffold.",
     "provider_mode": "none",
-    "run_id": "catalog-scaffold-20260708T025941Z-clip-016",
-    "source_commit": "5b3cbd12104e8d109d527752ac1d3b74568c7f37",
-    "started_at": "2026-07-08T02:59:41Z"
+    "run_id": "catalog-scaffold-20260708T052529Z-clip-016",
+    "source_commit": "7dd9a604e8ccd4cd361c5423d9a26503a2215ec2",
+    "started_at": "2026-07-08T05:25:29Z"
   },
   "scenario": {
     "bdd": {

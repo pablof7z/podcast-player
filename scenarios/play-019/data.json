@@ -1,0 +1,1859 @@
+{
+  "coherence": {
+    "cluster": {
+      "id": "playback-expansion",
+      "scenario_ids": [
+        "PLAY-017",
+        "PLAY-018",
+        "PLAY-020",
+        "PLAY-021",
+        "PLAY-022",
+        "PLAY-023",
+        "PLAY-024",
+        "PLAY-025"
+      ],
+      "title": "Playback Expansion"
+    },
+    "cross_scenario_risks": [
+      "Changes to PLAY-019 may affect PLAY-017, PLAY-018, PLAY-020, PLAY-021 and must be revalidated as a cluster."
+    ],
+    "group_judgment": {
+      "checks": [
+        "related scenario consistency",
+        "shared defect themes",
+        "cluster readiness",
+        "cross-flow state continuity"
+      ],
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Review adjacent scenario pages as a cluster before promoting group coherence."
+      ],
+      "status": "incomplete",
+      "summary": "Group-level coherence for Playback Expansion is unproven until adjacent scenarios are reviewed together."
+    },
+    "individual_judgment": {
+      "checks": [
+        "scenario-level UI polish",
+        "scenario-level UX polish",
+        "scenario-level performance/accessibility evidence",
+        "scenario-level product fit"
+      ],
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "gaps": [
+        "Attach observed behavior before making an individual product-coherence judgment."
+      ],
+      "status": "incomplete",
+      "summary": "PLAY-019 has not been judged in isolation because observed product behavior is missing."
+    },
+    "themes": [
+      "Does the flow preserve the same product mental model as adjacent scenarios?",
+      "Do UI, UX, accessibility, performance, and NMP architecture scores tell the same story?",
+      "Do related pages expose shared defects or readiness blockers instead of isolated one-off notes?"
+    ]
+  },
+  "dimension_scores": {
+    "accessibility_dynamic_type": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Accessibility And Dynamic Type has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "actual_result": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Actual Result has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "analytics_privacy_boundaries": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Analytics And Privacy Boundaries has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "artifacts": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Artifacts, Screenshots, Video has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "attempted_test": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Attempted Test has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "before_after_deltas": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Before/After Deltas has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "content_hierarchy": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Content Hierarchy has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "controls_gestures_audio": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Controls, Gestures, Audio, And Haptics has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "cross_screen_continuity": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Cross-Screen Continuity has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "data_integrity_state_sync": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Data Integrity And State Sync has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "defects_issues_filed": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Defects And Issues Filed has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "device_os_matrix": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Device And OS Matrix has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "device_viewport_coverage": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Device, Viewport, And Generated-Page Coverage has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "error_recovery": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Error And Recovery Behavior has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "evidence_confidence": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Evidence Confidence has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "evidence_provenance": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Evidence Provenance has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "execution_attempts": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Execution Attempts, Retries, And Branches has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "expected_behavior": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Expected Behavior has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "flow": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Flow has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "information_architecture": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Information Architecture has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "instrumentation_gaps": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Instrumentation Gaps And Missing Evidence has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "liquid_glass_ios_primitives": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Liquid Glass And iOS Primitives has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "localization_content_quality": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Localization And Content Quality has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "media_session_background_continuity": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Media Session And Background Audio Continuity has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "motion_haptics": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Motion And Haptics has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "navigation_state_restoration": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Navigation State And Restoration has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "next_actions": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Next Actions has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "nmp_architecture": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "NMP Architecture And Cohesiveness has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "observability": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Observability has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "offline_resume_behavior": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Offline, Interruption, And Resume Behavior has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "owner_status": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Owner And Status has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "performance": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Performance Metrics has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "persona_acceptance": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Persona, Job, And Acceptance Criteria has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "privacy_security": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Privacy And Security has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "product_cluster_coherence": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Product Cluster Coherence has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "product_coherence": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Product Coherence In Context has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "readiness_gates": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Readiness Gates has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "regression_risk": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Regression Risk has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "reliability_flakiness": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Reliability And Flakiness has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "replayability_cassette_provenance": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Replayability And Cassette Provenance has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "revalidation_status": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Revalidation Status has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "review_skill_grounding": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Review Skill Grounding has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "risks_follow_up": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Risks, Follow-Up, And Back-Links has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "scenario_setup": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Scenario Setup has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "sister_app_nmp_chirp_comparison": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Sister App, NMP, And Chirp Comparison has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "states_resilience": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "rationale": "Empty, Loading, Offline, And Recovery States has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "touch_ergonomics": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Touch Ergonomics has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "ui_polish": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "UI Polish Report has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "ux_polish": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "UX Polish Report has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "verdict": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "rationale": "Verdict has not been validated with current run evidence.",
+      "score": 0,
+      "status": "incomplete"
+    }
+  },
+  "evidence": {
+    "artifacts": [
+      {
+        "description": "Catalog source row for PLAY-019 at line 50.",
+        "id": "catalog:play-019",
+        "path": "sources/catalog/06-expanded-product-validation.md",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "type": "source_doc"
+      },
+      {
+        "description": "Required review skills and skill-search terms for scenario critique.",
+        "id": "rubric:review-skill-grounding",
+        "path": "data/skill-grounding.json",
+        "redaction": {
+          "status": "not_needed"
+        },
+        "required": true,
+        "type": "source_doc"
+      }
+    ],
+    "missing": [
+      {
+        "blocks_dimensions": [
+          "accessibility_dynamic_type",
+          "touch_ergonomics"
+        ],
+        "kind": "accessibility_audit",
+        "reason": "Apple HIG evidence is required before accessibility can pass.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "attempted_test",
+          "execution_attempts"
+        ],
+        "kind": "command_output",
+        "reason": "Attempt commands or manual/tool notes are required for reproducibility.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "observability",
+          "reliability_flakiness"
+        ],
+        "kind": "log",
+        "reason": "Failures and state transitions need diagnostic context.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "performance"
+        ],
+        "kind": "metric_trace",
+        "reason": "Catalog performance requirement is unmeasured: resume under 1 sec.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "actual_result",
+          "ui_polish",
+          "content_hierarchy"
+        ],
+        "kind": "screenshot",
+        "reason": "Every meaningful user-visible step needs a screenshot.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "accessibility_dynamic_type",
+          "information_architecture"
+        ],
+        "kind": "ui_tree",
+        "reason": "Accessibility labels, hierarchy, and Dynamic Type behavior need UI-tree evidence.",
+        "required": true
+      }
+    ],
+    "placeholders": [
+      {
+        "blocks_dimensions": [
+          "accessibility_dynamic_type",
+          "touch_ergonomics"
+        ],
+        "id": "placeholder:accessibility_audit",
+        "kind": "accessibility_audit",
+        "message": "Missing required accessibility audit evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "attempted_test",
+          "execution_attempts"
+        ],
+        "id": "placeholder:command_output",
+        "kind": "command_output",
+        "message": "Missing required command output evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "observability",
+          "reliability_flakiness"
+        ],
+        "id": "placeholder:log",
+        "kind": "log",
+        "message": "Missing required log evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "performance"
+        ],
+        "id": "placeholder:metric_trace",
+        "kind": "metric_trace",
+        "message": "Missing required metric trace evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "actual_result",
+          "ui_polish",
+          "content_hierarchy"
+        ],
+        "id": "placeholder:screenshot",
+        "kind": "screenshot",
+        "message": "Missing required screenshot evidence is blocking this report area.",
+        "required": true
+      },
+      {
+        "blocks_dimensions": [
+          "accessibility_dynamic_type",
+          "information_architecture"
+        ],
+        "id": "placeholder:ui_tree",
+        "kind": "ui_tree",
+        "message": "Missing required ui tree evidence is blocking this report area.",
+        "required": true
+      }
+    ],
+    "redaction_summary": "Only source catalog and rubric metadata are published. Secret-bearing logs, provider payloads, private keys, audio, transcripts, and relay payloads remain forbidden until redacted.",
+    "required_kinds": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "source_doc",
+      "ui_tree"
+    ]
+  },
+  "execution": {
+    "attempts": [
+      {
+        "branches": [
+          {
+            "expected": "playback resumes only through the kernel decision path",
+            "id": "happy-path",
+            "status": "not_run",
+            "trigger": "the OS reports completion"
+          }
+        ],
+        "commands": [],
+        "completed_at": "2026-07-08T05:25:29Z",
+        "evidence_refs": [
+          "catalog:play-019"
+        ],
+        "executor": "validation-agent",
+        "id": "attempt-001",
+        "notes": "Catalog scaffold only. Replace this attempt with simulator/manual/automation execution metadata.",
+        "started_at": "2026-07-08T05:25:29Z",
+        "status": "not_run",
+        "tools": [
+          "not-run"
+        ]
+      }
+    ],
+    "branch_coverage": [
+      {
+        "expected": "playback resumes only through the kernel decision path",
+        "id": "happy-path",
+        "status": "not_run",
+        "trigger": "the OS reports completion"
+      }
+    ],
+    "retry_policy": "Record every retry as a separate attempt with cause, changed fixture/state, and whether the retry invalidates earlier evidence.",
+    "status": "not_run"
+  },
+  "flow_steps": [
+    {
+      "action": "Prepare an interruption ends with should-resume",
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "evidence_required": [
+        "source_doc",
+        "command_output"
+      ],
+      "expected": "Fixture, device, provider, account, cassette, and network state match the scenario setup.",
+      "id": "step-01-preconditions",
+      "phase": "Preconditions",
+      "status": "not_run"
+    },
+    {
+      "action": "Execute the OS reports completion",
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "evidence_required": [
+        "screenshot",
+        "ui_tree",
+        "log"
+      ],
+      "expected": "The user-visible route follows the intended path without hidden state mutation.",
+      "id": "step-02-action",
+      "phase": "Primary Action",
+      "status": "not_run"
+    },
+    {
+      "action": "Observe that playback resumes only through the kernel decision path",
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "evidence_required": [
+        "accessibility_audit",
+        "command_output",
+        "log",
+        "metric_trace",
+        "screenshot",
+        "source_doc",
+        "ui_tree"
+      ],
+      "expected": "Observed UI, logs, metrics, and state projections agree with the expected behavior.",
+      "id": "step-03-result",
+      "phase": "Expected Result",
+      "status": "not_run"
+    },
+    {
+      "action": "Leave the flow through the natural product path",
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "evidence_required": [
+        "screenshot",
+        "ui_tree"
+      ],
+      "expected": "Adjacent screens, back stack, mini-player, account, transcript, agent, or library state remain coherent.",
+      "id": "step-04-exit",
+      "phase": "Exit State",
+      "status": "not_run"
+    }
+  ],
+  "group_scores": {
+    "engineering_quality": {
+      "dimension_refs": [
+        "performance",
+        "accessibility_dynamic_type",
+        "privacy_security",
+        "nmp_architecture",
+        "observability",
+        "analytics_privacy_boundaries",
+        "reliability_flakiness"
+      ],
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "evidence_reproducibility": {
+      "dimension_refs": [
+        "artifacts",
+        "evidence_provenance",
+        "review_skill_grounding",
+        "replayability_cassette_provenance",
+        "device_os_matrix",
+        "device_viewport_coverage",
+        "evidence_confidence",
+        "instrumentation_gaps",
+        "defects_issues_filed"
+      ],
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "follow_through": {
+      "dimension_refs": [
+        "defects_issues_filed",
+        "revalidation_status",
+        "risks_follow_up",
+        "verdict",
+        "next_actions",
+        "owner_status"
+      ],
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "functional_correctness": {
+      "dimension_refs": [
+        "persona_acceptance",
+        "flow",
+        "attempted_test",
+        "scenario_setup",
+        "execution_attempts",
+        "expected_behavior",
+        "actual_result",
+        "error_recovery",
+        "offline_resume_behavior",
+        "data_integrity_state_sync",
+        "navigation_state_restoration",
+        "regression_risk"
+      ],
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
+      "score": 0,
+      "status": "incomplete"
+    },
+    "product_experience": {
+      "dimension_refs": [
+        "ui_polish",
+        "ux_polish",
+        "liquid_glass_ios_primitives",
+        "cross_screen_continuity",
+        "states_resilience",
+        "touch_ergonomics",
+        "before_after_deltas",
+        "media_session_background_continuity",
+        "motion_haptics",
+        "information_architecture",
+        "content_hierarchy",
+        "product_coherence",
+        "product_cluster_coherence",
+        "localization_content_quality",
+        "controls_gestures_audio",
+        "readiness_gates"
+      ],
+      "rationale": "The group contains unassessed dimensions without current run evidence; product experience additionally requires individual and cluster-level coherence judgments.",
+      "score": 0,
+      "status": "incomplete"
+    }
+  },
+  "instrumentation_gaps": [
+    {
+      "affected_dimensions": [
+        "artifacts",
+        "ui_polish",
+        "actual_result"
+      ],
+      "id": "screenshots",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "No step-by-step screenshots are attached."
+    },
+    {
+      "affected_dimensions": [
+        "accessibility_dynamic_type",
+        "actual_result"
+      ],
+      "id": "ui-tree",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "No accessibility/UI tree snapshot is attached."
+    },
+    {
+      "affected_dimensions": [
+        "observability",
+        "reliability_flakiness"
+      ],
+      "id": "logs",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "No structured logs or command outputs are attached."
+    },
+    {
+      "affected_dimensions": [
+        "accessibility_dynamic_type",
+        "touch_ergonomics"
+      ],
+      "id": "accessibility",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "No VoiceOver, Dynamic Type, contrast, Reduce Motion, or Reduce Transparency evidence is attached."
+    },
+    {
+      "affected_dimensions": [
+        "data_integrity_state_sync",
+        "actual_result"
+      ],
+      "id": "state-integrity",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "No persistence, projection, or data-integrity evidence is attached."
+    },
+    {
+      "affected_dimensions": [
+        "device_viewport_coverage",
+        "device_os_matrix"
+      ],
+      "id": "viewport-coverage",
+      "owner": "validation-agent",
+      "severity": "minor",
+      "status": "open",
+      "summary": "No generated-page viewport or device coverage evidence is attached."
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "reliability_flakiness"
+      ],
+      "id": "performance-metrics",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "summary": "Catalog requires performance evidence, but no trace or metric is attached."
+    }
+  ],
+  "issues": [
+    {
+      "affected_dimensions": [
+        "artifacts",
+        "ui_polish",
+        "ux_polish",
+        "liquid_glass_ios_primitives"
+      ],
+      "id": "GH-702",
+      "owner": "review-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Populate gh-pages report with screenshot-level UX critique",
+      "url": "https://github.com/pablof7z/podcast-player/issues/702"
+    },
+    {
+      "affected_dimensions": [
+        "accessibility_dynamic_type",
+        "touch_ergonomics",
+        "device_os_matrix"
+      ],
+      "id": "GH-730",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Add accessibility audit evidence for every scenario cluster",
+      "url": "https://github.com/pablof7z/podcast-player/issues/730"
+    },
+    {
+      "affected_dimensions": [
+        "evidence_provenance",
+        "revalidation_status",
+        "observability"
+      ],
+      "id": "GH-733",
+      "owner": "validation-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Automate xcresult evidence ingestion into scenario report overlays",
+      "url": "https://github.com/pablof7z/podcast-player/issues/733"
+    },
+    {
+      "affected_dimensions": [
+        "performance",
+        "reliability_flakiness",
+        "readiness_gates"
+      ],
+      "id": "GH-700",
+      "owner": "performance-agent",
+      "severity": "major",
+      "status": "open",
+      "title": "Publish per-scenario performance metrics in the Pod0 validation report",
+      "url": "https://github.com/pablof7z/podcast-player/issues/700"
+    }
+  ],
+  "launch_assessment": {
+    "accessibility_status": "incomplete",
+    "blocking_gates": [
+      "required_evidence",
+      "skill_grounding",
+      "score_integrity",
+      "product_coherence",
+      "defect_tracking",
+      "release_readiness"
+    ],
+    "dependency_posture": "none",
+    "evidence_quality": "incomplete",
+    "individual_judgment": "PLAY-019 has not been judged in isolation because observed product behavior is missing.",
+    "issue_refs": [
+      "GH-702",
+      "GH-730",
+      "GH-733",
+      "GH-700"
+    ],
+    "launch_readiness": "incomplete",
+    "missing_evidence": [
+      "accessibility_audit",
+      "command_output",
+      "log",
+      "metric_trace",
+      "screenshot",
+      "ui_tree"
+    ],
+    "product_judgment": "Not launch-ready. The page has a complete review structure, but product judgment remains blocked until current evidence supports individual and whole-product coherence.",
+    "regression_coverage": "incomplete",
+    "risk_classification": "major",
+    "scenario_owner": "validation-agent",
+    "scenario_status": "not_run",
+    "whole_product_judgment": "Group-level coherence for Playback Expansion is unproven until adjacent scenarios are reviewed together."
+  },
+  "metrics": [],
+  "next_actions": [
+    {
+      "id": "run-scenario",
+      "owner": "validation-agent",
+      "status": "open",
+      "title": "Execute PLAY-019 on the target simulator/device."
+    },
+    {
+      "id": "attach-evidence",
+      "owner": "validation-agent",
+      "status": "open",
+      "title": "Attach screenshots, UI trees, logs, metrics, accessibility evidence, and redaction metadata."
+    },
+    {
+      "id": "score-dimensions",
+      "owner": "review-agent",
+      "status": "open",
+      "title": "Score every individual and grouped dimension from evidence."
+    },
+    {
+      "id": "file-defects",
+      "owner": "review-agent",
+      "status": "open",
+      "title": "File GitHub issues for every actionable defect before leaving incomplete."
+    },
+    {
+      "id": "revalidate-defects",
+      "owner": "validation-agent",
+      "status": "open",
+      "title": "Re-run this scenario after each fix PR and attach revalidation run IDs."
+    },
+    {
+      "id": "assign-owners",
+      "owner": "review-agent",
+      "status": "open",
+      "title": "Assign owner and status for every blocker, gate, action, defect, and revalidation item."
+    }
+  ],
+  "page": {
+    "assets_base": "assets/scenarios/play-019/",
+    "canonical_url": "https://pablof7z.github.io/podcast-player/scenarios/play-019/",
+    "generated_at": "2026-07-08T05:25:29Z",
+    "navigation": {
+      "category_url": "../playback-expansion/",
+      "next_url": "../play-020/",
+      "previous_url": "../play-018/",
+      "rollup_url": "../../data/rollups.json",
+      "scenario_index_url": "../"
+    }
+  },
+  "product_context": {
+    "acceptance_criteria": [
+      "Given an interruption ends with should-resume",
+      "When the OS reports completion",
+      "Then playback resumes only through the kernel decision path",
+      "Architecture boundary remains within D4, D7."
+    ],
+    "job_to_be_done": "Complete PLAY-019 with confidence: playback resumes only through the kernel decision path.",
+    "persona": "A returning listener trying to continue or control audio quickly.",
+    "platform_expectations": [
+      "iPhone-first flow uses system navigation/chrome, safe areas, SF typography, semantic color, 44 pt tap targets, and reachable primary controls.",
+      "Accessibility evidence covers VoiceOver, Dynamic Type, contrast, motion/transparency settings, and touch target behavior before UI scores can pass.",
+      "Provider, relay, transcript, audio, or LLM dependencies are deterministic through fixtures/cassettes or explicitly marked live-only.",
+      "State, navigation, queue, playback, and generated report pages are checked across device, viewport, and resume contexts."
+    ],
+    "scenario_cluster": {
+      "id": "playback-expansion",
+      "related_scenarios": [
+        "PLAY-017",
+        "PLAY-018",
+        "PLAY-020",
+        "PLAY-021",
+        "PLAY-022",
+        "PLAY-023",
+        "PLAY-024",
+        "PLAY-025"
+      ],
+      "title": "Playback Expansion"
+    },
+    "user_value": "The flow should make playback expansion feel reliable, understandable, and native to Pod0 rather than a test-only path."
+  },
+  "quality_review": {
+    "accessibility": {
+      "checks": [
+        "VoiceOver labels",
+        "Dynamic Type",
+        "4.5:1 contrast",
+        "44 pt targets",
+        "Reduce Motion/Transparency"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach accessibility evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "VoiceOver, Dynamic Type, contrast, Reduce Motion, Reduce Transparency, 44 pt targets, captions, and assistive navigation. Current scaffold has no run evidence for PLAY-019."
+    },
+    "content_localization": {
+      "checks": [
+        "copy clarity",
+        "long text",
+        "dates/numbers/locale",
+        "empty/error copy",
+        "transcript readability"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach content localization evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Podcast metadata, transcript/agent copy, truncation, empty copy, locale/date/number behavior, and translation safety. Current scaffold has no run evidence for PLAY-019."
+    },
+    "controls_gestures": {
+      "checks": [
+        "touch reach",
+        "gesture alternative",
+        "audio controls",
+        "haptic expectation",
+        "sheet/menu behavior"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach controls gestures evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Buttons, menus, sheets, gestures, audio route controls, haptics, keyboard alternatives, and touch reach. Current scaffold has no run evidence for PLAY-019."
+    },
+    "observability": {
+      "checks": [
+        "metric IDs",
+        "request IDs",
+        "relay IDs",
+        "redacted traces",
+        "issue reproduction context"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach observability evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Structured logs, metric IDs, provider/request IDs, relay IDs, redacted traces, and issue reproduction context. Current scaffold has no run evidence for PLAY-019."
+    },
+    "offline_resume": {
+      "checks": [
+        "offline messaging",
+        "resume after relaunch",
+        "background playback",
+        "download availability",
+        "cancel/retry"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach offline resume evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Offline state, app relaunch, background playback, interrupted provider calls, downloads, and resume from stale state. Current scaffold has no run evidence for PLAY-019."
+    },
+    "performance": {
+      "checks": [
+        "launch latency",
+        "tap latency",
+        "screen settle",
+        "scroll hitches",
+        "provider/audio/network latency"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach performance evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Launch, interaction latency, screen-settle time, scroll hitches, memory, CPU, audio, network, and provider latency. Current scaffold has no run evidence for PLAY-019."
+    },
+    "privacy_security": {
+      "checks": [
+        "no secrets in screenshots/logs",
+        "permission clarity",
+        "redaction hashes",
+        "private Nostr material safe"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach privacy security evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Secrets, private keys, permissions, logs, analytics, relay visibility, cassette redaction, and export safety. Current scaffold has no run evidence for PLAY-019."
+    },
+    "reliability": {
+      "checks": [
+        "rerun count",
+        "retry cause",
+        "flake history",
+        "fresh build",
+        "deterministic replay"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach reliability evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Rerun count, flake history, retry behavior, stale evidence, timeout behavior, and deterministic replay. Current scaffold has no run evidence for PLAY-019."
+    },
+    "ui": {
+      "checks": [
+        "SF/system typography",
+        "semantic color",
+        "visual hierarchy",
+        "no overlapping text",
+        "platform-native controls"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach ui evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Layout, spacing, typography, visual hierarchy, semantic color, SF Symbols, screenshots, and platform-native finish. Current scaffold has no run evidence for PLAY-019."
+    },
+    "ux": {
+      "checks": [
+        "clear user goal",
+        "low cognitive load",
+        "visible feedback",
+        "recoverable errors",
+        "predictable navigation"
+      ],
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "gaps": [
+        "Attach ux evidence before scoring this area above 2."
+      ],
+      "status": "incomplete",
+      "summary": "Task clarity, user effort, feedback, interruption recovery, cognitive load, and route predictability. Current scaffold has no run evidence for PLAY-019."
+    }
+  },
+  "readiness": {
+    "blocking_reasons": [
+      "No current execution evidence is attached.",
+      "Product-quality judgments are scaffolded, not observed.",
+      "Linked validation blocker(s): GH-702, GH-730, GH-733, GH-700."
+    ],
+    "gates": [
+      {
+        "evidence_refs": [
+          "catalog:play-019",
+          "GH-702",
+          "GH-730",
+          "GH-733",
+          "GH-700"
+        ],
+        "id": "required_evidence",
+        "owner": "validation-agent",
+        "requirement": "Screenshots/UI trees/logs/cassettes/metrics required by the scenario are attached and redacted.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "rubric:review-skill-grounding"
+        ],
+        "id": "skill_grounding",
+        "owner": "validation-agent",
+        "requirement": "UI, UX, accessibility, performance, and product judgments cite the loaded review skills or local doctrine.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "rubric:review-skill-grounding"
+        ],
+        "id": "score_integrity",
+        "owner": "validation-agent",
+        "requirement": "Every dimension and group score follows the evidence gates and matches the final verdict.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "rubric:review-skill-grounding"
+        ],
+        "id": "product_coherence",
+        "owner": "validation-agent",
+        "requirement": "Individual scenario judgment and related-scenario group judgment are both present.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "GH-702",
+          "GH-730",
+          "GH-733",
+          "GH-700"
+        ],
+        "id": "defect_tracking",
+        "owner": "validation-agent",
+        "requirement": "Every actionable defect has severity, owner, GitHub issue link, and fix/revalidation state.",
+        "status": "blocked"
+      },
+      {
+        "evidence_refs": [
+          "GH-702",
+          "GH-730",
+          "GH-733",
+          "GH-700"
+        ],
+        "id": "release_readiness",
+        "owner": "validation-agent",
+        "requirement": "No blocker or major unresolved risk remains without an explicit owner and acceptance rationale.",
+        "status": "blocked"
+      }
+    ],
+    "ship_gate": "incomplete"
+  },
+  "review_grounding": {
+    "all_considered": [
+      {
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, native chrome usage, interactive glass restraint, safe-area-sensitive controls, and Reduce Motion/Transparency expectations.",
+        "name": "vabole/apple-skills@ios-liquid-glass",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": true
+      },
+      {
+        "coverage": "Apple HIG factual checks for safe areas, system typography, Dynamic Type, accessibility, color/contrast, materials, navigation, controls, and 44 pt touch targets.",
+        "name": "vabole/apple-skills@hig",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": true
+      },
+      {
+        "coverage": "Mobile app interface rules for safe areas, Dynamic Type, semantic colors, native navigation, haptics, accessibility labels, list performance, Liquid Glass overlays, and material fallbacks.",
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": true
+      },
+      {
+        "coverage": "Search result considered; the exact skill was not loadable from the package, so the package HIG skill was loaded instead for factual native iOS checks.",
+        "name": "vabole/apple-skills@ios-design-consultant",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": false
+      },
+      {
+        "coverage": "Search result considered for mobile UX critique; qodex mobile-app-interface and Apple HIG coverage were enough for this focused manifest.",
+        "name": "phazurlabs/ux-ui-mastery@mobile ux design",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": false
+      },
+      {
+        "coverage": "Search result considered for SwiftUI Liquid Glass implementation detail; this pass plans evidence requirements rather than changing SwiftUI runtime code.",
+        "name": "openai/plugins@swiftui-liquid-glass",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": false
+      },
+      {
+        "coverage": "Search result considered for Swift app implementation workflow; not needed because this change is report-generator planning data and rendering only.",
+        "name": "petekp/claude-code-setup@swift-apps",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": false
+      },
+      {
+        "coverage": "Represented in NMP architecture dimensions: Rust-owned state and policy, bounded FFI/projections, privacy fail-closed behavior, and replayable clocks.",
+        "name": "local NMP architecture doctrine",
+        "search_terms": "NMP architecture Rust core thin shell",
+        "selected": false
+      }
+    ],
+    "search_command": "npx skills search \"iOS mobile UI UX liquid glass native polish validation\"",
+    "selected_skills": [
+      {
+        "coverage": "Liquid Glass hierarchy, harmony, consistency, native chrome usage, interactive glass restraint, safe-area-sensitive controls, and Reduce Motion/Transparency expectations.",
+        "name": "vabole/apple-skills@ios-liquid-glass",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": true
+      },
+      {
+        "coverage": "Apple HIG factual checks for safe areas, system typography, Dynamic Type, accessibility, color/contrast, materials, navigation, controls, and 44 pt touch targets.",
+        "name": "vabole/apple-skills@hig",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": true
+      },
+      {
+        "coverage": "Mobile app interface rules for safe areas, Dynamic Type, semantic colors, native navigation, haptics, accessibility labels, list performance, Liquid Glass overlays, and material fallbacks.",
+        "name": "qodex-ai/ai-agent-skills@mobile-app-interface",
+        "search_terms": "iOS mobile UI UX liquid glass native polish validation",
+        "selected": true
+      }
+    ],
+    "template_impact": [
+      "iOS Liquid Glass grounding drives restrained material judgment: glass belongs on navigation/control chrome, not dense content, with accessibility fallbacks.",
+      "Apple HIG grounding drives factual checks for safe areas, system typography, Dynamic Type, semantic color, 44 pt touch targets, navigation conventions, and accessibility.",
+      "Mobile app interface grounding drives user-goal framing, thumb reach, native navigation, purposeful haptics, list performance, material fallback checks, and performance-as-UX budgets.",
+      "The generated page front-loads launch readiness, risk class, evidence quality, accessibility status, regression coverage, and dependency posture before detailed scores.",
+      "The report separates individual dimensions from whole-product cluster judgment so an isolated pass cannot hide a weak or inconsistent product flow."
+    ]
+  },
+  "risks": [
+    {
+      "affected_dimensions": [
+        "artifacts",
+        "evidence_confidence",
+        "verdict"
+      ],
+      "id": "risk-missing-evidence",
+      "mitigation": "Keep verdict incomplete until run artifacts, scores, and issue links are attached.",
+      "priority": "p0",
+      "severity": "major",
+      "status": "open",
+      "title": "Scenario could be misread as validated without current evidence."
+    },
+    {
+      "affected_dimensions": [
+        "product_cluster_coherence",
+        "regression_risk"
+      ],
+      "id": "risk-cluster-regression",
+      "mitigation": "Revalidate the scenario cluster before promoting group coherence.",
+      "priority": "p1",
+      "severity": "major",
+      "status": "open",
+      "title": "Fixes for this flow may regress related scenarios: PLAY-017, PLAY-018, PLAY-020, PLAY-021."
+    },
+    {
+      "affected_dimensions": [
+        "performance"
+      ],
+      "id": "risk-performance-budget",
+      "mitigation": "Attach metric trace with budget, value, unit, method, and status.",
+      "priority": "p1",
+      "severity": "major",
+      "status": "open",
+      "title": "Performance budget is declared but unmeasured."
+    }
+  ],
+  "run": {
+    "app_build": "not-built-catalog-scaffold",
+    "branch": "codex/pod0-scenario-catalog-expansion",
+    "cassettes": [],
+    "completed_at": "2026-07-08T05:25:29Z",
+    "device_matrix": [
+      {
+        "form_factor": "other",
+        "name": "not-run",
+        "os_version": "not-run"
+      }
+    ],
+    "environment": {
+      "appearance": "unspecified",
+      "launch_arguments": [],
+      "locale": "unspecified",
+      "network_condition": "not-run"
+    },
+    "executor": "static catalog generator",
+    "fixtures": [
+      "interruption end replay"
+    ],
+    "generator_version": "scenario-report-generator/0.4.0",
+    "live_dependency_rationale": "No live provider dependency is declared for this catalog scaffold.",
+    "provider_mode": "none",
+    "run_id": "catalog-scaffold-20260708T052529Z-play-019",
+    "source_commit": "7dd9a604e8ccd4cd361c5423d9a26503a2215ec2",
+    "started_at": "2026-07-08T05:25:29Z"
+  },
+  "scenario": {
+    "bdd": {
+      "given": [
+        "an interruption ends with should-resume"
+      ],
+      "then": [
+        "playback resumes only through the kernel decision path"
+      ],
+      "when": [
+        "the OS reports completion"
+      ]
+    },
+    "category": "Playback Expansion",
+    "dependencies": [
+      "interruption end replay"
+    ],
+    "id": "PLAY-019",
+    "related_scenarios": [
+      "PLAY-017",
+      "PLAY-018",
+      "PLAY-020",
+      "PLAY-021"
+    ],
+    "slug": "play-019",
+    "source_path": "docs/testing/scenarios/catalog/06-expanded-product-validation.md:50",
+    "tags": [
+      "catalog-scaffold",
+      "d4",
+      "d7",
+      "performance-required",
+      "play",
+      "playback-expansion",
+      "visual-evidence-required"
+    ],
+    "title": "Playback resumes only through the kernel decision path"
+  },
+  "schema_version": "1.1.0",
+  "sections": {
+    "accessibility_dynamic_type": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Requires VoiceOver/UI tree labels, Dynamic Type, contrast, Reduce Motion/Transparency, and touch target evidence."
+    },
+    "actual_result": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [
+        "Attach step-by-step observed behavior before changing this verdict."
+      ],
+      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete."
+    },
+    "analytics_privacy_boundaries": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Confirm useful event boundaries without PII, private keys, raw transcripts/audio, or provider secrets."
+    },
+    "artifacts": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Required visual/raw evidence from the catalog: interruption end, resumed player, UI tree. Only the source catalog and rubric metadata exist right now."
+    },
+    "attempted_test": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "No run evidence has been attached yet; this generated page is intentionally incomplete. A simulator, manual, or automation run must execute scenario PLAY-019."
+    },
+    "before_after_deltas": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Capture the before state, user action, after state, expected delta, unexpected regression, and screenshot pair for every visible product change."
+    },
+    "content_hierarchy": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Verify podcast/show/episode/transcript/agent content outranks chrome and does not truncate critical meaning."
+    },
+    "controls_gestures_audio": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Review must check buttons, menus, sheets, gestures, audio route controls, haptics, keyboard alternatives, and one-handed reach."
+    },
+    "cross_screen_continuity": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Capture before/after navigation state for adjacent surfaces and ensure mini-player, queue, transcript, agent, and settings remain coherent."
+    },
+    "data_integrity_state_sync": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Verify persisted state, Rust projections, Swift render state, queue/download/transcript/index data, and exported/imported records agree before and after the user-visible action."
+    },
+    "defects_issues_filed": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "No defects have been observed yet because the scenario has not run. Any actionable defect found later must link a GitHub issue before the page can leave incomplete."
+    },
+    "device_os_matrix": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "No device/OS matrix has run. The first validation should record simulator/device, OS, locale, appearance, Dynamic Type, and network state."
+    },
+    "device_viewport_coverage": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Record iPhone size class, Dynamic Type, orientation when relevant, and generated GitHub Pages desktop/mobile viewport checks for the published report page."
+    },
+    "error_recovery_behavior": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Error, offline, retry, cancellation, and recovery paths must be captured where the scenario can fail."
+    },
+    "evidence_confidence": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Evidence confidence is zero until a current build, device/OS, rerun count, freshness, and flake notes are attached."
+    },
+    "evidence_provenance": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Every artifact must identify its source command/tool, capture context, source commit, branch, device/OS, SHA/path, redaction state, freshness, and whether it is live, replayed, generated, or copied from prior evidence."
+    },
+    "execution_attempts": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "No attempts, retries, or branch executions have run. The page reserves structured attempt records for manual, simulator, CI, and replay executions."
+    },
+    "expected_behavior": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Expected behavior from BDD: playback resumes only through the kernel decision path. NMP/RMP boundary declared by the catalog: D4,D7."
+    },
+    "flow": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Catalog flow for Playback Expansion: Given an interruption ends with should-resume, when the OS reports completion, then playback resumes only through the kernel decision path."
+    },
+    "information_architecture": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Confirm the user knows location, current mode, and next action from titles, tabs, bars, breadcrumbs, and hierarchy."
+    },
+    "instrumentation_gaps": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Screenshots, UI trees, logs, metrics, cassettes, and accessibility audits are listed as explicit missing evidence so gaps cannot be hidden in prose."
+    },
+    "liquid_glass_ios_primitives": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Requires evidence that iOS primitives and glass-like materials are used as functional chrome, with accessibility fallbacks."
+    },
+    "localization_content_quality": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Review must check locale-sensitive strings, podcast metadata, transcript/agent content, truncation, empty/error copy, and translation safety."
+    },
+    "media_session_background_continuity": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. For podcast-facing flows, verify audio session route, mini-player/full-player continuity, queue state, lock-screen/background behavior, interruptions, and remote commands or mark them N/A with rationale."
+    },
+    "motion_haptics": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Record transition, haptic, and Reduce Motion behavior when motion is part of the flow."
+    },
+    "navigation_state_restoration": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Capture tab, sheet, detail path, back stack, deep-link, and relaunch restoration state so navigation success cannot hide stale or contradictory product state."
+    },
+    "next_actions": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Run the scenario, attach evidence, score every dimension, file defects, and republish this page from validated JSON."
+    },
+    "nmp_architecture_cohesiveness": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Declared NMP/RMP boundary: D4,D7. Review must check Rust-owned state/policy, thin native renderers, bounded FFI, replay clocks, and privacy fail-closed behavior."
+    },
+    "observability": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Attach structured logs, metric IDs, provider/request IDs, relay IDs, and redacted traces needed to diagnose failures."
+    },
+    "offline_resume_behavior": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Offline, interruption, relaunch, background playback, cancellation, retry, and resume behavior must be captured where applicable."
+    },
+    "owner_status": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Default ownership is validation-agent for evidence and review-agent for scoring/defects until a human or agent owner is assigned. Every blocker, gate, action, defect, and revalidation item must carry owner and status."
+    },
+    "performance_metrics": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not measured. Required performance evidence: resume under 1 sec."
+    },
+    "persona_job_acceptance": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Persona: A returning listener trying to continue or control audio quickly. Acceptance criteria are the scenario Given/When/Then plus the declared architecture boundary D4,D7."
+    },
+    "privacy_security": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Validation must scan screenshots, logs, cassettes, relays, and exports for leaked keys, tokens, private audio, or private Nostr material."
+    },
+    "product_cluster_coherence": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Related scenarios must be judged as a group so UI/UX/product coherence does not pass in isolation while the cluster remains inconsistent."
+    },
+    "product_coherence_in_context": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. The page must explain how this flow fits nearby Pod0 surfaces such as library, player, transcript, agent, settings, and Nostr/social state."
+    },
+    "readiness_gates": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "All readiness gates are blocked until evidence, skill-grounded scoring, product-cluster coherence, defect tracking, and release readiness are populated."
+    },
+    "regression_risk": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Validation must list adjacent scenarios and modules to rerun after any fix."
+    },
+    "reliability_flakiness": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Validation must record rerun count, retry causes, flake history, stale-build risk, timeout behavior, and deterministic replay coverage."
+    },
+    "replayability_cassette_provenance": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not executed yet. Declared dependencies: interruption end replay. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
+    },
+    "revalidation_status": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "No fix or revalidation cycle exists yet. Every fixed defect must link the fix PR, revalidation run ID, rerun commit, affected dimensions, and remaining open gaps."
+    },
+    "review_skill_grounding": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [
+        "Selected skills: vabole/apple-skills@ios-liquid-glass, vabole/apple-skills@hig, qodex-ai/ai-agent-skills@mobile-app-interface."
+      ],
+      "summary": "Review must be grounded in loaded skills, not generic taste. Selected grounding covers Liquid Glass restraint, HIG factual checks, safe areas, Dynamic Type, touch targets, accessibility settings, native navigation, material fallbacks, and performance-as-UX review."
+    },
+    "risks_follow_up": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Current risks are scaffolded from missing evidence and cluster regression exposure. Actionable defects must gain issue/PR links and revalidation run IDs."
+    },
+    "scenario_setup": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Declared setup dependencies: interruption end replay. Provider mode is none; Declared dependencies: interruption end replay. Provider, relay, STT, TTS, LLM, and network behavior must use replay cassettes or explain live-only evidence."
+    },
+    "sister_app_nmp_chirp_comparison": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Review must compare applicable NMP doctrine and known Chirp/sister-app fixes before marking this flow cohesive."
+    },
+    "states_resilience": {
+      "evidence_refs": [
+        "catalog:play-019"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Capture empty, loading, denied, unavailable, offline, retry, and recovery states reached by this scenario."
+    },
+    "touch_ergonomics": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Audit primary controls for reachability, 44x44 pt targets, spacing, and gesture alternatives."
+    },
+    "ui_polish_report": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Requires annotated screenshots for layout, spacing, typography, color, symbols, component state, and platform-native finish."
+    },
+    "ux_polish_report": {
+      "evidence_refs": [
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Not assessed. Requires notes on task clarity, user effort, feedback, interruption/resume, recovery, and cognitive load."
+    },
+    "verdict": {
+      "evidence_refs": [
+        "catalog:play-019",
+        "rubric:review-skill-grounding"
+      ],
+      "notes": [],
+      "summary": "Overall verdict is incomplete because required screenshots, metrics, cassettes, accessibility evidence, critique, and issue back-links are missing."
+    }
+  },
+  "verdict": {
+    "overall": "incomplete",
+    "score_gate_explanation": "Every dimension is scored 0, so the mechanical verdict is incomplete.",
+    "summary": "Generated catalog scaffold only. Required execution evidence and critique are missing."
+  }
+}
