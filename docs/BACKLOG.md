@@ -116,7 +116,13 @@ worktrees currently in flight.
   bridge codegen drift gate`, `Android Kotlin compile + unit tests`, `Android
   cross-compile check (aarch64-linux-android)`, and `Headless e2e kernel
   proofs (nipf4 signing + offline scenarios)`, plus the full iOS simulator
-  `Build and Test` lane. `Build and Test` runs
+  `Build and Test` lane. The per-PR `Build and Test` gate is moving from the
+  self-hosted runner to GitHub-hosted `macos-26` (free for this public repo),
+  split into a required `Build and Test (unit)` context and a non-blocking
+  `Build and Test (ui)` context; see
+  `docs/plan/ci-runner-decision.md` for the decision and migration plan
+  (issue #752). The TestFlight `test`/`deploy` jobs stay self-hosted because
+  `deploy` needs the signing keychain. `Build and Test` runs
   `ci_scripts/run_tests.sh`, which builds the Rust core for
   `aarch64-apple-ios-sim` and runs `xcodebuild ... test` without
   `SKIP_UI_TESTS` in the regular Test workflow. The route back to making it
