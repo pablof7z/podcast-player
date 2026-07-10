@@ -20,7 +20,7 @@ struct ThreadingTopicListView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
             .task {
-                service.attach(store: store)
+                await service.attach(store: store)
             }
     }
 

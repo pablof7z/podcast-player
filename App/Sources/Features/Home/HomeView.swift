@@ -43,6 +43,19 @@ struct HomeView: View {
     /// recency pill on every redraw.
     @State private var renderedAt: Date = Date()
     @State private var cachedTopActiveThread: ThreadingInferenceService.ActiveTopic?
+    /// Cached result of `CategoryLibraryProjection.load` — an FFI/JSON round
+    /// trip through Rust. `categoryProjection` used to be a plain computed
+    /// property, so every read (directly, and transitively via
+    /// `allowedSubscriptionIDs`, which alone is read from ~7 sites in this
+    /// file) re-ran the FFI call. On a real library that measured 300+ calls
+    /// in the first ~15s after launch (most sub-millisecond once Rust's own
+    /// cache is warm, but with the cold first call and periodic recomputes
+    /// costing hundreds of ms each — pure waste, since category membership
+    /// only changes when `store.state.categories` changes). Recomputed via
+    /// `.task(id:)` below, same pattern as `cachedTopActiveThread`.
+    @State private var cachedCategoryProjection = CategoryLibraryProjection(
+        categoryIDs: [], podcastIDsByCategory: [:], allTranscriptionEnabledByCategory: [:]
+    )
 
     var body: some View {
         scrollContent
@@ -125,12 +138,18 @@ struct HomeView: View {
                 store.kernelTriageInbox()
                 // Bind the threading service to the store so the
                 // "Threaded Today" derivation has somewhere to look.
-                threadingService.attach(store: store)
+                await threadingService.attach(store: store)
             }
             .onAppear { renderedAt = Date() }
+            .task(id: store.state.categories) {
+                cachedCategoryProjection = CategoryLibraryProjection.load(
+                    categories: store.state.categories, store: store
+                )
+            }
             .task(id: topActiveThreadKey) {
-                store.refreshThreadingProjection()
-                cachedTopActiveThread = threadingService.topActiveTopics(
+                await store.refreshThreadingProjection()
+                guard !Task.isCancelled else { return }
+                cachedTopActiveThread = await threadingService.topActiveTopics(
                     limit: 1,
                     subscriptionFilter: allowedSubscriptionIDs
                 ).first
@@ -156,7 +175,7 @@ struct HomeView: View {
     }
 
     private var categoryProjection: CategoryLibraryProjection {
-        CategoryLibraryProjection.load(categories: store.state.categories, store: store)
+        cachedCategoryProjection
     }
 
     /// Subscription-id set for the active category, or `nil` for All.

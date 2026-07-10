@@ -41,7 +41,7 @@ struct ThreadingTopicView: View {
         .scrollIndicators(.hidden)
         .background(paperBackground)
         .navigationBarTitleDisplayMode(.inline)
-        .task { service.attach(store: store) }
+        .task { await service.attach(store: store) }
     }
 
     // MARK: - Sections

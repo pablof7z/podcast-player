@@ -22,20 +22,43 @@ extension AppStateStore {
         threadingProjection.topics
     }
 
-    func refreshThreadingProjection() {
+    /// Off-MainActor refresh. The underlying Rust projection is O(episodes):
+    /// on a freshly-synced real library (thousands of episodes) the FIRST
+    /// post-launch call recomputes every episode's heuristic category from
+    /// scratch (the categorization cache starts empty each launch — see
+    /// #755/#756) and measured over 1s on a real ~2k-episode library. Calling
+    /// this synchronously from HomeView's `.task` used to block MainActor for
+    /// that entire second right after the list had already rendered, freezing
+    /// scrolling/interaction. The envelope fetch + JSON decode now run on
+    /// `kernel.snapshotDecodeQueue` — the same off-MainActor decode queue
+    /// `KernelModel` already uses for the full-library snapshot pull (see
+    /// `KernelModel+SnapshotPull.swift`) — captured while still on MainActor
+    /// (`PodcastHandle` is the thread-safe FFI handle; `KernelModel` itself is
+    /// not). Only the final assignment hops back to MainActor.
+    func refreshThreadingProjection() async {
+        guard let kernelModel = kernel else { return }
+        let handle = kernelModel.kernel
+        let decodeQueue = kernelModel.snapshotDecodeQueue
         let start = DispatchTime.now().uptimeNanoseconds
-        defer {
-            PerfMetrics.shared.record(
-                .threadingProjectionPull,
-                micros: Int((DispatchTime.now().uptimeNanoseconds &- start) / 1_000))
+        let decoded: ThreadingProjection? = await withCheckedContinuation { continuation in
+            decodeQueue.async {
+                let decoder = JSONDecoder()
+                decoder.keyDecodingStrategy = .convertFromSnakeCase
+                guard let envelope = handle.threadingProjectionEnvelope(),
+                      let data = envelope.data(using: .utf8),
+                      let decodedEnvelope = try? decoder.decode(ThreadingProjectionEnvelope.self, from: data)
+                else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                continuation.resume(returning: decodedEnvelope.projection)
+            }
         }
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        guard let envelope = kernel?.threadingProjectionEnvelope(),
-              let data = envelope.data(using: .utf8),
-              let decoded = try? decoder.decode(ThreadingProjectionEnvelope.self, from: data)
-        else { return }
-        threadingProjection = decoded.projection
+        PerfMetrics.shared.record(
+            .threadingProjectionPull,
+            micros: Int((DispatchTime.now().uptimeNanoseconds &- start) / 1_000))
+        guard let decoded else { return }
+        threadingProjection = decoded
     }
 
     func threadingTopic(id: UUID) -> ThreadingTopic? {
@@ -50,23 +73,40 @@ extension AppStateStore {
         threadingProjection.mentions.filter { $0.episodeID == episodeID }
     }
 
+    /// Off-MainActor, same rationale as `refreshThreadingProjection`: this
+    /// shares the Rust-side rev-gated cache with the projection pull, but a
+    /// rev bump between the two calls (any concurrent library/download/
+    /// playback update touches the same global rev counter) makes this ALSO
+    /// hit the ~1s-on-a-real-library cold-rebuild path — observed on-device
+    /// as a second main-thread stall right after the first one. Runs on the
+    /// same `kernel.snapshotDecodeQueue` for the same off-MainActor reason.
     func activeThreadingTopics(
         limit: Int,
         subscriptionFilter: Set<UUID>? = nil
-    ) -> [ActiveThreadingTopic] {
-        let start = DispatchTime.now().uptimeNanoseconds
-        defer {
-            PerfMetrics.shared.record(
-                .threadingActiveTopicsPull,
-                micros: Int((DispatchTime.now().uptimeNanoseconds &- start) / 1_000))
-        }
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
+    ) async -> [ActiveThreadingTopic] {
+        guard let kernelModel = kernel else { return [] }
+        let handle = kernelModel.kernel
+        let decodeQueue = kernelModel.snapshotDecodeQueue
         let podcastIDs = subscriptionFilter.map { Array($0) } ?? []
-        guard let envelope = kernel?.threadingActiveTopicsEnvelope(limit: limit, podcastIDs: podcastIDs),
-              let data = envelope.data(using: .utf8),
-              let decoded = try? decoder.decode(ActiveThreadingTopicsEnvelope.self, from: data)
-        else { return [] }
+        let start = DispatchTime.now().uptimeNanoseconds
+        let decoded: ActiveThreadingTopicsEnvelope? = await withCheckedContinuation { continuation in
+            decodeQueue.async {
+                let decoder = JSONDecoder()
+                decoder.keyDecodingStrategy = .convertFromSnakeCase
+                guard let envelope = handle.threadingActiveTopicsEnvelope(limit: limit, podcastIDs: podcastIDs),
+                      let data = envelope.data(using: .utf8),
+                      let decodedEnvelope = try? decoder.decode(ActiveThreadingTopicsEnvelope.self, from: data)
+                else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                continuation.resume(returning: decodedEnvelope)
+            }
+        }
+        PerfMetrics.shared.record(
+            .threadingActiveTopicsPull,
+            micros: Int((DispatchTime.now().uptimeNanoseconds &- start) / 1_000))
+        guard let decoded else { return [] }
         return decoded.activeTopics.compactMap { row in
             guard let topicID = UUID(uuidString: row.topicId),
                   let topic = threadingTopic(id: topicID) else { return nil }
