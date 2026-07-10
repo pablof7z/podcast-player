@@ -41,7 +41,8 @@ final class KernelModel {
     // ── Snapshot slot ──────────────────────────────────────────────────────
 
     /// Latest decoded snapshot. `nil` before the first tick lands.
-    private(set) var snapshot: PodcastUpdate?
+    // widened to internal so KernelModel+SnapshotPull can write it
+    var snapshot: PodcastUpdate?
 
     /// Latest download-queue snapshot, updated on every accepted frame where
     /// the downloads value changed. `podcastSnapshot` deliberately excludes
@@ -82,7 +83,8 @@ final class KernelModel {
     // ── Podcast projection (polled separately from NMP kernel snapshot) ───
 
     /// Latest podcast library decoded from the Rust podcast snapshot.
-    private(set) var library: [PodcastSummary] = []
+    // widened to internal so KernelModel+SnapshotPull can write it
+    var library: [PodcastSummary] = []
     /// Monotonic generation bumped each time `library` is reassigned (i.e. on
     /// every `libraryMetaHash` change — see `commitPodcastProjection`). The
     /// kernel-projection pass reads this to detect, in O(1), that a tick fired
@@ -90,9 +92,11 @@ final class KernelModel {
     /// stayed byte-identical — letting it skip the O(N) episode rebuild.
     /// `@ObservationIgnored`: callers already observe `library`; a separate
     /// tracked generation would arm a redundant observation.
-    @ObservationIgnored private(set) var libraryGeneration: Int = 0
+    // widened to internal so KernelModel+SnapshotPull can write it
+    @ObservationIgnored var libraryGeneration: Int = 0
     /// Latest full podcast snapshot (library, player, account …).
-    private(set) var podcastSnapshot: PodcastUpdate?
+    // widened to internal so KernelModel+SnapshotPull can write it
+    var podcastSnapshot: PodcastUpdate?
     /// Live player state — updated on every snapshot tick (4 Hz during playback).
     /// Views that only need player position should observe this instead of
     /// `podcastSnapshot?.nowPlaying` so they don't hold a reference to the
@@ -110,16 +114,19 @@ final class KernelModel {
     /// Hash of the library fields that matter to list views. Excludes
     /// `playbackPositionSecs` so list views don't re-render at 4 Hz
     /// during playback (the position is only needed by the player row).
-    private var lastLibraryMetaHash: Int = 0
+    // widened to internal so KernelModel+SnapshotPull can write it
+    var lastLibraryMetaHash: Int = 0
     /// Hash of the snapshot fields that matter to non-player UI. Excludes
     /// `nowPlaying.positionSecs` and `nowPlaying.bufferingFraction` so
     /// views like HomeView, InboxView, etc. don't re-render at 4 Hz.
-    private var lastSnapshotContentHash: Int = 0
+    // widened to internal so KernelModel+SnapshotPull can write it
+    var lastSnapshotContentHash: Int = 0
     /// Rev of the last snapshot we decoded from the kernel. Unlike
     /// `podcastSnapshot?.rev` (which only advances on content changes),
     /// this tracks every processed tick so the short-circuit guards stay
     /// accurate.
-    private var lastProcessedRev: UInt64 = 0
+    // widened to internal so KernelModel+SnapshotPull can read/write it
+    var lastProcessedRev: UInt64 = 0
     /// `false` until the first cold-start full pull has been successfully
     /// applied. Guards the re-seed allowance: before the first hydration
     /// the pull path uses `>=` instead of `>` when comparing
@@ -129,7 +136,8 @@ final class KernelModel {
     /// composite. Flipped to `true` inside `applyPodcastUpdate` the
     /// moment the first `fromPull` frame commits; after that the
     /// steady-state `>` guard is restored for both push and pull paths.
-    private(set) var hasHydratedPodcastSnapshot: Bool = false
+    // widened to internal so KernelModel+SnapshotPull can write it
+    var hasHydratedPodcastSnapshot: Bool = false
     /// Per-domain last-applied rev counters. Each domain frame's `rev` is
     /// compared here before merging — stale/duplicate frames are dropped
     /// without touching the composite.
@@ -137,14 +145,16 @@ final class KernelModel {
     /// Composite `PodcastUpdate` — the current merged state built by
     /// selectively replacing domains as per-domain push frames arrive. The
     /// pull path replaces the entire composite on cold-start / fallback.
-    private var compositeUpdate: PodcastUpdate = PodcastUpdate()
+    // widened to internal so KernelModel+SnapshotPull can write it
+    var compositeUpdate: PodcastUpdate = PodcastUpdate()
     /// Serial queue for the off-MainActor full-library snapshot decode. The
     /// `JSONDecoder` pass measured ~35 ms on the simulator (≈100 ms on device)
     /// at 3.6k episodes — it must never run on the MainActor. Serial so a burst
     /// of rapid dispatches doesn't pile up concurrent multi-MB decodes; the
     /// rev-monotonic guards in `applyPodcastUpdate` drop any stale frame that a
     /// late decode produces. See `docs/perf/ffi-snapshot-transport-findings.md`.
-    private let snapshotDecodeQueue = DispatchQueue(
+    // widened to internal so KernelModel+SnapshotPull can read it
+    let snapshotDecodeQueue = DispatchQueue(
         label: "podcast.snapshot-decode", qos: .userInitiated)
     /// `true` while a full-library decode is enqueued/running on
     /// `snapshotDecodeQueue`. Every `dispatch(namespace:body:)` call ends
@@ -155,11 +165,13 @@ final class KernelModel {
     /// settles once. This flag plus `snapshotPullPending` below coalesces
     /// a burst of requests into the in-flight decode plus at most one
     /// trailing follow-up, instead of one decode per caller.
-    private var snapshotPullInFlight = false
+    // widened to internal so KernelModel+SnapshotPull can read/write it
+    var snapshotPullInFlight = false
     /// Set when a pull is requested while one is already in flight.
     /// Consumed by the in-flight decode's completion, which kicks off
     /// exactly one more pull so the final settled state still lands.
-    private var snapshotPullPending = false
+    // widened to internal so KernelModel+SnapshotPull can read/write it
+    var snapshotPullPending = false
 
     // ── Computed projections ───────────────────────────────────────────────
 
@@ -285,154 +297,8 @@ final class KernelModel {
         pullPodcastSnapshotIfChanged()
     }
 
-    /// One-shot rev-gated pull. This is NOT a poll — there is no timer; the
-    /// 500ms background poll has been removed in favor of the reactive push
-    /// (`apply(result:)`).
-    ///
-    /// The full-library `JSONDecoder` pass (`kernel.podcastSnapshot()`) is the
-    /// expensive step and always runs off the MainActor on `snapshotDecodeQueue`.
-    /// Dispatch sites are fire-and-forget over `@Observable`, so a one-runloop-
-    /// later commit is invisible.
-    ///
-    /// Ordering: rapid pulls may request several decodes; the rev-monotonic
-    /// guards in `applyPodcastUpdate` (`update.rev > lastProcessedRev`) and
-    /// `commitPodcastProjection` (`frameRev == lastProcessedRev`) make the newest
-    /// frame win and drop any stale one. `synchronous` is retained for source
-    /// compatibility; decode is always off-main.
-    ///
-    /// Coalesced: only one decode is ever enqueued at a time. A request that
-    /// arrives while one is already in flight sets `snapshotPullPending`
-    /// instead of enqueuing its own full-library decode — the in-flight
-    /// decode's completion consumes that flag and fires exactly one trailing
-    /// pull, so a burst of N requests (e.g. one dispatch per podcast during a
-    /// feed refresh) costs ~2 decodes instead of N.
-    // internal (not private) so extension files can trigger snapshot pulls.
-    func pullPodcastSnapshotIfChanged(
-        synchronous: Bool = false,
-        allowEqualRev: Bool = false
-    ) {
-        let currentRev = kernel.podcastSnapshotRev()
-        guard Self.shouldPullPodcastSnapshot(
-            currentRev: currentRev,
-            lastProcessedRev: lastProcessedRev,
-            hasHydratedPodcastSnapshot: hasHydratedPodcastSnapshot,
-            allowEqualRev: allowEqualRev
-        ) else { return }
-        guard !snapshotPullInFlight else {
-            snapshotPullPending = true
-            return
-        }
-        snapshotPullInFlight = true
-        let handle = kernel
-        snapshotDecodeQueue.async { [weak self] in
-            let update = handle.podcastSnapshot()
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated {
-                    guard let self else { return }
-                    // Pull path always replaces the composite so push merges
-                    // start from the current full state (fromPull: true).
-                    self.applyPodcastUpdate(
-                        update,
-                        fromPull: true,
-                        allowEqualRev: allowEqualRev)
-                    self.snapshotPullInFlight = false
-                    if self.snapshotPullPending {
-                        self.snapshotPullPending = false
-                        self.pullPodcastSnapshotIfChanged(allowEqualRev: true)
-                    }
-                }
-            }
-        }
-    }
-
-    /// Apply one `PodcastUpdate` to the observable surface. Shared by:
-    ///   - The per-domain push path (`apply(result:)` → `mergeDomainFrames`)
-    ///   - The rev-gated pull path (`pullPodcastSnapshotIfChanged`)
-    ///
-    /// Rev-gated so redundant frames (push at emit-Hz, or a pull racing a push)
-    /// are dropped cheaply. For the push path `update` is the already-merged
-    /// `compositeUpdate`; for the pull path it is the full library snapshot.
-    ///
-    /// This method runs the cheap, must-be-main assignments inline, then
-    /// offloads the O(N×M) content/library hashing to a detached task.
-    ///
-    /// `fromPull`: when true, also replace `compositeUpdate` with the full
-    /// snapshot so the push path's incremental merges start from a current base.
-    private func applyPodcastUpdate(
-        _ update: PodcastUpdate,
-        fromPull: Bool = false,
-        allowEqualRev: Bool = false
-    ) {
-        // Allow `>=` only when a full pull must seed or repair state after a
-        // same-rev typed push. Ordinary steady-state pulls keep strict `>`.
-        let revPasses = fromPull && (!hasHydratedPodcastSnapshot || allowEqualRev)
-            ? update.rev >= Int(lastProcessedRev)
-            : update.rev > Int(lastProcessedRev)
-        guard revPasses else { return }
-        lastProcessedRev = UInt64(update.rev)
-        // For the pull path, replace the composite so future push merges start
-        // from the current full state rather than a stale domain-by-domain build.
-        if fromPull {
-            compositeUpdate = update
-            hasHydratedPodcastSnapshot = true
-        }
-        snapshot = update
-        if update.downloads != downloadSnapshot { downloadSnapshot = update.downloads }
-        let previousNowPlaying = nowPlaying
-        nowPlaying = update.nowPlaying
-        PodcastCapabilities.shared.iCloudSync.applySettingsSnapshot(
-            SettingsKVSnapshot.from(podcastUpdate: update))
-        PodcastCapabilities.shared.spotlight.indexLibrary(update.library)
-        reconcileLiveActivity(
-            previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
-        reconcileNowPlayingMetadata(
-            previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
-        kmLog.debug("podcast update rev=\(update.rev) library=\(update.library.count)")
-
-        // Gate `podcastSnapshot` (and `library`) on content hashes that exclude
-        // volatile position/buffering fields so list views don't re-render at
-        // the emit rate. Both hashes are O(N×M) — offloaded off-main.
-        let frameRev = UInt64(update.rev)
-        Task.detached(priority: .utility) { [weak self] in
-            guard let self else { return }
-            let snapHashInterval = signposter.beginInterval("snapshotContentHash")
-            let newSnapHash = self.snapshotContentHash(for: update)
-            signposter.endInterval("snapshotContentHash", snapHashInterval)
-            let libHashInterval = signposter.beginInterval("libraryMetaHash")
-            let newLibHash = self.libraryMetaHash(for: update.library)
-            signposter.endInterval("libraryMetaHash", libHashInterval)
-            await MainActor.run {
-                self.commitPodcastProjection(
-                    update: update, frameRev: frameRev,
-                    newSnapHash: newSnapHash, newLibHash: newLibHash)
-            }
-        }
-    }
-
-    /// Commit the rev-gated `podcastSnapshot`/`library` assignments. Shared by
-    /// both the inline (pull) and detached (push) hashing paths so they can
-    /// never drift. The `frameRev == lastProcessedRev` reentrancy guard is
-    /// load-bearing for the async path — 4 Hz hops interleave, so a
-    /// late-returning stale frame must not clobber newer state; `lastProcessedRev`
-    /// is monotonic, so a newer frame already advanced it (newest wins). On the
-    /// synchronous path the guard is trivially true (nothing ran between
-    /// assigning `lastProcessedRev` above and arriving here).
-    private func commitPodcastProjection(
-        update: PodcastUpdate, frameRev: UInt64, newSnapHash: Int, newLibHash: Int
-    ) {
-        guard frameRev == lastProcessedRev else { return }
-        if newSnapHash != lastSnapshotContentHash {
-            lastSnapshotContentHash = newSnapHash
-            podcastSnapshot = update
-        }
-        if newLibHash != lastLibraryMetaHash {
-            lastLibraryMetaHash = newLibHash
-            library = update.library
-            // Bump AFTER the assignment so a reader that samples the generation
-            // alongside `library` sees them advance together.
-            libraryGeneration &+= 1
-        }
-    }
+    // `pullPodcastSnapshotIfChanged` / `applyPodcastUpdate` / `commitPodcastProjection`
+    // moved to KernelModel+SnapshotPull.swift (file-size cap, AGENTS.md).
 
     func applyConfiguration() {
         kernel.configure(visibleLimit: visibleLimit, emitHz: emitHz)
