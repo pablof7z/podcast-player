@@ -25,6 +25,9 @@
 //! `categorize_episode` rescans a single episode (useful when the iOS
 //! shell wants to refresh one row without rebuilding the projection).
 
+use std::collections::{HashMap, HashSet};
+use std::sync::OnceLock;
+
 use serde::{Deserialize, Serialize};
 
 use nmp_core::substrate::ActionModule;
@@ -105,22 +108,52 @@ pub const MAX_CATEGORIES_PER_EPISODE: usize = 3;
 /// keyword-match count (highest first). Categories with zero matches
 /// are dropped. Ties resolved by [`CATEGORY_KEYWORDS`] order (the
 /// stable sort below preserves the canonical order on equal counts).
+///
+/// Cost is **one linear pass over the haystack**, not one pass per
+/// keyword. The naive "scan the whole haystack once per keyword"
+/// approach this replaced was O(keywords × haystack length) *per
+/// episode* — cheap for a single episode in isolation, but pathological
+/// once run synchronously over a freshly-synced library on app launch
+/// (see #755: it burned 32s of CPU on the main thread and tripped the
+/// scene-create watchdog). [`keyword_tokens`] is built once and reused,
+/// so the keyword set is never rescanned per call.
 pub fn categorize_text(title: &str, description: &str) -> Vec<String> {
     let haystack = format!("{} {}", title, description).to_ascii_lowercase();
     if haystack.trim().is_empty() {
         return Vec::new();
     }
 
+    let words: Vec<&str> = tokenize_words(&haystack).collect();
+    if words.is_empty() {
+        return Vec::new();
+    }
+
+    let index = keyword_tokens();
+    // matched[cat_idx] holds the keyword indices already found for that
+    // category, so a phrase repeated many times in the text is still
+    // counted once — same semantics as the old per-keyword `.count()`.
+    let mut matched: Vec<HashSet<usize>> = vec![HashSet::new(); CATEGORY_KEYWORDS.len()];
+
+    for start in 0..words.len() {
+        let Some(candidates) = index.by_first_token.get(words[start]) else {
+            continue;
+        };
+        for &(cat_idx, kw_idx) in candidates {
+            if matched[cat_idx].contains(&kw_idx) {
+                continue;
+            }
+            let kw_tokens = &index.tokens[cat_idx][kw_idx];
+            let end = start + kw_tokens.len();
+            if end <= words.len() && words[start..end].iter().eq(kw_tokens.iter()) {
+                matched[cat_idx].insert(kw_idx);
+            }
+        }
+    }
+
     let mut hits: Vec<(usize, &str, usize)> = CATEGORY_KEYWORDS
         .iter()
         .enumerate()
-        .map(|(idx, (category, keywords))| {
-            let count: usize = keywords
-                .iter()
-                .filter(|kw| contains_word_bounded(&haystack, kw))
-                .count();
-            (idx, *category, count)
-        })
+        .map(|(idx, (category, _))| (idx, *category, matched[idx].len()))
         .filter(|(_, _, count)| *count > 0)
         .collect();
 
@@ -133,34 +166,45 @@ pub fn categorize_text(title: &str, description: &str) -> Vec<String> {
         .collect()
 }
 
-/// Return `true` iff `needle` appears in `haystack` with non-alphanumeric
-/// neighbours on both ends (so `"ai"` does not match `"main"`).
-///
-/// Caller must lowercase both inputs; matching is byte-wise (sufficient
-/// for the ASCII keyword sets we ship).
-fn contains_word_bounded(haystack: &str, needle: &str) -> bool {
-    if needle.is_empty() || needle.len() > haystack.len() {
-        return false;
-    }
-    let bytes = haystack.as_bytes();
-    let nlen = needle.len();
-    let nb = needle.as_bytes();
-    let mut i = 0;
-    while i + nlen <= bytes.len() {
-        if &bytes[i..i + nlen] == nb {
-            let prev_ok = i == 0 || !is_word_byte(bytes[i - 1]);
-            let next_ok = i + nlen == bytes.len() || !is_word_byte(bytes[i + nlen]);
-            if prev_ok && next_ok {
-                return true;
-            }
-        }
-        i += 1;
-    }
-    false
+/// Split `s` into lowercase word tokens using the same word-boundary
+/// rule the matcher relies on: a run of ASCII alphanumerics/underscore
+/// is a word, everything else (spaces, hyphens, punctuation) is a
+/// delimiter. Treating hyphens as delimiters too means a keyword phrase
+/// like `"open source"` matches both "open source" and "open-source" in
+/// free text without needing a second literal entry.
+fn tokenize_words(s: &str) -> impl Iterator<Item = &str> {
+    s.split(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+        .filter(|w| !w.is_empty())
 }
 
-fn is_word_byte(b: u8) -> bool {
-    b.is_ascii_alphanumeric() || b == b'_'
+/// One-time tokenized index over [`CATEGORY_KEYWORDS`]: `tokens[cat][kw]`
+/// is that keyword's token sequence, and `by_first_token` maps a token to
+/// every `(category, keyword)` pair whose phrase starts with it. Built
+/// once via [`OnceLock`] — [`categorize_text`] never re-tokenizes or
+/// re-scans the keyword set on a per-call basis.
+struct KeywordTokens {
+    tokens: Vec<Vec<Vec<&'static str>>>,
+    by_first_token: HashMap<&'static str, Vec<(usize, usize)>>,
+}
+
+fn keyword_tokens() -> &'static KeywordTokens {
+    static INDEX: OnceLock<KeywordTokens> = OnceLock::new();
+    INDEX.get_or_init(|| {
+        let mut tokens = Vec::with_capacity(CATEGORY_KEYWORDS.len());
+        let mut by_first_token: HashMap<&'static str, Vec<(usize, usize)>> = HashMap::new();
+        for (cat_idx, (_, keywords)) in CATEGORY_KEYWORDS.iter().enumerate() {
+            let mut cat_tokens = Vec::with_capacity(keywords.len());
+            for (kw_idx, kw) in keywords.iter().enumerate() {
+                let kw_tokens: Vec<&'static str> = tokenize_words(kw).collect();
+                if let Some(&first) = kw_tokens.first() {
+                    by_first_token.entry(first).or_default().push((cat_idx, kw_idx));
+                }
+                cat_tokens.push(kw_tokens);
+            }
+            tokens.push(cat_tokens);
+        }
+        KeywordTokens { tokens, by_first_token }
+    })
 }
 
 #[cfg(test)]

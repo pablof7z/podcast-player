@@ -4,8 +4,10 @@
 //! Lives in its own file so the dispatcher module
 //! (`categorization_module.rs`) stays under the 500-line cap.
 //! Keyword sets are intentionally narrow + lowercased; the matcher
-//! lower-cases the haystack once and looks for word-bounded
-//! occurrences (`is_alphanumeric` neighbours).
+//! tokenizes the haystack once and looks for word-bounded occurrences.
+//! Multi-word phrases are tokenized the same way, so a hyphen and a
+//! space are equivalent delimiters — no need to list both a `"stand
+//! up"` and a `"stand-up"` variant of the same phrase.
 
 /// The full set of categories the heuristic can assign. Order is the
 /// canonical display order in `CategoriesView`.
@@ -196,7 +198,6 @@ pub const CATEGORY_KEYWORDS: &[(&str, &[&str])] = &[
             "comedy",
             "humor",
             "stand up",
-            "stand-up",
             "celebrity",
             "gaming",
             "video game",

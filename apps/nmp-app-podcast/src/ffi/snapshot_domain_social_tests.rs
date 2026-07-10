@@ -513,6 +513,7 @@ fn block_peer_action_reemits_social_with_trusted_false_overriding_follow() {
         )),
         approved_peer_store: Arc::clone(&approved),
         snapshot_cache: Arc::new(Mutex::new(None)),
+        threading_projection_cache: Arc::new(Mutex::new(None)),
         clean_html_cache: Arc::new(Mutex::new(HashMap::new())),
         ask_state: Arc::new(Mutex::new(crate::ffi::agent_ask::AgentAskState::default())),
         ask_callback: Arc::new(Mutex::new(

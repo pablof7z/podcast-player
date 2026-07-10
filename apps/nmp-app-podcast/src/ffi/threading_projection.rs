@@ -6,6 +6,8 @@
 
 use std::collections::{HashMap, HashSet};
 use std::ffi::{c_char, CStr, CString};
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
 use podcast_core::TriageDecision;
 use serde::{Deserialize, Serialize};
@@ -40,7 +42,7 @@ struct ActiveThreadingTopicRow {
 }
 
 #[derive(Debug, Serialize)]
-struct ThreadingProjection {
+pub(crate) struct ThreadingProjection {
     topics: Vec<ThreadingTopicRow>,
     mentions: Vec<ThreadingMentionRow>,
 }
@@ -69,16 +71,31 @@ struct ThreadingMentionRow {
 }
 
 #[derive(Clone)]
-struct EpisodeThreadInput {
+pub(crate) struct EpisodeThreadInput {
     podcast_id: String,
     episode_id: String,
     title: String,
     description: String,
-    transcript: Option<String>,
-    timed_entries: Vec<podcast_transcripts::TranscriptEntry>,
+    /// Precomputed at collect time (see [`mention_source_for`]) so this
+    /// struct never carries a whole transcript or timed-entry list forward —
+    /// `candidate_for` only ever needs one snippet per episode, truncated to
+    /// `truncate_snippet`'s 220-char cap. The naive version cloned the full
+    /// transcript string/timed-entry vector for every episode on every
+    /// projection build regardless of whether that episode ever became part
+    /// of a qualifying thread.
+    mention_source: MentionSource,
     published_at: i64,
     played: bool,
     triage_archived: bool,
+}
+
+#[derive(Clone)]
+enum MentionSource {
+    /// A timed transcript entry was available: exact playback position.
+    TimedEntry { start_ms: i64, end_ms: i64, snippet: String },
+    /// No timed entry — fall back to the plain transcript or description
+    /// text (already truncated; no start/end position).
+    Text(String),
 }
 
 #[derive(Clone)]
@@ -102,16 +119,12 @@ pub fn nmp_app_podcast_threading_projection(
         std::ptr::null_mut,
         || {
             let handle_ref = unsafe { &*handle };
-            let categories = handle_ref.state.categories.categories_snapshot();
-            let projection = match handle_ref.state.library.store.lock() {
-                Ok(store) => {
-                    let inputs = collect_thread_inputs(&store);
-                    build_projection(inputs, &categories)
-                }
-                Err(_) => return std::ptr::null_mut(),
+            let Some((_inputs, projection)) = projection_and_inputs_for_current_rev(handle_ref)
+            else {
+                return std::ptr::null_mut();
             };
 
-            match serde_json::to_string(&projection) {
+            match serde_json::to_string(&*projection) {
                 Ok(json) => match CString::new(json) {
                     Ok(c) => c.into_raw(),
                     Err(_) => std::ptr::null_mut(),
@@ -152,17 +165,14 @@ pub fn nmp_app_podcast_threading_active_topics(
             let limit = request.limit.unwrap_or(1).max(1).min(MAX_TOPICS);
 
             let handle_ref = unsafe { &*handle };
-            let categories = handle_ref.state.categories.categories_snapshot();
-            let projection = match handle_ref.state.library.store.lock() {
-                Ok(store) => {
-                    let inputs = collect_thread_inputs(&store);
-                    let projection = build_projection(inputs.clone(), &categories);
-                    build_active_topics(projection, &inputs, &allowed_podcasts, limit)
-                }
-                Err(_) => return std::ptr::null_mut(),
+            let Some((inputs, projection)) = projection_and_inputs_for_current_rev(handle_ref)
+            else {
+                return std::ptr::null_mut();
             };
+            let active =
+                build_active_topics(&projection, inputs.as_slice(), &allowed_podcasts, limit);
 
-            match serde_json::to_string(&projection) {
+            match serde_json::to_string(&active) {
                 Ok(json) => match CString::new(json) {
                     Ok(c) => c.into_raw(),
                     Err(_) => std::ptr::null_mut(),
@@ -173,7 +183,48 @@ pub fn nmp_app_podcast_threading_active_topics(
     )
 }
 
-fn collect_thread_inputs(store: &crate::store::PodcastStore) -> Vec<EpisodeThreadInput> {
+/// Fetch the `(inputs, projection)` pair for the library's current rev,
+/// rebuilding only on a cache miss.
+///
+/// `build_projection` scans every episode (categorization + candidate-mention
+/// selection) and `collect_thread_inputs` clones each episode's transcript
+/// data — real work that both FFI entry points need, and that HomeView's
+/// `.task` blocks can trigger several times per launch as the library and
+/// categorizer cache settle. Caching by `state.infra.rev` (the same counter
+/// `snapshot_cache` uses) means a burst of same-rev calls costs one rebuild
+/// plus cheap `Arc` clones instead of re-scanning the whole library each time.
+/// Returns `None` only if the store mutex is poisoned.
+fn projection_and_inputs_for_current_rev(
+    handle: &PodcastHandle,
+) -> Option<(Arc<Vec<EpisodeThreadInput>>, Arc<ThreadingProjection>)> {
+    let rev = handle.state.infra.rev.load(Ordering::Relaxed);
+    if let Ok(cache) = handle.threading_projection_cache.lock() {
+        if let Some((cached_rev, ref inputs, ref projection)) = *cache {
+            if cached_rev == rev {
+                return Some((Arc::clone(inputs), Arc::clone(projection)));
+            }
+        }
+    }
+
+    let categories = handle.state.categories.categories_snapshot();
+    let inputs = {
+        let store = handle.state.library.store.lock().ok()?;
+        collect_thread_inputs(&store, handle)
+    };
+    let projection = build_projection(inputs.clone(), &categories);
+    let inputs = Arc::new(inputs);
+    let projection = Arc::new(projection);
+
+    if let Ok(mut cache) = handle.threading_projection_cache.lock() {
+        *cache = Some((rev, Arc::clone(&inputs), Arc::clone(&projection)));
+    }
+    Some((inputs, projection))
+}
+
+fn collect_thread_inputs(
+    store: &crate::store::PodcastStore,
+    handle: &PodcastHandle,
+) -> Vec<EpisodeThreadInput> {
     let mut inputs = Vec::new();
     for (_podcast, episodes) in store.all_podcasts() {
         for ep in episodes {
@@ -182,12 +233,12 @@ fn collect_thread_inputs(store: &crate::store::PodcastStore) -> Vec<EpisodeThrea
                 podcast_id: ep.podcast_id.0.to_string(),
                 episode_id: id.clone(),
                 title: ep.title.clone(),
-                description: podcast_core::strip_html(&ep.description),
-                transcript: store.transcript_for(&id).map(str::to_owned),
-                timed_entries: store
-                    .timed_transcript_for(&id)
-                    .map(|entries| entries.to_vec())
-                    .unwrap_or_default(),
+                // Memoized (see `PodcastHandle::clean_html`) — the raw
+                // description is immutable per content, so a same-content
+                // rebuild reuses the already-cleaned string instead of
+                // re-running the HTML strip for every episode again.
+                description: handle.clean_html(&ep.description),
+                mention_source: mention_source_for(store, &id, &ep.description),
                 published_at: ep.pub_date.timestamp(),
                 played: ep.played,
                 triage_archived: ep.triage_decision == Some(TriageDecision::Archived),
@@ -195,6 +246,32 @@ fn collect_thread_inputs(store: &crate::store::PodcastStore) -> Vec<EpisodeThrea
         }
     }
     inputs
+}
+
+/// Pick the one snippet `candidate_for` will ever need for this episode,
+/// without cloning the whole transcript or timed-entry list to get it: the
+/// first non-empty timed entry if one exists, else the transcript (falling
+/// back to the description) truncated up front.
+fn mention_source_for(
+    store: &crate::store::PodcastStore,
+    episode_id: &str,
+    description: &str,
+) -> MentionSource {
+    if let Some(entry) = store
+        .timed_transcript_for(episode_id)
+        .and_then(|entries| entries.iter().find(|entry| !entry.text.trim().is_empty()))
+    {
+        return MentionSource::TimedEntry {
+            start_ms: seconds_to_ms(entry.start_secs),
+            end_ms: seconds_to_ms(entry.end_secs),
+            snippet: truncate_snippet(&entry.text),
+        };
+    }
+    let text = store
+        .transcript_for(episode_id)
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or(description);
+    MentionSource::Text(truncate_snippet(text))
 }
 
 fn build_projection(
@@ -281,7 +358,7 @@ fn build_projection(
 }
 
 fn build_active_topics(
-    projection: ThreadingProjection,
+    projection: &ThreadingProjection,
     inputs: &[EpisodeThreadInput],
     allowed_podcasts: &HashSet<String>,
     limit: usize,
@@ -298,7 +375,7 @@ fn build_active_topics(
     let mut episodes_by_topic: HashMap<String, HashSet<String>> = HashMap::new();
     let mut mentions_by_topic: HashMap<String, Vec<String>> = HashMap::new();
 
-    for mention in projection.mentions {
+    for mention in &projection.mentions {
         let Some(episode) = episode_by_id.get(&mention.episode_id) else {
             continue;
         };
@@ -313,9 +390,9 @@ fn build_active_topics(
             .or_default()
             .insert(mention.episode_id.clone());
         mentions_by_topic
-            .entry(mention.topic_id)
+            .entry(mention.topic_id.clone())
             .or_default()
-            .push(mention.id);
+            .push(mention.id.clone());
     }
 
     let mut rows: Vec<ActiveThreadingTopicRow> = episodes_by_topic
@@ -359,31 +436,21 @@ fn build_active_topics(
 }
 
 fn candidate_for(input: &EpisodeThreadInput) -> CandidateMention {
-    if let Some(entry) = input
-        .timed_entries
-        .iter()
-        .find(|entry| !entry.text.trim().is_empty())
-    {
-        return CandidateMention {
+    match &input.mention_source {
+        MentionSource::TimedEntry { start_ms, end_ms, snippet } => CandidateMention {
             episode_id: input.episode_id.clone(),
             published_at: input.published_at,
-            start_ms: seconds_to_ms(entry.start_secs),
-            end_ms: seconds_to_ms(entry.end_secs),
-            snippet: truncate_snippet(&entry.text),
-        };
-    }
-
-    let text = input
-        .transcript
-        .as_deref()
-        .filter(|s| !s.trim().is_empty())
-        .unwrap_or(&input.description);
-    CandidateMention {
-        episode_id: input.episode_id.clone(),
-        published_at: input.published_at,
-        start_ms: 0,
-        end_ms: 0,
-        snippet: truncate_snippet(text),
+            start_ms: *start_ms,
+            end_ms: *end_ms,
+            snippet: snippet.clone(),
+        },
+        MentionSource::Text(snippet) => CandidateMention {
+            episode_id: input.episode_id.clone(),
+            published_at: input.published_at,
+            start_ms: 0,
+            end_ms: 0,
+            snippet: snippet.clone(),
+        },
     }
 }
 
@@ -418,3 +485,7 @@ fn slugify(input: &str) -> String {
 fn stable_uuid(seed: &str) -> Uuid {
     Uuid::new_v5(&Uuid::NAMESPACE_URL, seed.as_bytes())
 }
+
+#[cfg(test)]
+#[path = "threading_projection_tests.rs"]
+mod tests;

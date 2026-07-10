@@ -23,6 +23,12 @@ extension AppStateStore {
     }
 
     func refreshThreadingProjection() {
+        let start = DispatchTime.now().uptimeNanoseconds
+        defer {
+            PerfMetrics.shared.record(
+                .threadingProjectionPull,
+                micros: Int((DispatchTime.now().uptimeNanoseconds &- start) / 1_000))
+        }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         guard let envelope = kernel?.threadingProjectionEnvelope(),
@@ -48,6 +54,12 @@ extension AppStateStore {
         limit: Int,
         subscriptionFilter: Set<UUID>? = nil
     ) -> [ActiveThreadingTopic] {
+        let start = DispatchTime.now().uptimeNanoseconds
+        defer {
+            PerfMetrics.shared.record(
+                .threadingActiveTopicsPull,
+                micros: Int((DispatchTime.now().uptimeNanoseconds &- start) / 1_000))
+        }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         let podcastIDs = subscriptionFilter.map { Array($0) } ?? []
