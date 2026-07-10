@@ -21,16 +21,16 @@ final class ThreadingInferenceService {
 
     init() {}
 
-    func attach(store: AppStateStore) {
+    func attach(store: AppStateStore) async {
         self.store = store
-        store.refreshThreadingProjection()
+        await store.refreshThreadingProjection()
     }
 
     func recompute(store: AppStateStore) async {
         guard !isRecomputing else { return }
         isRecomputing = true
         defer { isRecomputing = false }
-        attach(store: store)
+        await attach(store: store)
         lastError = nil
         lastRecomputedAt = Date()
     }
@@ -42,14 +42,16 @@ final class ThreadingInferenceService {
     func topActiveTopics(
         limit: Int,
         subscriptionFilter: Set<UUID>? = nil
-    ) -> [ActiveTopic] {
-        store?.activeThreadingTopics(limit: limit, subscriptionFilter: subscriptionFilter).map {
+    ) async -> [ActiveTopic] {
+        guard let store else { return [] }
+        let topics = await store.activeThreadingTopics(limit: limit, subscriptionFilter: subscriptionFilter)
+        return topics.map {
             ActiveTopic(
                 topic: $0.topic,
                 unplayedEpisodeCount: $0.unplayedEpisodeCount,
                 mentionIDs: $0.mentionIDs
             )
-        } ?? []
+        }
     }
 
     struct ActiveTopic: Sendable, Equatable, Identifiable {
