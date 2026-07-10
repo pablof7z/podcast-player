@@ -119,14 +119,29 @@ final class PodcastHandle: @unchecked Sendable {
     /// Wire the Rust update callback. `handler` runs on every snapshot frame;
     /// `onPanic` runs exactly once if/when the actor thread dies and the Rust
     /// supervisor emits an `{"t":"panic",...}` envelope (D7 actor-death contract).
+    ///
+    /// `decodeQueue`: `KernelUpdateSink.onUpdate(frame:)` — the UniFFI
+    /// callback Rust invokes on every push frame — used to decode
+    /// synchronously on whatever thread Rust called back on, which a
+    /// main-thread `sample` caught landing on MainActor: during active
+    /// library sync the actor emits a continuous stream of frames, each one
+    /// running `decode_update_frame`/`decode_typed_projection_frame`
+    /// in-line, pegging the main thread at 100%+ CPU for the whole sync
+    /// (#755 follow-up — a sustained, ongoing freeze, not just a launch
+    /// stall). The decode now runs on `decodeQueue` (callers pass
+    /// `KernelModel.snapshotDecodeQueue`, the same serial queue already used
+    /// for the full-library snapshot pull); `handler` still hops to
+    /// MainActor itself to apply the already-decoded result.
     func listen(
         _ handler: @escaping (KernelUpdateResult) -> Void,
-        onPanic: @escaping () -> Void = {}
+        onPanic: @escaping () -> Void = {},
+        decodeQueue: DispatchQueue
     ) {
         let sink = KernelUpdateSink(
             handler: handler, onPanic: onPanic,
             signedEvents: signedEventsRegistry,
             actionResults: actionResultsRegistry,
+            decodeQueue: decodeQueue,
             decodeFrame: { [weak self] frame in
                 self?.podcastApp.decodeUpdateFrame(frame: frame)
             },
@@ -293,6 +308,7 @@ private final class KernelUpdateSink: PodcastUpdateSink, @unchecked Sendable {
     let onPanic: () -> Void
     let signedEvents: SignedEventsRegistry
     let actionResults: ActionResultsRegistry
+    let decodeQueue: DispatchQueue
     let decodeFrame: (Data) -> String?
     let decodeDomainFrames: (Data) -> PodcastDomainFrames?
 
@@ -301,6 +317,7 @@ private final class KernelUpdateSink: PodcastUpdateSink, @unchecked Sendable {
         onPanic: @escaping () -> Void,
         signedEvents: SignedEventsRegistry,
         actionResults: ActionResultsRegistry,
+        decodeQueue: DispatchQueue,
         decodeFrame: @escaping (Data) -> String?,
         decodeDomainFrames: @escaping (Data) -> PodcastDomainFrames?
     ) {
@@ -308,28 +325,40 @@ private final class KernelUpdateSink: PodcastUpdateSink, @unchecked Sendable {
         self.onPanic = onPanic
         self.signedEvents = signedEvents
         self.actionResults = actionResults
+        self.decodeQueue = decodeQueue
         self.decodeFrame = decodeFrame
         self.decodeDomainFrames = decodeDomainFrames
     }
 
+    /// Rust invokes this UniFFI callback on every push frame, on whatever
+    /// thread the actor's callback dispatch lands on — observed on
+    /// MainActor via a main-thread `sample`. The decode work (JSON parse +
+    /// typed-projection merge) is dispatched onto `decodeQueue` so a
+    /// continuous stream of frames during active library sync can't peg the
+    /// main thread; `handler` (built by `KernelModel`) still hops back to
+    /// MainActor itself to apply the already-decoded result. `signedEvents`/
+    /// `actionResults` are `@unchecked Sendable` with their own internal
+    /// locking, safe to call from `decodeQueue`.
     func onUpdate(frame: Data) {
         guard !frame.isEmpty else { return }
-        let frameStart = DispatchTime.now().uptimeNanoseconds
-        guard let payload = decodeFrame(frame) else { return }
-        let payloadData = Data(payload.utf8)
-        signedEvents.ingest(envelopePayload: payloadData)
-        actionResults.ingest(envelopePayload: payloadData)
-        if payload.contains("\"t\":\"panic\"") {
-            kbLog.fault("NMP_ACTOR_PANIC detected bytes=\(frame.count)")
-            onPanic()
-            return
+        decodeQueue.async { [self] in
+            let frameStart = DispatchTime.now().uptimeNanoseconds
+            guard let payload = decodeFrame(frame) else { return }
+            let payloadData = Data(payload.utf8)
+            signedEvents.ingest(envelopePayload: payloadData)
+            actionResults.ingest(envelopePayload: payloadData)
+            if payload.contains("\"t\":\"panic\"") {
+                kbLog.fault("NMP_ACTOR_PANIC detected bytes=\(frame.count)")
+                onPanic()
+                return
+            }
+            let domainFrames = decodeDomainFrames(frame) ?? PodcastDomainFrames()
+            guard let result = PodcastHandle.decode(payload: payload, domainFrames: domainFrames) else { return }
+            PerfMetrics.shared.record(
+                .pushFrameDecode,
+                micros: Int((DispatchTime.now().uptimeNanoseconds &- frameStart) / 1_000),
+                bytes: frame.count)
+            handler(result)
         }
-        let domainFrames = decodeDomainFrames(frame) ?? PodcastDomainFrames()
-        guard let result = PodcastHandle.decode(payload: payload, domainFrames: domainFrames) else { return }
-        PerfMetrics.shared.record(
-            .pushFrameDecode,
-            micros: Int((DispatchTime.now().uptimeNanoseconds &- frameStart) / 1_000),
-            bytes: frame.count)
-        handler(result)
     }
 }

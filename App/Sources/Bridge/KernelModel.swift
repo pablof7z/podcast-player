@@ -198,7 +198,7 @@ final class KernelModel {
                 guard let self else { return }
                 MainActor.assumeIsolated { self.markKernelDead() }
             }
-        })
+        }, decodeQueue: snapshotDecodeQueue)
         kernel.attachAudioReportChannel()
         kernel.attachDownloadReportChannel()
         kernel.attachHttpReportChannel()

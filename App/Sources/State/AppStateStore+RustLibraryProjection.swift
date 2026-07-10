@@ -117,6 +117,42 @@ extension AppStateStore {
         return decoded
     }
 
+    /// Proactively warms `cachedLibrarySummary` off MainActor. The many
+    /// synchronous call sites of `rustEpisodeCount`/`rustTotalUnplayedCount`/
+    /// `rustFollowedPodcastCount`/`rustHasUnfollowedPodcasts` (HomeView,
+    /// several Settings screens) can't all be converted to `async` without a
+    /// much larger refactor, so instead this keeps the shared cache warm
+    /// ahead of them: `AppStateStore+KernelProjection.swift`'s observation
+    /// loop calls this every time `podcastSnapshot` changes — the same event
+    /// that invalidates the cache — so by the time a synchronous reader hits
+    /// `rustLibrarySummary()`, the rev usually already matches and it never
+    /// falls through to a live FFI call at all.
+    ///
+    /// Without this, the cold FFI call after a rev change would run
+    /// synchronously on MainActor — measured negligible in isolation, but a
+    /// main-thread `sample` during ACTIVE library sync caught it blocking
+    /// for ~15% of a sample window: `librarySummaryEnvelope` and the
+    /// update-frame decode (now on `snapshotDecodeQueue`, see
+    /// `KernelBridge.swift`) both lock `state.library.store`, and a burst of
+    /// incoming frames can hold that lock long enough for the synchronous
+    /// caller to stall waiting on it (#755 follow-up).
+    func refreshLibrarySummaryCacheOffMain() async {
+        let currentRev = kernel?.podcastSnapshot?.rev ?? -1
+        if let cached = cachedLibrarySummary, cached.rev == currentRev { return }
+        let envelope = await offMainFFI { $0.librarySummaryEnvelope() }
+        guard let envelope = envelope ?? nil,
+              let data = envelope.data(using: .utf8),
+              let decoded = try? JSONDecoder.rustLibraryProjection.decode(
+                LibrarySummaryResponse.self,
+                from: data
+              )
+        else {
+            cachedLibrarySummary = (currentRev, nil)
+            return
+        }
+        cachedLibrarySummary = (currentRev, decoded)
+    }
+
     func rustFollowedPodcasts() -> [Podcast] {
         guard let envelope = kernel?.libraryFollowedPodcastsEnvelope(),
               let data = envelope.data(using: .utf8),
