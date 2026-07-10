@@ -12,7 +12,13 @@ struct LibraryPodcastStatsProjection {
     let transcribedPodcastIDs: Set<UUID>
     let latestEpisodeIDs: [UUID: UUID]
 
-    // `@MainActor`: reads main-actor `store.kernel`; callers are SwiftUI views.
+    static let empty = LibraryPodcastStatsProjection(
+        episodeCounts: [:], unplayedCounts: [:], downloadedPodcastIDs: [],
+        transcribedPodcastIDs: [], latestEpisodeIDs: [:]
+    )
+
+    // `@MainActor`: reads main-actor `store.kernel`; callers are SwiftUI views
+    // and one-shot agent/sort operations, not a re-run-every-render UI read.
     @MainActor
     static func load(podcastIDs: [UUID], store: AppStateStore) -> LibraryPodcastStatsProjection {
         guard !podcastIDs.isEmpty,
@@ -20,16 +26,39 @@ struct LibraryPodcastStatsProjection {
               let data = envelope.data(using: .utf8),
               let decoded = try? JSONDecoder.libraryPodcastStats.decode(Response.self, from: data)
         else {
-            return LibraryPodcastStatsProjection(
-                episodeCounts: [:],
-                unplayedCounts: [:],
-                downloadedPodcastIDs: [],
-                transcribedPodcastIDs: [],
-                latestEpisodeIDs: [:]
-            )
+            return .empty
         }
+        return Self.projection(from: decoded)
+    }
 
-        return LibraryPodcastStatsProjection(
+    /// `nmp_app_podcast_library_podcast_stats` (the Rust side of
+    /// `libraryPodcastStatsEnvelope`) scans `store.all_podcasts()` and does a
+    /// linear `.find()` per requested id. Runs off MainActor on
+    /// `kernel.snapshotDecodeQueue` — see `AppStateStore.offMainFFI`'s doc
+    /// comment for why caching alone (a `.task(id:)` gate) isn't enough: the
+    /// call that DOES fire can still block MainActor for hundreds of ms on a
+    /// real library, caught via a main-thread `sample` (#755 follow-up). Used
+    /// by Home-screen views that read this from a `.task(id:)`, not a
+    /// synchronous computed property; other call sites (agent adapters, sort
+    /// comparators — one-shot operations, not re-run per render) keep using
+    /// the synchronous `load` above.
+    @MainActor
+    static func loadOffMain(podcastIDs: [UUID], store: AppStateStore) async -> LibraryPodcastStatsProjection {
+        guard !podcastIDs.isEmpty else { return .empty }
+        let envelope = await store.offMainFFI { handle in
+            handle.libraryPodcastStatsEnvelope(podcastIDs: podcastIDs)
+        }
+        guard let envelope = envelope ?? nil,
+              let data = envelope.data(using: .utf8),
+              let decoded = try? JSONDecoder.libraryPodcastStats.decode(Response.self, from: data)
+        else {
+            return .empty
+        }
+        return Self.projection(from: decoded)
+    }
+
+    private static func projection(from decoded: Response) -> LibraryPodcastStatsProjection {
+        LibraryPodcastStatsProjection(
             episodeCounts: Dictionary(
                 uniqueKeysWithValues: decoded.podcasts.map { ($0.podcastId, $0.episodeCount) }
             ),

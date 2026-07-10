@@ -19,10 +19,39 @@ struct HomeSubscriptionListSection: View {
 
     @Environment(AppStateStore.self) private var store
 
+    /// `LibraryPodcastStatsProjection.load` is an FFI round trip whose Rust
+    /// side (`nmp_app_podcast_library_podcast_stats`) scans the whole
+    /// library. This section renders on the default Home screen with no
+    /// navigation gate, so an uncached call here re-runs on every SwiftUI
+    /// body pass — a main-thread `sample` on a real ~2k-episode library
+    /// caught this class of bug pegging the main thread (#755 follow-up;
+    /// same pattern already fixed on `HomeView` itself). Cached behind
+    /// `@State` + `.task(id:)`, keyed by `podcasts` (already cached one
+    /// level up as `HomeView.filteredSubs`) plus the snapshot rev so a new
+    /// episode landing still refreshes "most recent episode" per row.
+    @State private var cachedLibraryStats = LibraryPodcastStatsProjection(
+        episodeCounts: [:], unplayedCounts: [:], downloadedPodcastIDs: [],
+        transcribedPodcastIDs: [], latestEpisodeIDs: [:]
+    )
+
+    private struct LibraryStatsKey: Equatable {
+        var podcasts: [Podcast]
+        var snapshotRev: Int?
+    }
+
+    private var libraryStatsKey: LibraryStatsKey {
+        LibraryStatsKey(podcasts: podcasts, snapshotRev: store.kernel?.podcastSnapshot?.rev)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             rowList
+        }
+        .task(id: libraryStatsKey) {
+            cachedLibraryStats = await LibraryPodcastStatsProjection.loadOffMain(
+                podcastIDs: podcasts.map(\.id), store: store
+            )
         }
     }
 
@@ -48,15 +77,11 @@ struct HomeSubscriptionListSection: View {
     }
 
     private var rowList: some View {
-        let libraryStats = LibraryPodcastStatsProjection.load(
-            podcastIDs: podcasts.map(\.id),
-            store: store
-        )
-        return LazyVStack(alignment: .leading, spacing: 0) {
+        LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(podcasts) { sub in
                 HomeSubscriptionRow(
                     podcast: sub,
-                    mostRecentEpisode: libraryStats.latestEpisode(for: sub.id, store: store),
+                    mostRecentEpisode: cachedLibraryStats.latestEpisode(for: sub.id, store: store),
                     now: now,
                     onRequestUnsubscribe: { onRequestUnsubscribe(sub) }
                 )
