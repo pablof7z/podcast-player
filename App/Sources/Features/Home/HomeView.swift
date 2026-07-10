@@ -56,6 +56,9 @@ struct HomeView: View {
     @State private var cachedCategoryProjection = CategoryLibraryProjection(
         categoryIDs: [], podcastIDsByCategory: [:], allTranscriptionEnabledByCategory: [:]
     )
+    @State private var cachedTriageCounts: (inbox: Int, archived: Int, shows: Int) = (0, 0, 0)
+    @State private var cachedContinueListeningEpisodes: [Episode] = []
+    @State private var cachedFilteredSubs: [Podcast] = []
 
     var body: some View {
         scrollContent
@@ -154,6 +157,15 @@ struct HomeView: View {
                     subscriptionFilter: allowedSubscriptionIDs
                 ).first
             }
+            .task(id: triageCountsKey) {
+                cachedTriageCounts = computeTriageCounts()
+            }
+            .task(id: continueListeningKey) {
+                cachedContinueListeningEpisodes = computeContinueListeningEpisodes()
+            }
+            .task(id: filteredSubsKey) {
+                cachedFilteredSubs = computeFilteredSubs()
+            }
     }
 
     private var topActiveThread: ThreadingInferenceService.ActiveTopic? { cachedTopActiveThread }
@@ -196,7 +208,17 @@ struct HomeView: View {
     /// Inbox section header. Rust owns the count semantics and active-category
     /// scope; Swift passes only the renderer's podcast-id scope and displays
     /// the returned values.
-    private var triageCounts: (inbox: Int, archived: Int, shows: Int) {
+    ///
+    /// Cached behind `cachedTriageCounts` / `triageCountsKey` (same pattern as
+    /// `cachedCategoryProjection`): `homeTriageRollupEnvelope` is an
+    /// O(episodes) full-library FFI scan, and this used to be a plain
+    /// computed property re-run on every SwiftUI body pass. A sampled
+    /// main-thread trace on the real ~2k-episode library caught this (and
+    /// `librarySummaryEnvelope`, cached separately in `AppStateStore`)
+    /// pegging the main thread — the residual freeze after #758/#759.
+    private var triageCounts: (inbox: Int, archived: Int, shows: Int) { cachedTriageCounts }
+
+    private func computeTriageCounts() -> (inbox: Int, archived: Int, shows: Int) {
         let interval = signposter.beginInterval("triageCounts")
         defer { signposter.endInterval("triageCounts", interval) }
         let podcastIDs = allowedSubscriptionIDs.map { Array($0) } ?? []
@@ -206,6 +228,15 @@ struct HomeView: View {
               let decoded = try? decoder.decode(HomeTriageRollupEnvelope.self, from: data)
         else { return (0, 0, 0) }
         return (decoded.inbox, decoded.archived, decoded.shows)
+    }
+
+    private struct TriageCountsKey: Equatable {
+        var podcastIDs: Set<UUID>?
+        var lastTriagedAt: Date?
+    }
+
+    private var triageCountsKey: TriageCountsKey {
+        TriageCountsKey(podcastIDs: allowedSubscriptionIDs, lastTriagedAt: inboxLastTriagedAt)
     }
 
     private var inboxLastTriagedAt: Date? {
@@ -271,7 +302,23 @@ struct HomeView: View {
     /// product filter (unplayed, non-archived, started, last two weeks, active
     /// category scope) and returns ordered episode ids; Swift resolves them for
     /// native row rendering.
-    private var continueListeningEpisodes: [Episode] {
+    ///
+    /// Cached (`cachedContinueListeningEpisodes` / `continueListeningKey`, same
+    /// pattern as `cachedCategoryProjection`/`cachedTriageCounts`):
+    /// `homeContinueListeningEnvelope` is an O(episodes) full-library scan.
+    /// A main-thread `sample` on the real ~2k-episode library caught this as
+    /// THE dominant remaining hot path (~25% of main-thread samples) after
+    /// #758/#759 fixed `categoryProjection`/`threading_projection` — this was
+    /// still a plain computed property re-run on every SwiftUI body pass.
+    /// Keyed by `podcastSnapshot?.rev`, not the raw episode set: the content
+    /// hash backing that rev already tracks in-progress/recent-unplayed
+    /// *membership* changes (see `KernelModelHashing.swift`'s `agentContext`
+    /// hashing, which exists for exactly this reason) while excluding raw
+    /// position ticks — so this stays both correct (updates when an episode
+    /// starts/finishes) and warm (doesn't rebuild at the 4 Hz emit rate).
+    private var continueListeningEpisodes: [Episode] { cachedContinueListeningEpisodes }
+
+    private func computeContinueListeningEpisodes() -> [Episode] {
         let podcastIDs = allowedSubscriptionIDs.map { Array($0) } ?? []
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -282,6 +329,15 @@ struct HomeView: View {
         return decoded.episodeIds
             .compactMap { UUID(uuidString: $0) }
             .compactMap { store.episode(id: $0) }
+    }
+
+    private struct ContinueListeningKey: Equatable {
+        var podcastIDs: Set<UUID>?
+        var snapshotRev: Int?
+    }
+
+    private var continueListeningKey: ContinueListeningKey {
+        ContinueListeningKey(podcastIDs: allowedSubscriptionIDs, snapshotRev: store.kernel?.podcastSnapshot?.rev)
     }
 
     // MARK: - Subscription surface
@@ -342,7 +398,14 @@ struct HomeView: View {
     // Rust owns subscription visibility and ordering; Swift passes the active
     // filter/category scope and resolves the returned ids for native rows.
 
-    private var filteredSubs: [Podcast] {
+    /// Cached (`cachedFilteredSubs` / `filteredSubsKey`) — `homeSubscriptionListEnvelope`
+    /// scans every episode of every allowed podcast for the `unplayed` /
+    /// `downloaded` / `transcribed` filters (see `home_projection.rs`); same
+    /// per-body-pass re-run bug as `continueListeningEpisodes` above, fixed
+    /// the same way and for the same reason (main-thread `sample` audit).
+    private var filteredSubs: [Podcast] { cachedFilteredSubs }
+
+    private func computeFilteredSubs() -> [Podcast] {
         let podcastIDs = allowedSubscriptionIDs.map { Array($0) } ?? []
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -356,6 +419,20 @@ struct HomeView: View {
         return decoded.podcastIds
             .compactMap { UUID(uuidString: $0) }
             .compactMap { store.podcast(id: $0) }
+    }
+
+    private struct FilteredSubsKey: Equatable {
+        var podcastIDs: Set<UUID>?
+        var filter: LibraryFilter
+        var snapshotRev: Int?
+    }
+
+    private var filteredSubsKey: FilteredSubsKey {
+        FilteredSubsKey(
+            podcastIDs: allowedSubscriptionIDs,
+            filter: filter,
+            snapshotRev: store.kernel?.podcastSnapshot?.rev
+        )
     }
 
     private var selectedCategoryID: UUID? {

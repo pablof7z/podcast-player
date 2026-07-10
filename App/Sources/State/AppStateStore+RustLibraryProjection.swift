@@ -69,13 +69,21 @@ extension AppStateStore {
     }
 
     private func rustLibrarySummary() -> LibrarySummaryResponse? {
+        let currentRev = kernel?.podcastSnapshot?.rev ?? -1
+        if let cached = cachedLibrarySummary, cached.rev == currentRev {
+            return cached.response
+        }
         guard let envelope = kernel?.librarySummaryEnvelope(),
               let data = envelope.data(using: .utf8),
               let decoded = try? JSONDecoder.rustLibraryProjection.decode(
                 LibrarySummaryResponse.self,
                 from: data
               )
-        else { return nil }
+        else {
+            cachedLibrarySummary = (currentRev, nil)
+            return nil
+        }
+        cachedLibrarySummary = (currentRev, decoded)
         return decoded
     }
 
@@ -278,7 +286,9 @@ private struct ListenNowResponse {
     let latestEpisodes: [Episode]
 }
 
-private struct LibrarySummaryResponse: Decodable {
+// Internal (not private): `AppStateStore.cachedLibrarySummary` (declared in
+// AppStateStore.swift) stores this type.
+struct LibrarySummaryResponse: Decodable {
     let episodeCount: Int
     let followedPodcastCount: Int
     let hasUnfollowedPodcasts: Bool

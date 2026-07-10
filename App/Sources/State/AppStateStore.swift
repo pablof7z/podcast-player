@@ -130,6 +130,23 @@ final class AppStateStore {
     @ObservationIgnored
     weak var kernel: KernelModel?
 
+    /// Rev-gated cache for `rustLibrarySummary()` (see
+    /// `AppStateStore+RustLibraryProjection.swift`). `librarySummaryEnvelope`
+    /// is an O(episodes) full-library FFI scan; `rustLibrarySummary()` backs
+    /// four separate accessors (`rustEpisodeCount`, `rustTotalUnplayedCount`,
+    /// `rustFollowedPodcastCount`, `rustHasUnfollowedPodcasts`) that are read
+    /// from plain (uncached) computed properties in `HomeView`. Without this
+    /// cache, a single SwiftUI body pass could fire the full-library scan
+    /// several times over — a sampled main-thread trace on the real ~2k-episode
+    /// library caught exactly this pegging the main thread (#755 follow-up).
+    /// Keyed by `kernel?.podcastSnapshot?.rev`, which only advances on an
+    /// actual content-hash change (playback-position ticks are excluded — see
+    /// `KernelModel.podcastSnapshot`'s doc comment) — NOT a raw per-tick
+    /// counter, so this cache stays warm across the 4 Hz emit rate.
+    /// `@ObservationIgnored`: an internal memo, not UI-observable state.
+    @ObservationIgnored
+    var cachedLibrarySummary: (rev: Int, response: LibrarySummaryResponse?)?
+
     /// Cancellable observation task that projects `KernelModel` state into
     /// `AppState`. Stored here (not via `objc_setAssociatedObject`) so
     /// `deinit` can cancel it cleanly without a retain cycle.
