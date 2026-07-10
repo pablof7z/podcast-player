@@ -252,6 +252,24 @@ impl PodcastHandle {
     }
 }
 
+/// Decode one push frame into the small JSON envelope the Swift-side
+/// `SnapshotEnvelope`/`PodcastHandle.decode(payload:domainFrames:)` actually
+/// reads: `t`/`rev`/`running`/`last_error_*`, plus the `signed_events` /
+/// `action_results` / `nostr_search` sidecars.
+///
+/// Does NOT decode `podcast.*` domain sidecars (`decode_podcast_domain_sidecars`,
+/// which includes `podcast.library` — a re-parse + re-serialize of the whole
+/// library, up to ~2k episodes with transcripts) into this JSON. Verified
+/// (both by the #755 follow-up diagnosis and independently against the Swift
+/// call site) that nothing reads them from here: Swift decodes `payload` only
+/// as far as `SnapshotEnvelope { t }`, and `domainFrames`/`identity` come
+/// entirely from the SEPARATE `decodeTypedProjectionFrame` FlatBuffer path
+/// (`KernelBridge.decodeDomainFrames` → `PodcastHandle.decode(payload:domainFrames:)`
+/// takes `domainFrames` as an already-decoded parameter, never reads
+/// `payload`'s `projections.podcast_*` keys). This was pure dead work run on
+/// every library-domain frame — on a live-syncing real library, a continuous
+/// stream of these frames pegged the main thread for the whole sync (#755
+/// follow-up).
 pub(crate) fn decode_update_frame_json(slice: &[u8]) -> Option<String> {
     let envelope = nmp_core::decode_update_frame(slice).ok()?;
     let json = match envelope {
@@ -270,13 +288,10 @@ pub(crate) fn decode_update_frame_json(slice: &[u8]) -> Option<String> {
 
             let signed_events_json = decode_signed_events_sidecar(slice);
             let action_results_json = decode_action_results_sidecar(slice);
-            let domain_sidecars =
-                super::snapshot_domain_projections::decode_podcast_domain_sidecars(slice);
             let nostr_search_sidecars = decode_nostr_search_sidecars(slice);
 
             if signed_events_json.is_some()
                 || action_results_json.is_some()
-                || domain_sidecars.is_some()
                 || nostr_search_sidecars.is_some()
             {
                 let mut projections = serde_json::Map::new();
@@ -285,11 +300,6 @@ pub(crate) fn decode_update_frame_json(slice: &[u8]) -> Option<String> {
                 }
                 if let Some(ar) = action_results_json {
                     projections.insert("action_results".to_string(), ar);
-                }
-                if let Some(domains) = domain_sidecars {
-                    for (key, val) in domains {
-                        projections.insert(key, val);
-                    }
                 }
                 if let Some(searches) = nostr_search_sidecars {
                     for (key, val) in searches {

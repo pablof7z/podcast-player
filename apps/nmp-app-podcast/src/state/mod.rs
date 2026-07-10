@@ -222,6 +222,32 @@ impl Infra {
             domain: Domain::Misc,
         }
     }
+
+    /// Like `for_test()` but shares the caller-supplied `library_rev` Arc as
+    /// `domain_revs.library` so tests can observe library-domain bumps via
+    /// the same handle they hold, independently of the global `rev` counter
+    /// (see `DomainRevs` — `library` is the counter consumers that only care
+    /// about podcast/episode/category/inbox content should key caches on,
+    /// not the global rev, which also bumps on unrelated domains like
+    /// `Domain::Playback` position ticks).
+    #[cfg(test)]
+    pub fn for_test_with_library_rev(library_rev: Arc<AtomicU64>) -> Self {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("test tokio runtime");
+        let domain_revs = DomainRevs::new();
+        Self {
+            rev: Arc::new(AtomicU64::new(1)),
+            signal: None,
+            runtime: Arc::new(rt),
+            domain_revs: Arc::new(DomainRevs {
+                library: library_rev,
+                ..domain_revs
+            }),
+            domain: Domain::Misc,
+        }
+    }
 }
 
 // ── PodcastAppState ───────────────────────────────────────────────────────────

@@ -18,11 +18,45 @@ struct AllPodcastsListView: View {
     @State private var searchText: String = ""
     @State private var showAddShowSheet: Bool = false
 
+    /// `rustAllPodcasts`, `LibraryPodcastStatsProjection.load`, and
+    /// `rustIsAlreadySubscribed` are all FFI round trips whose Rust side
+    /// scans the whole library (`nmp_app_podcast_library_all_podcasts` /
+    /// `..._library_podcast_stats` / `..._library_subscription_status`, each
+    /// iterating `store.all_podcasts()`). `body` used to rebuild `libraryStats`
+    /// on every render, `podcasts`/`filteredPodcasts` were plain computed
+    /// properties (re-run on every keystroke AND every unrelated re-render),
+    /// and `rustIsAlreadySubscribed` was called once PER ROW PER RENDER —
+    /// O(N²) for N visible rows. Same bug class as `HomeView`'s fixed
+    /// projections (#755 follow-up). Cached behind `@State` + `.task(id:)`;
+    /// the followed-set membership check is now a single O(followed) call
+    /// building a `Set<UUID>`, then an O(1) `.contains` per row instead of an
+    /// O(library) FFI round trip per row.
+    @State private var cachedPodcasts: [Podcast] = []
+    @State private var cachedFilteredPodcasts: [Podcast] = []
+    @State private var cachedLibraryStats = LibraryPodcastStatsProjection(
+        episodeCounts: [:], unplayedCounts: [:], downloadedPodcastIDs: [],
+        transcribedPodcastIDs: [], latestEpisodeIDs: [:]
+    )
+    @State private var cachedFollowedPodcastIDs: Set<UUID> = []
+
+    private struct PodcastsKey: Equatable {
+        var snapshotRev: Int?
+    }
+
+    private var podcastsKey: PodcastsKey {
+        PodcastsKey(snapshotRev: store.kernel?.podcastSnapshot?.rev)
+    }
+
+    private struct FilteredPodcastsKey: Equatable {
+        var searchText: String
+        var snapshotRev: Int?
+    }
+
+    private var filteredPodcastsKey: FilteredPodcastsKey {
+        FilteredPodcastsKey(searchText: searchText, snapshotRev: store.kernel?.podcastSnapshot?.rev)
+    }
+
     var body: some View {
-        let libraryStats = LibraryPodcastStatsProjection.load(
-            podcastIDs: podcasts.map(\.id),
-            store: store
-        )
         List {
             if filteredPodcasts.isEmpty {
                 ContentUnavailableView(
@@ -37,7 +71,7 @@ struct AllPodcastsListView: View {
             } else {
                 ForEach(filteredPodcasts) { podcast in
                     NavigationLink(value: podcast) {
-                        row(for: podcast, libraryStats: libraryStats)
+                        row(for: podcast)
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
@@ -84,16 +118,27 @@ struct AllPodcastsListView: View {
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: { podcast in
-            let episodes = libraryStats.episodeCount(for: podcast.id)
+            let episodes = cachedLibraryStats.episodeCount(for: podcast.id)
             let count = episodes == 1 ? "1 episode" : "\(episodes) episodes"
             Text("This removes \(podcast.title.isEmpty ? "the podcast" : podcast.title) and \(count) from your library. This cannot be undone.")
+        }
+        .task(id: podcastsKey) {
+            let all = await store.rustAllPodcastsOffMain()
+            cachedPodcasts = all
+            cachedLibraryStats = await LibraryPodcastStatsProjection.loadOffMain(
+                podcastIDs: all.map(\.id), store: store
+            )
+            cachedFollowedPodcastIDs = Set(await store.rustFollowedPodcastsOffMain().map(\.id))
+        }
+        .task(id: filteredPodcastsKey) {
+            cachedFilteredPodcasts = await store.rustAllPodcastsOffMain(query: searchText)
         }
     }
 
     // MARK: - Rows
 
     @ViewBuilder
-    private func row(for podcast: Podcast, libraryStats: LibraryPodcastStatsProjection) -> some View {
+    private func row(for podcast: Podcast) -> some View {
         HStack(spacing: AppTheme.Spacing.md) {
             artwork(for: podcast)
             VStack(alignment: .leading, spacing: 2) {
@@ -101,10 +146,10 @@ struct AllPodcastsListView: View {
                     .font(AppTheme.Typography.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                metaLine(for: podcast, libraryStats: libraryStats)
+                metaLine(for: podcast)
             }
             Spacer(minLength: 0)
-            if store.rustIsAlreadySubscribed(feedURL: nil, ownerPubkey: nil, podcastID: podcast.id) {
+            if cachedFollowedPodcastIDs.contains(podcast.id) {
                 Text("Following")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -153,8 +198,8 @@ struct AllPodcastsListView: View {
             .foregroundStyle(.white.opacity(0.92))
     }
 
-    private func metaLine(for podcast: Podcast, libraryStats: LibraryPodcastStatsProjection) -> some View {
-        let count = libraryStats.episodeCount(for: podcast.id)
+    private func metaLine(for podcast: Podcast) -> some View {
+        let count = cachedLibraryStats.episodeCount(for: podcast.id)
         let countLabel = count == 1 ? "1 episode" : "\(count) episodes"
         var parts: [String] = [countLabel]
         if !podcast.author.isEmpty { parts.append(podcast.author) }
@@ -170,13 +215,9 @@ struct AllPodcastsListView: View {
     /// implementation detail of the agent's external-play fallback —
     /// surfacing it in this list would invite the user to delete the
     /// fallback row and break subsequent external plays).
-    private var podcasts: [Podcast] {
-        store.rustAllPodcasts()
-    }
+    private var podcasts: [Podcast] { cachedPodcasts }
 
-    private var filteredPodcasts: [Podcast] {
-        store.rustAllPodcasts(query: searchText)
-    }
+    private var filteredPodcasts: [Podcast] { cachedFilteredPodcasts }
 
     private var pendingDeleteBinding: Binding<Bool> {
         Binding(

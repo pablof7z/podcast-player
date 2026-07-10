@@ -17,6 +17,10 @@ use crate::ffi::actions::categorization_module::categorize_text;
 use crate::ffi::guard::ffi_guard;
 use crate::ffi::handle::PodcastHandle;
 
+#[path = "threading_projection_cache.rs"]
+mod threading_projection_cache;
+use threading_projection_cache::projection_and_inputs_for_current_rev;
+
 const MIN_EPISODES_PER_THREAD: usize = 3;
 const MAX_TOPICS: usize = 12;
 const MAX_MENTIONS_PER_TOPIC: usize = 60;
@@ -181,44 +185,6 @@ pub fn nmp_app_podcast_threading_active_topics(
             }
         },
     )
-}
-
-/// Fetch the `(inputs, projection)` pair for the library's current rev,
-/// rebuilding only on a cache miss.
-///
-/// `build_projection` scans every episode (categorization + candidate-mention
-/// selection) and `collect_thread_inputs` clones each episode's transcript
-/// data — real work that both FFI entry points need, and that HomeView's
-/// `.task` blocks can trigger several times per launch as the library and
-/// categorizer cache settle. Caching by `state.infra.rev` (the same counter
-/// `snapshot_cache` uses) means a burst of same-rev calls costs one rebuild
-/// plus cheap `Arc` clones instead of re-scanning the whole library each time.
-/// Returns `None` only if the store mutex is poisoned.
-fn projection_and_inputs_for_current_rev(
-    handle: &PodcastHandle,
-) -> Option<(Arc<Vec<EpisodeThreadInput>>, Arc<ThreadingProjection>)> {
-    let rev = handle.state.infra.rev.load(Ordering::Relaxed);
-    if let Ok(cache) = handle.threading_projection_cache.lock() {
-        if let Some((cached_rev, ref inputs, ref projection)) = *cache {
-            if cached_rev == rev {
-                return Some((Arc::clone(inputs), Arc::clone(projection)));
-            }
-        }
-    }
-
-    let categories = handle.state.categories.categories_snapshot();
-    let inputs = {
-        let store = handle.state.library.store.lock().ok()?;
-        collect_thread_inputs(&store, handle)
-    };
-    let projection = build_projection(inputs.clone(), &categories);
-    let inputs = Arc::new(inputs);
-    let projection = Arc::new(projection);
-
-    if let Ok(mut cache) = handle.threading_projection_cache.lock() {
-        *cache = Some((rev, Arc::clone(&inputs), Arc::clone(&projection)));
-    }
-    Some((inputs, projection))
 }
 
 fn collect_thread_inputs(

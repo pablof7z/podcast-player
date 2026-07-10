@@ -17,6 +17,21 @@ struct HomeCategoryPickerSheet: View {
     let selectedCategoryID: UUID?
     let onSelect: (UUID?) -> Void
 
+    /// `sortedCategories`/`categoryCardProjections` are both FFI round trips
+    /// whose Rust side scans the whole library
+    /// (`nmp_app_podcast_library_categories` /
+    /// `nmp_app_podcast_home_category_cards`, both iterate
+    /// `store.all_podcasts()`; the card-projection call additionally does a
+    /// per-episode triage lookup for every podcast in every category). Both
+    /// used to be plain computed properties re-run on every SwiftUI body
+    /// pass — the same bug class fixed on `HomeView` itself (#755
+    /// follow-up), reintroduced here since this sheet independently calls
+    /// the identical category-projection helper. Cached behind `@State` +
+    /// `.task(id: store.state.categories)`, same key `HomeView` uses for its
+    /// own `cachedCategoryProjection`.
+    @State private var cachedSortedCategories: [PodcastCategory] = []
+    @State private var cachedCategoryCardProjections: [UUID: CategoryCardProjection] = [:]
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -43,6 +58,15 @@ struct HomeCategoryPickerSheet: View {
                 }
             }
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        }
+        .task(id: store.state.categories) {
+            let sorted = await CategoryLibraryProjection
+                .loadOffMain(categories: store.state.categories, store: store)
+                .sortedCategories(from: store.state.categories)
+            cachedSortedCategories = sorted
+            cachedCategoryCardProjections = await Self.loadCategoryCardProjections(
+                sortedCategories: sorted, store: store
+            )
         }
     }
 
@@ -170,20 +194,32 @@ struct HomeCategoryPickerSheet: View {
             .padding(.horizontal, 4)
     }
 
-    private var sortedCategories: [PodcastCategory] {
-        CategoryLibraryProjection
-            .load(categories: store.state.categories, store: store)
-            .sortedCategories(from: store.state.categories)
-    }
+    private var sortedCategories: [PodcastCategory] { cachedSortedCategories }
 
-    private var categoryCardProjections: [UUID: CategoryCardProjection] {
-        let request = sortedCategories.map { category in
-            [
-                "category_id": category.id.uuidString,
-                "podcast_ids": category.subscriptionIDs.map(\.uuidString),
-            ] as [String: Any]
+    private var categoryCardProjections: [UUID: CategoryCardProjection] { cachedCategoryCardProjections }
+
+    /// `nmp_app_podcast_home_category_cards` scans `store.all_podcasts()`
+    /// once per category and does a per-episode triage lookup on top — the
+    /// most expensive call found in the #755 follow-up main-thread `sample`
+    /// audit of this bug class. Runs off MainActor on
+    /// `kernel.snapshotDecodeQueue` (see `AppStateStore.offMainFFI`).
+    @MainActor
+    private static func loadCategoryCardProjections(
+        sortedCategories: [PodcastCategory], store: AppStateStore
+    ) async -> [UUID: CategoryCardProjection] {
+        // `[[String: Any]]` isn't `Sendable`, so the request is built INSIDE
+        // the `offMainFFI` closure from `sortedCategories` (`PodcastCategory`
+        // is `Sendable`) rather than captured from outside.
+        let envelope = await store.offMainFFI { handle in
+            let request = sortedCategories.map { category in
+                [
+                    "category_id": category.id.uuidString,
+                    "podcast_ids": category.subscriptionIDs.map(\.uuidString),
+                ] as [String: Any]
+            }
+            return handle.homeCategoryCardsEnvelope(categories: request)
         }
-        guard let envelope = store.kernel?.homeCategoryCardsEnvelope(categories: request),
+        guard let envelope = envelope ?? nil,
               let data = envelope.data(using: .utf8),
               let response = try? JSONDecoder.homeCategoryCards.decode(CategoryCardsResponse.self, from: data)
         else { return [:] }

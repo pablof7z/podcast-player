@@ -18,11 +18,13 @@ import os.signpost
 // space in the editorial scroll.
 
 struct HomeView: View {
-    @Environment(AppStateStore.self) private var store
+    // Not `private`: read from `HomeView+Projections.swift` (same type,
+    // separate file — see that file's header for why the split exists).
+    @Environment(AppStateStore.self) var store
     @Environment(PlaybackState.self) private var playback
 
-    @AppStorage("library.filter") private var filter: LibraryFilter = .all
-    @AppStorage("library.categoryFilterID") private var categoryFilterID: String = ""
+    @AppStorage("library.filter") var filter: LibraryFilter = .all
+    @AppStorage("library.categoryFilterID") var categoryFilterID: String = ""
     @AppStorage("home.featuredExpanded") private var featuredExpanded: Bool = true
 
     @State private var threadingService = ThreadingInferenceService.shared
@@ -42,20 +44,18 @@ struct HomeView: View {
     /// composition time so a 1Hz playback tick doesn't re-format the
     /// recency pill on every redraw.
     @State private var renderedAt: Date = Date()
-    @State private var cachedTopActiveThread: ThreadingInferenceService.ActiveTopic?
-    /// Cached result of `CategoryLibraryProjection.load` — an FFI/JSON round
-    /// trip through Rust. `categoryProjection` used to be a plain computed
-    /// property, so every read (directly, and transitively via
-    /// `allowedSubscriptionIDs`, which alone is read from ~7 sites in this
-    /// file) re-ran the FFI call. On a real library that measured 300+ calls
-    /// in the first ~15s after launch (most sub-millisecond once Rust's own
-    /// cache is warm, but with the cold first call and periodic recomputes
-    /// costing hundreds of ms each — pure waste, since category membership
-    /// only changes when `store.state.categories` changes). Recomputed via
-    /// `.task(id:)` below, same pattern as `cachedTopActiveThread`.
-    @State private var cachedCategoryProjection = CategoryLibraryProjection(
+    // The `cached*` projection caches below are read/written from both this
+    // file's `body` and `HomeView+Projections.swift`'s computed properties —
+    // not `private` for the same cross-file reason as `store`/`filter` above.
+    // See that file's header for the full rationale (main-thread `sample`
+    // audit that caught these as O(episodes) FFI scans re-run per body pass).
+    @State var cachedTopActiveThread: ThreadingInferenceService.ActiveTopic?
+    @State var cachedCategoryProjection = CategoryLibraryProjection(
         categoryIDs: [], podcastIDsByCategory: [:], allTranscriptionEnabledByCategory: [:]
     )
+    @State var cachedTriageCounts: (inbox: Int, archived: Int, shows: Int) = (0, 0, 0)
+    @State var cachedContinueListeningEpisodes: [Episode] = []
+    @State var cachedFilteredSubs: [Podcast] = []
 
     var body: some View {
         scrollContent
@@ -142,7 +142,7 @@ struct HomeView: View {
             }
             .onAppear { renderedAt = Date() }
             .task(id: store.state.categories) {
-                cachedCategoryProjection = CategoryLibraryProjection.load(
+                cachedCategoryProjection = await CategoryLibraryProjection.loadOffMain(
                     categories: store.state.categories, store: store
                 )
             }
@@ -154,66 +154,20 @@ struct HomeView: View {
                     subscriptionFilter: allowedSubscriptionIDs
                 ).first
             }
+            .task(id: triageCountsKey) {
+                cachedTriageCounts = await computeTriageCounts()
+            }
+            .task(id: continueListeningKey) {
+                cachedContinueListeningEpisodes = await computeContinueListeningEpisodes()
+            }
+            .task(id: filteredSubsKey) {
+                cachedFilteredSubs = await computeFilteredSubs()
+            }
     }
 
-    private var topActiveThread: ThreadingInferenceService.ActiveTopic? { cachedTopActiveThread }
-
-    private struct TopActiveThreadKey: Equatable {
-        var episodeCount: Int
-        var totalUnplayed: Int
-        var mentionCount: Int
-        var categoryID: UUID?
-    }
-
-    private var topActiveThreadKey: TopActiveThreadKey {
-        TopActiveThreadKey(
-            episodeCount: store.rustEpisodeCount(),
-            totalUnplayed: store.rustTotalUnplayedCount(),
-            mentionCount: store.threadingProjection.mentions.count,
-            categoryID: selectedCategoryID
-        )
-    }
-
-    private var categoryProjection: CategoryLibraryProjection {
-        cachedCategoryProjection
-    }
-
-    /// Subscription-id set for the active category, or `nil` for All.
-    /// Rust resolves valid category membership; Swift passes the renderer
-    /// scope through to Rust-owned Home projections and native row builders.
-    private var allowedSubscriptionIDs: Set<UUID>? {
-        guard let id = selectedCategoryID else { return nil }
-        return Set(categoryProjection.podcastIDsByCategory[id] ?? [])
-    }
-
-    /// Resolved `PodcastCategory` for the active filter, or `nil` for All.
-    private var activeCategory: PodcastCategory? {
-        guard let id = selectedCategoryID else { return nil }
-        return store.category(id: id)
-    }
-
-    /// Roll-up of the agent's triage decisions for the subtitle under the
-    /// Inbox section header. Rust owns the count semantics and active-category
-    /// scope; Swift passes only the renderer's podcast-id scope and displays
-    /// the returned values.
-    private var triageCounts: (inbox: Int, archived: Int, shows: Int) {
-        let interval = signposter.beginInterval("triageCounts")
-        defer { signposter.endInterval("triageCounts", interval) }
-        let podcastIDs = allowedSubscriptionIDs.map { Array($0) } ?? []
-        let decoder = JSONDecoder()
-        guard let envelope = store.kernel?.homeTriageRollupEnvelope(podcastIDs: podcastIDs),
-              let data = envelope.data(using: .utf8),
-              let decoded = try? decoder.decode(HomeTriageRollupEnvelope.self, from: data)
-        else { return (0, 0, 0) }
-        return (decoded.inbox, decoded.archived, decoded.shows)
-    }
-
-    private var inboxLastTriagedAt: Date? {
-        guard let timestamp = store.kernel?.podcastSnapshot?.inboxLastTriagedAt else {
-            return nil
-        }
-        return Date(timeIntervalSince1970: TimeInterval(timestamp))
-    }
+    // Home/category projection computed properties (topActiveThread,
+    // categoryProjection, allowedSubscriptionIDs, activeCategory,
+    // triageCounts, inboxLastTriagedAt) live in `HomeView+Projections.swift`.
 
     // MARK: - Layout
 
@@ -267,22 +221,8 @@ struct HomeView: View {
         }
     }
 
-    /// In-progress episodes for the Continue Listening section. Rust owns the
-    /// product filter (unplayed, non-archived, started, last two weeks, active
-    /// category scope) and returns ordered episode ids; Swift resolves them for
-    /// native row rendering.
-    private var continueListeningEpisodes: [Episode] {
-        let podcastIDs = allowedSubscriptionIDs.map { Array($0) } ?? []
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        guard let envelope = store.kernel?.homeContinueListeningEnvelope(limit: 20, podcastIDs: podcastIDs),
-              let data = envelope.data(using: .utf8),
-              let decoded = try? decoder.decode(HomeContinueListeningEnvelope.self, from: data)
-        else { return [] }
-        return decoded.episodeIds
-            .compactMap { UUID(uuidString: $0) }
-            .compactMap { store.episode(id: $0) }
-    }
+    // `continueListeningEpisodes` (+ its cache key) lives in
+    // `HomeView+Projections.swift`.
 
     // MARK: - Subscription surface
 
@@ -341,28 +281,9 @@ struct HomeView: View {
     // Filters apply to the subscription list ONLY — featured is curated.
     // Rust owns subscription visibility and ordering; Swift passes the active
     // filter/category scope and resolves the returned ids for native rows.
-
-    private var filteredSubs: [Podcast] {
-        let podcastIDs = allowedSubscriptionIDs.map { Array($0) } ?? []
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        guard let envelope = store.kernel?.homeSubscriptionListEnvelope(
-            filter: filter.rawValue,
-            podcastIDs: podcastIDs
-        ),
-              let data = envelope.data(using: .utf8),
-              let decoded = try? decoder.decode(HomeSubscriptionListEnvelope.self, from: data)
-        else { return [] }
-        return decoded.podcastIds
-            .compactMap { UUID(uuidString: $0) }
-            .compactMap { store.podcast(id: $0) }
-    }
-
-    private var selectedCategoryID: UUID? {
-        guard let id = UUID(uuidString: categoryFilterID),
-              categoryProjection.categoryIDs.contains(id) else { return nil }
-        return id
-    }
+    //
+    // `filteredSubs` (+ its cache key) and `selectedCategoryID` live in
+    // `HomeView+Projections.swift`.
 
     private var navBarTitle: String {
         activeCategory?.name ?? "Home"
@@ -439,27 +360,6 @@ struct HomeView: View {
     }
 }
 
-private struct HomeContinueListeningEnvelope: Decodable {
-    var episodeIds: [String] = []
-
-    // Explicit CodingKeys: a custom `init(from:)` on a Decodable-only type with
-    // an all-defaulted stored property suppresses synthesized `CodingKeys`.
-    private enum CodingKeys: String, CodingKey {
-        case episodeIds
-    }
-
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        episodeIds = try c.decodeIfPresent([String].self, forKey: .episodeIds) ?? []
-    }
-}
-
-private struct HomeTriageRollupEnvelope: Decodable {
-    var inbox: Int = 0
-    var archived: Int = 0
-    var shows: Int = 0
-}
-
-private struct HomeSubscriptionListEnvelope: Decodable {
-    var podcastIds: [String] = []
-}
+// `HomeContinueListeningEnvelope`, `HomeTriageRollupEnvelope`, and
+// `HomeSubscriptionListEnvelope` live in `HomeView+Projections.swift`
+// (the only file that decodes them).

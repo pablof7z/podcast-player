@@ -7,6 +7,36 @@ import Foundation
 
 extension AppStateStore {
 
+    /// Runs `body` off MainActor on `kernel.snapshotDecodeQueue` — the same
+    /// queue `KernelModel` already uses for the full-library snapshot decode
+    /// (see `KernelModel+SnapshotPull.swift`) — and awaits the result.
+    ///
+    /// `body` receives the thread-safe `PodcastHandle` directly (captured on
+    /// MainActor before dispatch; `PodcastHandle` is `@unchecked Sendable`,
+    /// `KernelModel` itself is not) so it can call FFI envelope methods
+    /// without touching any MainActor-isolated state. Use this for any
+    /// O(library) FFI scan reached from a SwiftUI `.task(id:)` — a
+    /// main-thread `sample` on a real ~2k-episode library caught several of
+    /// these (`home_continue_listening`, `home_triage_rollup`,
+    /// `home_subscription_list`, `library_categories`, `library_podcast_stats`,
+    /// `library_all_podcasts`, `home_category_cards`) still landing on
+    /// MainActor even after being cached behind `.task(id:)` — caching alone
+    /// cuts call *frequency* but a single call can still block MainActor for
+    /// hundreds of ms on a real library (#755 follow-up; see
+    /// `AppStateStore+Threading.swift.refreshThreadingProjection` for the
+    /// original instance of this pattern). Returns `nil` if there is no live
+    /// kernel.
+    func offMainFFI<T: Sendable>(_ body: @escaping @Sendable (PodcastHandle) -> T) async -> T? {
+        guard let kernelModel = kernel else { return nil }
+        let handle = kernelModel.kernel
+        let queue = kernelModel.snapshotDecodeQueue
+        return await withCheckedContinuation { continuation in
+            queue.async {
+                continuation.resume(returning: body(handle))
+            }
+        }
+    }
+
     func rustEpisodeCount(forPodcast podcastID: UUID) -> Int {
         LibraryPodcastStatsProjection
             .load(podcastIDs: [podcastID], store: self)
@@ -69,14 +99,58 @@ extension AppStateStore {
     }
 
     private func rustLibrarySummary() -> LibrarySummaryResponse? {
+        let currentRev = kernel?.podcastSnapshot?.rev ?? -1
+        if let cached = cachedLibrarySummary, cached.rev == currentRev {
+            return cached.response
+        }
         guard let envelope = kernel?.librarySummaryEnvelope(),
               let data = envelope.data(using: .utf8),
               let decoded = try? JSONDecoder.rustLibraryProjection.decode(
                 LibrarySummaryResponse.self,
                 from: data
               )
-        else { return nil }
+        else {
+            cachedLibrarySummary = (currentRev, nil)
+            return nil
+        }
+        cachedLibrarySummary = (currentRev, decoded)
         return decoded
+    }
+
+    /// Proactively warms `cachedLibrarySummary` off MainActor. The many
+    /// synchronous call sites of `rustEpisodeCount`/`rustTotalUnplayedCount`/
+    /// `rustFollowedPodcastCount`/`rustHasUnfollowedPodcasts` (HomeView,
+    /// several Settings screens) can't all be converted to `async` without a
+    /// much larger refactor, so instead this keeps the shared cache warm
+    /// ahead of them: `AppStateStore+KernelProjection.swift`'s observation
+    /// loop calls this every time `podcastSnapshot` changes — the same event
+    /// that invalidates the cache — so by the time a synchronous reader hits
+    /// `rustLibrarySummary()`, the rev usually already matches and it never
+    /// falls through to a live FFI call at all.
+    ///
+    /// Without this, the cold FFI call after a rev change would run
+    /// synchronously on MainActor — measured negligible in isolation, but a
+    /// main-thread `sample` during ACTIVE library sync caught it blocking
+    /// for ~15% of a sample window: `librarySummaryEnvelope` and the
+    /// update-frame decode (now on `snapshotDecodeQueue`, see
+    /// `KernelBridge.swift`) both lock `state.library.store`, and a burst of
+    /// incoming frames can hold that lock long enough for the synchronous
+    /// caller to stall waiting on it (#755 follow-up).
+    func refreshLibrarySummaryCacheOffMain() async {
+        let currentRev = kernel?.podcastSnapshot?.rev ?? -1
+        if let cached = cachedLibrarySummary, cached.rev == currentRev { return }
+        let envelope = await offMainFFI { $0.librarySummaryEnvelope() }
+        guard let envelope = envelope ?? nil,
+              let data = envelope.data(using: .utf8),
+              let decoded = try? JSONDecoder.rustLibraryProjection.decode(
+                LibrarySummaryResponse.self,
+                from: data
+              )
+        else {
+            cachedLibrarySummary = (currentRev, nil)
+            return
+        }
+        cachedLibrarySummary = (currentRev, decoded)
     }
 
     func rustFollowedPodcasts() -> [Podcast] {
@@ -92,6 +166,35 @@ extension AppStateStore {
 
     func rustAllPodcasts(query: String = "") -> [Podcast] {
         guard let envelope = kernel?.libraryAllPodcastsEnvelope(query: query),
+              let data = envelope.data(using: .utf8),
+              let decoded = try? JSONDecoder.rustLibraryProjection.decode(
+                AllPodcastsResponse.self,
+                from: data
+              )
+        else { return [] }
+        return decoded.podcastIds.compactMap { podcast(id: $0) }
+    }
+
+    /// Off-MainActor twins of `rustFollowedPodcasts`/`rustAllPodcasts`, for
+    /// callers that read these from a SwiftUI `.task(id:)` on a screen that
+    /// can carry a real-sized library (e.g. `AllPodcastsListView`) rather
+    /// than a one-shot agent/settings operation. See `offMainFFI`'s doc
+    /// comment (#755 follow-up, main-thread `sample` audit).
+    func rustFollowedPodcastsOffMain() async -> [Podcast] {
+        let envelope = await offMainFFI { $0.libraryFollowedPodcastsEnvelope() }
+        guard let envelope = envelope ?? nil,
+              let data = envelope.data(using: .utf8),
+              let decoded = try? JSONDecoder.rustLibraryProjection.decode(
+                FollowedPodcastsResponse.self,
+                from: data
+              )
+        else { return [] }
+        return decoded.podcastIds.compactMap { podcast(id: $0) }
+    }
+
+    func rustAllPodcastsOffMain(query: String = "") async -> [Podcast] {
+        let envelope = await offMainFFI { $0.libraryAllPodcastsEnvelope(query: query) }
+        guard let envelope = envelope ?? nil,
               let data = envelope.data(using: .utf8),
               let decoded = try? JSONDecoder.rustLibraryProjection.decode(
                 AllPodcastsResponse.self,
@@ -278,7 +381,9 @@ private struct ListenNowResponse {
     let latestEpisodes: [Episode]
 }
 
-private struct LibrarySummaryResponse: Decodable {
+// Internal (not private): `AppStateStore.cachedLibrarySummary` (declared in
+// AppStateStore.swift) stores this type.
+struct LibrarySummaryResponse: Decodable {
     let episodeCount: Int
     let followedPodcastCount: Int
     let hasUnfollowedPodcasts: Bool

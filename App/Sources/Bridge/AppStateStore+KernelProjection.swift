@@ -103,6 +103,22 @@ extension AppStateStore {
                 // iteration — without this, `withObservationTracking` arms on an
                 // already-final value and never fires, leaving the UI empty.
                 if kernel.hasHydratedPodcastSnapshot {
+                    // Warm `cachedLibrarySummary` off-main BEFORE
+                    // `applyKernelState` below — that call synchronously
+                    // mutates `@Observable` state, and SwiftUI re-renders
+                    // observing views on the SAME call stack tick (before a
+                    // fire-and-forget `Task` would get a chance to run).
+                    // Several of those views read rustEpisodeCount/
+                    // rustTotalUnplayedCount/rustFollowedPodcastCount/
+                    // rustHasUnfollowedPodcasts synchronously, so an
+                    // un-awaited warm still lost the race on the very next
+                    // render — a main-thread `sample` during active sync
+                    // caught this landing on MainActor even with the warm in
+                    // place. Awaiting it here closes that race: by the time
+                    // `applyKernelState` fires the re-render, the cache
+                    // already matches the new rev. See
+                    // `refreshLibrarySummaryCacheOffMain`'s doc comment.
+                    await self?.refreshLibrarySummaryCacheOffMain()
                     self?.applyKernelState(
                         library: kernel.library,
                         snapshot: kernel.podcastSnapshot,
