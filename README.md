@@ -224,6 +224,24 @@ tuist generate && open Podcastr.xcodeproj
 # Press Cmd+R in Xcode
 ```
 
+### Mock LLM backend (dev/test)
+
+The AI agent, episode summaries, categorization, picks scoring, chapter/ad
+synthesis, and semantic-search embeddings all normally call Ollama (local or
+cloud) or OpenRouter. To develop or run the Rust test suite without hitting
+either — e.g. to avoid burning a shared Ollama server's usage — set:
+
+```bash
+export PODCAST_MOCK_LLM=1
+```
+
+before running the app or `cargo test -p nmp-app-podcast`. Every LLM call
+path (chat/completion, embeddings, image generation) short-circuits to a
+deterministic, network-free canned response shaped for that caller's parser.
+It's opt-in only: unset (or `0`/`false`), behavior is unchanged from today —
+real Ollama/OpenRouter calls as usual. See `apps/nmp-app-podcast/src/llm/mod.rs`
+for the full list of call paths it covers.
+
 ---
 
 ## TestFlight Auto-Deployment
