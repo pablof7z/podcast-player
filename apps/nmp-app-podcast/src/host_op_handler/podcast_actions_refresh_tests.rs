@@ -95,6 +95,7 @@ fn refresh_parsed_feed_updates_known_podcast_and_episodes() {
         http_200(FRESH_FEED_XML),
         Some(&prior_cache),
         "corr-refresh-test",
+        true,
     );
 
     assert_eq!(result["ok"], serde_json::json!(true));
@@ -111,6 +112,49 @@ fn refresh_parsed_feed_updates_known_podcast_and_episodes() {
     assert_eq!(episodes[0].guid, "episode-1");
 }
 
+/// Regression guard for the refresh-all coalescing fix (#755 follow-up):
+/// `handle_refresh_all` passes `bump_domain: false` to every per-feed
+/// `apply_refresh_result` call and bumps `Domain::Library` exactly once
+/// itself after the loop — instead of once per feed, which used to fire a
+/// full-library rebuild + re-emit (`build_library_payload`) per feed and,
+/// on a real library, pegged the main thread for the whole refresh pass.
+/// This test proves the mechanism directly: a parsed-feed result with
+/// `bump_domain: false` must NOT advance `domain_revs.library`, while the
+/// existing `bump_domain: true` tests above/below prove the opposite.
+#[test]
+fn refresh_parsed_feed_with_bump_domain_false_does_not_bump_library_domain_rev() {
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let url = Url::parse("https://example.com/feed.xml").unwrap();
+    let (podcast_id, prior_cache) = seed_known_feed(&store, &url);
+    let handler = handler_with_store(Arc::clone(&store));
+    let library_rev_before = handler.state.infra.domain_revs.library.load(Ordering::Relaxed);
+
+    let result = handler.apply_refresh_result(
+        podcast_id,
+        &url,
+        http_200(FRESH_FEED_XML),
+        Some(&prior_cache),
+        "corr-refresh-coalesced",
+        false,
+    );
+
+    assert_eq!(result["ok"], serde_json::json!(true));
+    // The podcast/episode merge itself is unaffected by `bump_domain` — only
+    // the rev bump is suppressed.
+    let store_guard = store.lock().unwrap();
+    let podcast = store_guard
+        .podcast(podcast_id)
+        .expect("podcast should still be merged");
+    assert_eq!(podcast.title, "Fresh Title");
+    drop(store_guard);
+    assert_eq!(
+        handler.state.infra.domain_revs.library.load(Ordering::Relaxed),
+        library_rev_before,
+        "bump_domain: false must not advance domain_revs.library — the caller \
+         (handle_refresh_all) is responsible for a single coalesced bump"
+    );
+}
+
 #[test]
 fn refresh_not_modified_persists_validators_without_bumping_rev() {
     let store = Arc::new(Mutex::new(PodcastStore::new()));
@@ -125,6 +169,7 @@ fn refresh_not_modified_persists_validators_without_bumping_rev() {
         http_304(),
         Some(&prior_cache),
         "corr-refresh-304",
+        true,
     );
 
     assert_eq!(result["ok"], serde_json::json!(true));

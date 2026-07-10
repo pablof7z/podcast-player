@@ -40,6 +40,7 @@ impl PodcastHostOpHandler {
             etag.as_deref(),
             last_modified.as_deref(),
             correlation_id,
+            true, // single-feed refresh: bump immediately, no storm risk
         );
         if result["ok"] == true {
             self.auto_categorize();
@@ -69,6 +70,15 @@ impl PodcastHostOpHandler {
                 etag.as_deref(),
                 last_modified.as_deref(),
                 correlation_id,
+                // Coalesced: bumping `Domain::Library` (and therefore
+                // rebuilding + re-emitting the WHOLE library payload — see
+                // `build_library_payload`) once per feed here meant a
+                // refresh-all pass over N feeds bumped N times, each firing
+                // a full-library push frame. On a real ~2k-episode library
+                // that's what pegged the main thread for the whole refresh
+                // (#755 follow-up). One bump after the loop below covers
+                // every feed's changes in a single emit.
+                false,
             );
             if result["ok"] == true {
                 any_succeeded = true;
@@ -165,6 +175,10 @@ impl PodcastHostOpHandler {
         })
     }
 
+    /// `bump_domain`: whether a successful refresh should bump
+    /// `Domain::Library` immediately. `false` for the `handle_refresh_all`
+    /// loop, which coalesces into a single bump after every feed has been
+    /// refreshed — see that call site's comment.
     pub(super) fn refresh_one(
         &self,
         podcast_id: PodcastId,
@@ -172,6 +186,7 @@ impl PodcastHostOpHandler {
         etag: Option<&str>,
         last_modified: Option<&str>,
         correlation_id: &str,
+        bump_domain: bool,
     ) -> serde_json::Value {
         let cache = if etag.is_some() || last_modified.is_some() {
             Some(EtagCache::with_headers(
@@ -187,7 +202,14 @@ impl PodcastHostOpHandler {
             Ok(r) => r,
             Err(e) => return serde_json::json!({"ok": false, "error": e}),
         };
-        self.apply_refresh_result(podcast_id, url, http_result, cache.as_ref(), correlation_id)
+        self.apply_refresh_result(
+            podcast_id,
+            url,
+            http_result,
+            cache.as_ref(),
+            correlation_id,
+            bump_domain,
+        )
     }
 
     pub(super) fn apply_refresh_result(
@@ -197,6 +219,7 @@ impl PodcastHostOpHandler {
         http_result: podcast_feeds::http::HttpResult,
         prior_cache: Option<&EtagCache>,
         correlation_id: &str,
+        bump_domain: bool,
     ) -> serde_json::Value {
         match handle_feed_response(url, podcast_id, &http_result, prior_cache, Utc::now()) {
             Ok(FeedResult::Parsed { parsed, cache, .. }) => {
@@ -271,7 +294,9 @@ impl PodcastHostOpHandler {
                     Ok(mut s) => {
                         s.upsert_known_podcast(parsed.podcast, episodes);
                         s.update_refresh_metadata(podcast_id, cache.etag, cache.last_modified);
-                        self.bump_domain(crate::state::Domain::Library);
+                        if bump_domain {
+                            self.bump_domain(crate::state::Domain::Library);
+                        }
                         true
                     }
                     Err(_) => false,
