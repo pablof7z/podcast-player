@@ -259,17 +259,40 @@ final class KernelModel {
 
     // ── Lifecycle ──────────────────────────────────────────────────────────
 
+    /// `kernel.start(...)` internally calls `configurePodcastDataDir`, which
+    /// opens `podcasts.json` and hydrates the whole persisted library
+    /// synchronously (`nmp_app_podcast_set_data_dir`) — measured ~420-490ms on
+    /// a real ~2k-episode library. This is called from `PodcastrApp`'s launch
+    /// `.task`, which runs on MainActor; a blocking half-second FFI call there
+    /// stalls the run loop and delays the very first compositor frame (not
+    /// just a later refresh), which is exactly the "blank screen" launch
+    /// symptom. `PodcastHandle` is `@unchecked Sendable` (see
+    /// `KernelBridge.swift`) specifically so FFI entry points can be called
+    /// off-main; `pullPodcastSnapshotIfChanged` already runs its decode off
+    /// MainActor for the same reason. Dispatching the whole `kernel.start`
+    /// call there too — and hopping back to MainActor only for the
+    /// already-off-main-decode pull that follows — lets SwiftUI paint the
+    /// first frame immediately instead of waiting on this FFI round trip.
     func start() {
         guard !startedKernel else { return }
         startedKernel = true
-        kernel.start(visibleLimit: visibleLimit, emitHz: emitHz)
-        // One-shot startup pull: the persisted library is loaded during register,
-        // so it's already in the projection — surface it once. The decode runs
-        // off the MainActor (a 3.6k-episode library decode would otherwise block
-        // the launch MainActor for ~100 ms); the first frame lands a runloop
-        // later, which is imperceptible at launch. Everything after this is
-        // event-driven (push frame + report hooks); no timer/poll.
-        pullPodcastSnapshotIfChanged()
+        let handle = kernel
+        let vLimit = visibleLimit
+        let hz = emitHz
+        snapshotDecodeQueue.async { [weak self] in
+            handle.start(visibleLimit: vLimit, emitHz: hz)
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    // One-shot startup pull: the persisted library is loaded during
+                    // register, so it's already in the projection — surface it once.
+                    // The decode itself runs off the MainActor (a 3.6k-episode
+                    // library decode would otherwise block MainActor for ~100 ms).
+                    // Everything after this is event-driven (push frame + report
+                    // hooks); no timer/poll.
+                    self?.pullPodcastSnapshotIfChanged()
+                }
+            }
+        }
     }
 
     func stop() {

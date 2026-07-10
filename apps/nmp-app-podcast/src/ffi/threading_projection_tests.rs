@@ -8,6 +8,13 @@
 //! These tests assert the cache actually short-circuits a same-rev repeat
 //! call (`Arc::ptr_eq` on the cached value — a functional proof, not a
 //! timing threshold) and correctly rebuilds once the rev advances.
+//!
+//! The cache is keyed off `domain_revs.library` (not the global
+//! `state.infra.rev`) — see `projection_and_inputs_for_current_rev`'s doc
+//! comment for why: the global rev also bumps on unrelated domains (e.g.
+//! `Domain::Playback` position ticks at 4 Hz), which was invalidating an
+//! already-fresh threading-projection cache on every tick. These tests drive
+//! `domain_revs.library` directly to assert on cache hit vs. rebuild.
 
 use super::*;
 use crate::store::PodcastStore;
@@ -17,11 +24,12 @@ use std::sync::{Arc, Mutex};
 
 /// Build a `PodcastHandle` with a NULL `app` pointer — these tests only
 /// exercise the threading-projection path, which never touches `app`.
-/// `Infra::for_test_with_rev` lets the test drive `state.infra.rev` directly
-/// so it can assert on cache hit vs. rebuild.
-fn make_handle(store: Arc<Mutex<PodcastStore>>, rev: Arc<AtomicU64>) -> Box<PodcastHandle> {
+/// `Infra::for_test_with_library_rev` lets the test drive
+/// `state.infra.domain_revs.library` directly so it can assert on cache hit
+/// vs. rebuild.
+fn make_handle(store: Arc<Mutex<PodcastStore>>, library_rev: Arc<AtomicU64>) -> Box<PodcastHandle> {
     let state = Arc::new(crate::state::PodcastAppState::new(
-        crate::state::Infra::for_test_with_rev(rev),
+        crate::state::Infra::for_test_with_library_rev(library_rev),
         store,
     ));
     Box::new(PodcastHandle {
@@ -84,5 +92,36 @@ fn rev_bump_invalidates_the_cache() {
     assert!(
         !Arc::ptr_eq(&projection_a, &projection_b),
         "a rev bump must force a fresh rebuild rather than reuse the stale cache"
+    );
+}
+
+/// Regression guard for the fix that keys this cache off `domain_revs.library`
+/// instead of the global `state.infra.rev`: a bump of the global rev alone
+/// (e.g. the 4 Hz `Domain::Playback` position tick, or any other domain's
+/// mutation) must NOT invalidate an already-fresh threading-projection
+/// cache. Before this fix, a single playback tick during the ~1s cold build
+/// on a real library could force a fresh full-library rebuild even though
+/// nothing library-content-relevant had changed.
+#[test]
+fn unrelated_global_rev_bump_does_not_invalidate_the_cache() {
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let library_rev = Arc::new(AtomicU64::new(1));
+    let handle = make_handle(store, library_rev);
+
+    let (inputs_a, projection_a) =
+        projection_and_inputs_for_current_rev(&handle).expect("first build");
+    // Bump ONLY the global rev — simulates an unrelated domain's mutation
+    // (e.g. a playback position tick), not a library-content change.
+    handle.state.infra.rev.fetch_add(1, Ordering::Relaxed);
+    let (inputs_b, projection_b) =
+        projection_and_inputs_for_current_rev(&handle).expect("cache hit");
+
+    assert!(
+        Arc::ptr_eq(&inputs_a, &inputs_b),
+        "a global-rev-only bump must NOT force a rebuild of cached inputs"
+    );
+    assert!(
+        Arc::ptr_eq(&projection_a, &projection_b),
+        "a global-rev-only bump must NOT force a rebuild of the cached projection"
     );
 }
