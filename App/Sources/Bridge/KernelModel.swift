@@ -146,6 +146,20 @@ final class KernelModel {
     /// late decode produces. See `docs/perf/ffi-snapshot-transport-findings.md`.
     private let snapshotDecodeQueue = DispatchQueue(
         label: "podcast.snapshot-decode", qos: .userInitiated)
+    /// `true` while a full-library decode is enqueued/running on
+    /// `snapshotDecodeQueue`. Every `dispatch(namespace:body:)` call ends
+    /// with `pullPodcastSnapshotIfChanged(allowEqualRev: true)` (see
+    /// `KernelModel+Dispatch.swift`), so a fan-out like a feed refresh that
+    /// issues one dispatch per podcast used to enqueue one ~8 MB JSON
+    /// decode per podcast — dozens of redundant decodes of data that
+    /// settles once. This flag plus `snapshotPullPending` below coalesces
+    /// a burst of requests into the in-flight decode plus at most one
+    /// trailing follow-up, instead of one decode per caller.
+    private var snapshotPullInFlight = false
+    /// Set when a pull is requested while one is already in flight.
+    /// Consumed by the in-flight decode's completion, which kicks off
+    /// exactly one more pull so the final settled state still lands.
+    private var snapshotPullPending = false
 
     // ── Computed projections ───────────────────────────────────────────────
 
@@ -280,11 +294,18 @@ final class KernelModel {
     /// Dispatch sites are fire-and-forget over `@Observable`, so a one-runloop-
     /// later commit is invisible.
     ///
-    /// Ordering: rapid pulls may enqueue several decodes; the rev-monotonic
+    /// Ordering: rapid pulls may request several decodes; the rev-monotonic
     /// guards in `applyPodcastUpdate` (`update.rev > lastProcessedRev`) and
     /// `commitPodcastProjection` (`frameRev == lastProcessedRev`) make the newest
     /// frame win and drop any stale one. `synchronous` is retained for source
     /// compatibility; decode is always off-main.
+    ///
+    /// Coalesced: only one decode is ever enqueued at a time. A request that
+    /// arrives while one is already in flight sets `snapshotPullPending`
+    /// instead of enqueuing its own full-library decode — the in-flight
+    /// decode's completion consumes that flag and fires exactly one trailing
+    /// pull, so a burst of N requests (e.g. one dispatch per podcast during a
+    /// feed refresh) costs ~2 decodes instead of N.
     // internal (not private) so extension files can trigger snapshot pulls.
     func pullPodcastSnapshotIfChanged(
         synchronous: Bool = false,
@@ -297,17 +318,28 @@ final class KernelModel {
             hasHydratedPodcastSnapshot: hasHydratedPodcastSnapshot,
             allowEqualRev: allowEqualRev
         ) else { return }
+        guard !snapshotPullInFlight else {
+            snapshotPullPending = true
+            return
+        }
+        snapshotPullInFlight = true
         let handle = kernel
         snapshotDecodeQueue.async { [weak self] in
             let update = handle.podcastSnapshot()
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
+                    guard let self else { return }
                     // Pull path always replaces the composite so push merges
                     // start from the current full state (fromPull: true).
-                    self?.applyPodcastUpdate(
+                    self.applyPodcastUpdate(
                         update,
                         fromPull: true,
                         allowEqualRev: allowEqualRev)
+                    self.snapshotPullInFlight = false
+                    if self.snapshotPullPending {
+                        self.snapshotPullPending = false
+                        self.pullPodcastSnapshotIfChanged(allowEqualRev: true)
+                    }
                 }
             }
         }

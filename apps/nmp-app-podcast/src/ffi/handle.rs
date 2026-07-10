@@ -88,6 +88,23 @@ pub struct PodcastHandle {
     /// wholesale when it exceeds `CLEAN_HTML_CACHE_CAP` so churned descriptions
     /// (re-sync, feed edits) can't leak unboundedly.
     pub(super) clean_html_cache: Arc<Mutex<HashMap<u64, String>>>,
+    /// Rev-keyed cache for the threading projection (`ffi::threading_projection`).
+    /// `build_projection` scans every episode in the library (strip_html,
+    /// transcript lookups, keyword categorization); `threading_projection`
+    /// and `threading_active_topics` both need it, and Swift calls into both
+    /// — often several times per launch as `HomeView`'s `.task` blocks
+    /// re-fire while the library/categories settle. A same-`rev` request
+    /// reuses the cached `(inputs, projection)` pair instead of re-scanning
+    /// the whole library, mirroring `snapshot_cache` above.
+    pub(super) threading_projection_cache: Arc<
+        Mutex<
+            Option<(
+                u64,
+                Arc<Vec<crate::ffi::threading_projection::EpisodeThreadInput>>,
+                Arc<crate::ffi::threading_projection::ThreadingProjection>,
+            )>,
+        >,
+    >,
     // player_actor removed in Step 14 — now owned by `state.playback.player`.
     // queue removed in Step 14 — now owned by `state.playback.queue`.
     // download_queue removed in Step 14 — now owned by `state.playback.downloads`.

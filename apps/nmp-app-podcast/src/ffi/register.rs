@@ -417,6 +417,7 @@ pub fn register_podcast_app(app: *mut NmpApp) -> *mut PodcastHandle {
                 super::agent_ask::AgentAskCallbackState::default(),
             )),
             snapshot_cache: Arc::new(Mutex::new(None)),
+            threading_projection_cache: Arc::new(Mutex::new(None)),
             clean_html_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
         });
 

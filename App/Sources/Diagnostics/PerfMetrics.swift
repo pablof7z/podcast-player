@@ -18,21 +18,31 @@ import Foundation
     ///     UniFFI dispatch round-trip plus its post-dispatch pull.
 ///   • `snapshotPull` — caller thread (usually main). A full-library
     ///     Rust podcast snapshot serialize + decode.
+    ///   • `threadingProjectionPull` / `threadingActiveTopicsPull` — caller
+    ///     thread (`HomeView`'s `.task` blocks — main in practice). The
+    ///     cross-episode threading projection FFI round-trips. Rust caches
+    ///     the underlying rebuild by rev (#755 follow-up), but a cache MISS
+    ///     still scans the whole library, so these are worth watching
+    ///     separately from `dispatchAction`/`snapshotPull`.
 enum PerfOp: String, CaseIterable, Sendable {
     case pushFrameDecode
     case mainApply
     case mainProjection
     case dispatchAction
     case snapshotPull
+    case threadingProjectionPull
+    case threadingActiveTopicsPull
 
     /// Human-readable label for the Performance view rows.
     var title: String {
         switch self {
-        case .pushFrameDecode: return "Push-frame decode"
-        case .mainApply:       return "Main · apply"
-        case .mainProjection:  return "Main · projection"
-        case .dispatchAction:  return "FFI · dispatch"
-        case .snapshotPull:    return "FFI · snapshot pull"
+        case .pushFrameDecode:           return "Push-frame decode"
+        case .mainApply:                 return "Main · apply"
+        case .mainProjection:            return "Main · projection"
+        case .dispatchAction:            return "FFI · dispatch"
+        case .snapshotPull:              return "FFI · snapshot pull"
+        case .threadingProjectionPull:   return "FFI · threading projection"
+        case .threadingActiveTopicsPull: return "FFI · threading active topics"
         }
     }
 
@@ -40,15 +50,19 @@ enum PerfOp: String, CaseIterable, Sendable {
     var tracksBytes: Bool {
         switch self {
         case .pushFrameDecode, .snapshotPull: return true
-        case .mainApply, .mainProjection, .dispatchAction: return false
+        case .mainApply, .mainProjection, .dispatchAction,
+             .threadingProjectionPull, .threadingActiveTopicsPull:
+            return false
         }
     }
 
     /// Whether this op runs on the main actor (so its cost is UI-blocking).
     var isMainThread: Bool {
         switch self {
-        case .mainApply, .mainProjection: return true
-        case .pushFrameDecode, .dispatchAction, .snapshotPull: return false
+        case .mainApply, .mainProjection, .threadingProjectionPull, .threadingActiveTopicsPull:
+            return true
+        case .pushFrameDecode, .dispatchAction, .snapshotPull:
+            return false
         }
     }
 }
