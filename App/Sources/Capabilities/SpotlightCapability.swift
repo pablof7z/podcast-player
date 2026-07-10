@@ -32,7 +32,9 @@ final class SpotlightCapability {
     /// writes. A single domain lets `clearAll()` wipe everything in one
     /// call and lets `deindex(podcastId:)` target a known prefix set
     /// without per-item bookkeeping.
-    static let domainIdentifier = "io.f7z.podcast.library"
+    // `nonisolated`: a plain constant, referenced from the nonisolated item
+    // builders that `indexLibrary`'s detached task calls off the MainActor.
+    nonisolated static let domainIdentifier = "io.f7z.podcast.library"
 
     /// Process-wide instance. The capability holds no per-instance
     /// state besides the `lastIndexedLibrary` snapshot used for delta
@@ -43,13 +45,13 @@ final class SpotlightCapability {
 
     // MARK: - Identifier scheme
 
-    private static let podcastPrefix = "podcast:"
-    private static let episodePrefix = "episode:"
+    nonisolated private static let podcastPrefix = "podcast:"
+    nonisolated private static let episodePrefix = "episode:"
 
     /// Build the Spotlight `uniqueIdentifier` for a podcast row.
-    static func podcastIdentifier(_ id: String) -> String { podcastPrefix + id }
+    nonisolated static func podcastIdentifier(_ id: String) -> String { podcastPrefix + id }
     /// Build the Spotlight `uniqueIdentifier` for an episode row.
-    static func episodeIdentifier(_ id: String) -> String { episodePrefix + id }
+    nonisolated static func episodeIdentifier(_ id: String) -> String { episodePrefix + id }
 
     // MARK: - Deep-link decoding
 
@@ -135,32 +137,53 @@ final class SpotlightCapability {
     /// cost of a full rebuild is negligible compared to the
     /// bookkeeping a per-row incremental indexer would need to track
     /// what is present in the OS index.
+    ///
+    /// The caller (`KernelModel.commitPodcastProjection`) already gates
+    /// this call on its own `libraryMetaHash` so it only fires on frames
+    /// where the library actually changed — never at the 4 Hz emit rate.
+    /// This method's own `spotlightContentHash` gate stays as a second,
+    /// narrower filter (excludes `played`/`starred`/`downloadPath`, which
+    /// `libraryMetaHash` tracks but Spotlight doesn't care about).
+    ///
+    /// Both the hash and the item build are O(N×M) (every show × every
+    /// episode). Neither runs on the MainActor: this method returns
+    /// immediately after spawning a detached task, so `self` state
+    /// (`lastIndexedHash`/`lastIndexedLibrary`) is only touched inside a
+    /// brief `MainActor.run` once the hash is already known — the walk
+    /// itself, and the `CSSearchableIndex` calls, run entirely off-main.
     func indexLibrary(_ library: [PodcastSummary]) {
-        // Hash only the fields Spotlight actually indexes. This avoids
-        // re-indexing on every 4 Hz position tick — `playbackPositionSecs`,
-        // `played`, `starred`, etc. change constantly during playback but
-        // are irrelevant to search.
-        let hash = spotlightContentHash(for: library)
-        guard hash != lastIndexedHash else { return }
-        lastIndexedHash = hash
-        lastIndexedLibrary = library
-
-        let items = buildItems(for: library)
-        let index = CSSearchableIndex.default()
-
-        // Delete-then-insert keeps the OS index in lock-step with the
-        // current library: rows the user unsubscribed from disappear,
-        // re-titled rows refresh. The two operations are ordered by
-        // the system (callbacks fire in submission order on the same
-        // queue), so the empty-then-fill window is short.
-        index.deleteSearchableItems(withDomainIdentifiers: [Self.domainIdentifier]) { error in
-            if let error {
-                Self.logger.error("spotlight: delete-domain failed: \(error, privacy: .public)")
+        Task.detached(priority: .utility) { [weak self] in
+            guard let self else { return }
+            // Hash only the fields Spotlight actually indexes. This avoids
+            // re-indexing on every 4 Hz position tick — `playbackPositionSecs`,
+            // `played`, `starred`, etc. change constantly during playback but
+            // are irrelevant to search.
+            let hash = self.spotlightContentHash(for: library)
+            let shouldIndex = await MainActor.run { () -> Bool in
+                guard hash != self.lastIndexedHash else { return false }
+                self.lastIndexedHash = hash
+                self.lastIndexedLibrary = library
+                return true
             }
-            guard !items.isEmpty else { return }
-            index.indexSearchableItems(items) { error in
+            guard shouldIndex else { return }
+
+            let items = self.buildItems(for: library)
+            let index = CSSearchableIndex.default()
+
+            // Delete-then-insert keeps the OS index in lock-step with the
+            // current library: rows the user unsubscribed from disappear,
+            // re-titled rows refresh. The two operations are ordered by
+            // the system (callbacks fire in submission order on the same
+            // queue), so the empty-then-fill window is short.
+            index.deleteSearchableItems(withDomainIdentifiers: [Self.domainIdentifier]) { error in
                 if let error {
-                    Self.logger.error("spotlight: index \(items.count) items failed: \(error, privacy: .public)")
+                    Self.logger.error("spotlight: delete-domain failed: \(error, privacy: .public)")
+                }
+                guard !items.isEmpty else { return }
+                index.indexSearchableItems(items) { error in
+                    if let error {
+                        Self.logger.error("spotlight: index \(items.count) items failed: \(error, privacy: .public)")
+                    }
                 }
             }
         }
@@ -211,7 +234,10 @@ final class SpotlightCapability {
 
     // MARK: - Content hash
 
-    private func spotlightContentHash(for library: [PodcastSummary]) -> Int {
+    // `nonisolated`: touches only its parameter and a local `Hasher`, never
+    // `self` state — safe to call from the detached task in `indexLibrary`
+    // without hopping onto the MainActor for the O(N×M) walk.
+    nonisolated private func spotlightContentHash(for library: [PodcastSummary]) -> Int {
         var hasher = Hasher()
         for podcast in library {
             hasher.combine(podcast.id)
@@ -235,7 +261,10 @@ final class SpotlightCapability {
     /// Public for test access. Builds the `CSSearchableItem` array
     /// that `indexLibrary(_:)` submits to the OS. Pure: no side
     /// effects, no `CSSearchableIndex` calls.
-    func buildItems(for library: [PodcastSummary]) -> [CSSearchableItem] {
+    ///
+    /// `nonisolated`: touches only its parameter, never `self` state —
+    /// `indexLibrary`'s detached task calls this off the MainActor.
+    nonisolated func buildItems(for library: [PodcastSummary]) -> [CSSearchableItem] {
         var items: [CSSearchableItem] = []
         items.reserveCapacity(library.count + library.reduce(0) { $0 + $1.episodes.count })
         for podcast in library {
@@ -247,7 +276,7 @@ final class SpotlightCapability {
         return items
     }
 
-    private func makeSearchable(from podcast: PodcastSummary) -> CSSearchableItem {
+    nonisolated private func makeSearchable(from podcast: PodcastSummary) -> CSSearchableItem {
         let attrs = CSSearchableItemAttributeSet(contentType: UTType.audio)
         attrs.title = podcast.title
         // Podcast row description: "12 episodes · Author Name" when we
@@ -272,7 +301,7 @@ final class SpotlightCapability {
         return item
     }
 
-    private func podcastDescription(for podcast: PodcastSummary) -> String {
+    nonisolated private func podcastDescription(for podcast: PodcastSummary) -> String {
         var parts: [String] = []
         if podcast.episodeCount > 0 {
             let suffix = podcast.episodeCount == 1 ? "episode" : "episodes"
@@ -284,7 +313,7 @@ final class SpotlightCapability {
         return parts.joined(separator: " · ")
     }
 
-    private func makeSearchable(from episode: EpisodeSummary, showName: String) -> CSSearchableItem {
+    nonisolated private func makeSearchable(from episode: EpisodeSummary, showName: String) -> CSSearchableItem {
         let attrs = CSSearchableItemAttributeSet(contentType: UTType.audio)
         attrs.title = episode.title
         // Episode rows have no description field on `EpisodeSummary`
