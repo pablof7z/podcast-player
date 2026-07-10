@@ -164,23 +164,47 @@ fn categorize_text_returns_empty_for_unmatched_input() {
 }
 
 #[test]
-fn contains_word_bounded_respects_word_boundaries() {
-    // "ai" must not match inside "main" or "said".
-    assert!(!contains_word_bounded("the main idea", "ai"));
-    assert!(!contains_word_bounded("she said hi", "ai"));
-    assert!(contains_word_bounded("we use ai today", "ai"));
-    assert!(contains_word_bounded("ai is everywhere", "ai"));
-    assert!(contains_word_bounded("everywhere is ai", "ai"));
+fn categorize_text_respects_word_boundaries() {
+    // "ai" must not match inside "main" or "said" — only as a standalone word.
+    assert!(categorize_text("The main idea", "she said hi").is_empty());
+    assert!(categorize_text("We use ai today", "").contains(&"Technology".to_owned()));
 }
 
 #[test]
-fn contains_word_bounded_handles_multiword_needles() {
-    assert!(contains_word_bounded(
-        "the open source community thrives",
-        "open source"
-    ));
-    assert!(!contains_word_bounded(
-        "wide-open sourcing today",
-        "open source"
-    ));
+fn categorize_text_matches_multiword_keywords_across_hyphen_or_space() {
+    // The tokenizer treats hyphens and spaces as equivalent delimiters, so
+    // one keyword literal ("open source") catches both spellings.
+    assert!(categorize_text("Dev culture", "the open source community thrives")
+        .contains(&"Technology".to_owned()));
+    assert!(categorize_text("Dev culture", "the open-source community thrives")
+        .contains(&"Technology".to_owned()));
+    // "sourcing" must not satisfy the "source" token of the phrase.
+    assert!(!categorize_text("Travel diary", "wide-open sourcing today")
+        .contains(&"Technology".to_owned()));
+}
+
+#[test]
+fn categorize_text_stays_fast_for_a_realistic_library() {
+    // Regression guard for the on-launch watchdog crash (#755): categorize_text
+    // used to rescan the whole haystack once per keyword (~200 keywords),
+    // which is cheap for a single episode but pathological once run
+    // synchronously over a freshly-synced library on app launch (32s of
+    // main-thread CPU, 0x8badf00d scene-create watchdog kill). 2,000
+    // episodes with ~1.5KB of text each must categorize well under a
+    // second, even in an unoptimized debug build.
+    let title = "Deep dive into AI, machine learning, and open source software";
+    let description = "We cover technology, coding, and startup culture with a science \
+        angle on climate research, plus a look at business finance and investing \
+        trends."
+        .repeat(20);
+    let start = std::time::Instant::now();
+    for _ in 0..2000 {
+        let cats = categorize_text(title, &description);
+        assert!(!cats.is_empty());
+    }
+    let elapsed = start.elapsed();
+    assert!(
+        elapsed.as_millis() < 2000,
+        "categorize_text took {elapsed:?} for 2000 episodes — regression toward the #755 watchdog crash"
+    );
 }
