@@ -123,7 +123,16 @@ extension KernelModel {
         nowPlaying = update.nowPlaying
         PodcastCapabilities.shared.iCloudSync.applySettingsSnapshot(
             SettingsKVSnapshot.from(podcastUpdate: update))
-        PodcastCapabilities.shared.spotlight.indexLibrary(update.library)
+        // `spotlight.indexLibrary` is NOT called here. It used to run
+        // unconditionally, inline, on every rev-passing frame — an O(N×M)
+        // walk over the whole library on the MainActor even when nothing
+        // library-related had changed (identity/social/playback-tick
+        // frames all pass through here too). It now fires from
+        // `commitPodcastProjection`, gated on the SAME `newLibHash`
+        // check that already gates the `library` assignment below, so it
+        // only runs on frames where the library actually changed — and
+        // even then, `indexLibrary` itself no longer does its walk on
+        // the MainActor (see SpotlightCapability.swift).
         reconcileLiveActivity(
             previous: previousNowPlaying, next: update.nowPlaying, library: update.library)
         reconcileNowPlayingMetadata(
@@ -172,6 +181,10 @@ extension KernelModel {
             // Bump AFTER the assignment so a reader that samples the generation
             // alongside `library` sees them advance together.
             libraryGeneration &+= 1
+            // Fire-and-forget: `indexLibrary` spawns its own detached task
+            // and returns immediately (see SpotlightCapability.swift), so
+            // this call is cheap even though it's on the MainActor here.
+            PodcastCapabilities.shared.spotlight.indexLibrary(update.library)
         }
     }
 }
