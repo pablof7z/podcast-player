@@ -305,10 +305,26 @@ fn resolve_openrouter_request<'a>(
     })
 }
 
+/// A minimal valid 1x1 transparent PNG, returned in place of a real
+/// OpenRouter image-generation round-trip when `PODCAST_MOCK_LLM=1` — the
+/// callers just need decodable image bytes, not a meaningful picture.
+fn mock_generated_image() -> GeneratedImage {
+    const PNG_1X1_TRANSPARENT_BASE64: &str =
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+    GeneratedImage {
+        bytes: base64::engine::general_purpose::STANDARD
+            .decode(PNG_1X1_TRANSPARENT_BASE64)
+            .expect("valid embedded base64 PNG"),
+    }
+}
+
 pub fn generate_openrouter_image(
     store: Arc<Mutex<PodcastStore>>,
     request: &ImageGenerationRequest,
 ) -> Result<GeneratedImage, ImageGenerationError> {
+    if crate::llm::mock_llm_enabled() {
+        return Ok(mock_generated_image());
+    }
     let settings = ImageProviderSettings::from_store(&store)?;
     let resolved = resolve_openrouter_request(&settings, request)?;
     let client = reqwest::blocking::Client::builder()

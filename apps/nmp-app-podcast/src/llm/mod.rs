@@ -4,6 +4,11 @@
 //! [`LlmBackend`] trait. Callers select a backend via [`backend_for`] based on
 //! the model string and stored credential state, then invoke [`LlmBackend::complete`]
 //! for a single async turn.
+//!
+//! Set `PODCAST_MOCK_LLM=1` to force every call through [`MockLlmBackend`]
+//! instead — see [`mock_llm_enabled`] for the full set of call paths it
+//! short-circuits (completions here, plus embeddings and the shell-facing
+//! [`provider_transport`] dispatch, which does not go through [`LlmBackend`]).
 
 pub mod assemblyai_transcript;
 pub mod backend;
@@ -32,7 +37,7 @@ pub mod provider_transport;
 pub mod rerank_backend;
 pub mod speech_model_catalog;
 
-pub use backend::{LlmBackend, LlmError, LlmRequest};
+pub use backend::{mock_llm_enabled, LlmBackend, LlmError, LlmRequest, MockLlmBackend};
 pub use complete_for_role::{
     complete_for_role, extract_json_array, extract_json_object, resolve_request,
 };

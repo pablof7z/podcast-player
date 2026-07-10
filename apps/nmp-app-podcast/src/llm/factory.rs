@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use super::backend::{LlmBackend, LlmError};
+use super::backend::{mock_llm_enabled, LlmBackend, LlmError, MockLlmBackend};
 use super::local_model_backend::LocalModelBackend;
 use super::ollama_backend::OllamaBackend;
 use super::openrouter_backend::OpenRouterBackend;
@@ -68,6 +68,13 @@ pub fn validate_model_credentials(
     store: &Arc<Mutex<PodcastStore>>,
     model: &str,
 ) -> Result<(), LlmError> {
+    // PODCAST_MOCK_LLM=1: the mock backend never touches a provider, so skip
+    // credential validation entirely — dev/test runs shouldn't need
+    // OPENROUTER_API_KEY/OLLAMA_API_KEY loaded just to exercise the mock.
+    if mock_llm_enabled() {
+        return Ok(());
+    }
+
     if model.starts_with("local:") {
         return Ok(());
     }
@@ -103,6 +110,10 @@ pub fn validate_model_credentials(
 /// pushed key, then returns the right boxed backend.
 ///
 /// Selection rule (per-role — keyed on the caller's own model string):
+/// - If `PODCAST_MOCK_LLM=1` (see [`mock_llm_enabled`]), always return
+///   [`MockLlmBackend`] — takes precedence over every rule below, including
+///   `local:`, so dev/test runs never touch Ollama, OpenRouter, or the
+///   on-device engine.
 /// - If the model string carries a `local:` prefix, use LocalModelBackend for
 ///   that role only. "Local" is just another provider the user picks per role,
 ///   not a global override — so a role on `local:gemma4-e2b` runs on-device
@@ -117,6 +128,10 @@ pub fn validate_model_credentials(
 /// which single on-device engine the host should keep loaded (the host derives
 /// it from the set of role selections; only one local engine loads at a time).
 pub fn backend_for(store: &Arc<Mutex<PodcastStore>>, model: &str) -> Box<dyn LlmBackend> {
+    if mock_llm_enabled() {
+        return Box::new(MockLlmBackend);
+    }
+
     // Per-role local routing: a `local:<id>` model string targets the
     // on-device backend for this caller only.
     if let Some(id) = model.strip_prefix("local:") {
@@ -156,6 +171,7 @@ pub fn backend_for(store: &Arc<Mutex<PodcastStore>>, model: &str) -> Box<dyn Llm
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::llm::backend::test_support::{lock_env_test, EnvVarGuard};
 
     #[test]
     fn test_role_model_gate_passes_local_selection() {
@@ -194,6 +210,7 @@ mod tests {
 
     #[test]
     fn test_validate_ollama_cloud_requires_key() {
+        let _lock = lock_env_test();
         let store = Arc::new(Mutex::new(PodcastStore::new()));
 
         let err = validate_model_credentials(&store, "ollama:gpt-oss:120b-cloud").unwrap_err();
@@ -204,6 +221,7 @@ mod tests {
 
     #[test]
     fn test_validate_ollama_cloud_accepts_loaded_key() {
+        let _lock = lock_env_test();
         let store = Arc::new(Mutex::new(PodcastStore::new()));
         store.lock().unwrap().set_provider_api_keys(
             None,
@@ -218,6 +236,7 @@ mod tests {
 
     #[test]
     fn test_validate_local_ollama_url_does_not_require_key() {
+        let _lock = lock_env_test();
         let store = Arc::new(Mutex::new(PodcastStore::new()));
         store
             .lock()
@@ -229,6 +248,7 @@ mod tests {
 
     #[test]
     fn test_validate_openrouter_requires_key() {
+        let _lock = lock_env_test();
         let store = Arc::new(Mutex::new(PodcastStore::new()));
 
         let err = validate_model_credentials(&store, "openrouter:openai/gpt-4o").unwrap_err();
@@ -276,6 +296,7 @@ mod tests {
     async fn test_backend_for_routes_local_prefix_to_local_backend() {
         // A `local:` model string routes to LocalModelBackend for that caller.
         // With no callback registered it yields Unavailable when invoked.
+        let _lock = lock_env_test();
         let store = Arc::new(Mutex::new(PodcastStore::new()));
 
         let backend = backend_for(&store, "local:gemma4-e2b");
@@ -288,5 +309,38 @@ mod tests {
 
         let result = backend.complete(&req).await;
         assert!(matches!(result, Err(crate::llm::LlmError::Unavailable(_))));
+    }
+
+    #[tokio::test]
+    async fn test_backend_for_prefers_mock_over_every_real_backend_when_env_set() {
+        // With PODCAST_MOCK_LLM set, even a `local:` model string — which
+        // normally wins every other routing rule — is overridden by the
+        // mock, and the call succeeds without any network/on-device call.
+        let _lock = lock_env_test();
+        let _guard = EnvVarGuard::set("PODCAST_MOCK_LLM", "1");
+        let store = Arc::new(Mutex::new(PodcastStore::new()));
+
+        let backend = backend_for(&store, "local:gemma4-e2b");
+        let req = crate::llm::LlmRequest {
+            system: "test".to_string(),
+            history: vec![],
+            user: "test".to_string(),
+            model: "test".to_string(),
+        };
+
+        let result = backend.complete(&req).await.unwrap();
+        assert!(result.starts_with("Mock LLM response"));
+    }
+
+    #[test]
+    fn test_validate_model_credentials_skips_when_mock_enabled() {
+        // Normally this errors with MissingCredential — no OPENROUTER_API_KEY
+        // is loaded on this store — but the mock never contacts a provider,
+        // so dev/test runs shouldn't need real credentials configured.
+        let _lock = lock_env_test();
+        let _guard = EnvVarGuard::set("PODCAST_MOCK_LLM", "true");
+        let store = Arc::new(Mutex::new(PodcastStore::new()));
+
+        assert!(validate_model_credentials(&store, "openrouter:openai/gpt-4o").is_ok());
     }
 }

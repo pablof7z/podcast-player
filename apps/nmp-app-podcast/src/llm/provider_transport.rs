@@ -16,6 +16,11 @@ use super::provider_config::{
 use super::provider_replay::{self, ProviderReplayError};
 use crate::store::PodcastStore;
 
+// `PODCAST_MOCK_LLM=1` canned results — split out to keep this file under
+// the 500-line hard limit (AGENTS.md).
+#[path = "provider_transport_mock.rs"]
+mod mock;
+
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 pub enum ProviderKind {
     #[serde(rename = "openrouter", alias = "open_router")]
@@ -124,10 +129,16 @@ impl From<ProviderConfigError> for ProviderTransportError {
     }
 }
 
+/// This is the shell-facing completion path (`nmp_app_podcast_provider_complete`)
+/// — it does NOT go through the [`super::backend::LlmBackend`] trait/factory at
+/// all, so it re-checks [`super::backend::mock_llm_enabled`] independently.
 pub async fn complete(
     store: Arc<Mutex<PodcastStore>>,
     intent: CompletionIntent,
 ) -> Result<CompletionResult, ProviderTransportError> {
+    if super::backend::mock_llm_enabled() {
+        return Ok(mock::mock_completion_result(&intent));
+    }
     let settings = ProviderSettings::from_store(&store)?;
     match intent.provider {
         ProviderKind::OpenRouter => complete_openrouter(intent, settings).await,
@@ -135,10 +146,17 @@ pub async fn complete(
     }
 }
 
+/// This is the embeddings path used by both `nmp_app_podcast_provider_embed`
+/// and the semantic-search knowledge indexer (`state::knowledge`,
+/// `state::knowledge_search`) — it also bypasses [`super::backend::LlmBackend`]
+/// entirely, so it re-checks [`super::backend::mock_llm_enabled`] independently.
 pub async fn embed(
     store: Arc<Mutex<PodcastStore>>,
     intent: EmbeddingIntent,
 ) -> Result<EmbeddingResult, ProviderTransportError> {
+    if super::backend::mock_llm_enabled() {
+        return Ok(mock::mock_embedding_result(&intent));
+    }
     let settings = ProviderSettings::from_store(&store)?;
     match intent.provider {
         ProviderKind::OpenRouter => embed_openrouter(intent, settings).await,
@@ -460,21 +478,7 @@ fn replay_transport_error(error: ProviderReplayError) -> ProviderTransportError 
     }
 }
 
+// Split out to keep this file under the 500-line hard limit (AGENTS.md).
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn completion_intent_decodes_json_format() {
-        let intent: CompletionIntent = serde_json::from_value(json!({
-            "provider": "openrouter",
-            "model": "openai/gpt-4o-mini",
-            "system": "sys",
-            "user": "usr",
-            "response_format": "json_object"
-        }))
-        .unwrap();
-        assert_eq!(intent.provider, ProviderKind::OpenRouter);
-        assert_eq!(intent.response_format, ResponseFormat::JsonObject);
-    }
-}
+#[path = "provider_transport_tests.rs"]
+mod tests;

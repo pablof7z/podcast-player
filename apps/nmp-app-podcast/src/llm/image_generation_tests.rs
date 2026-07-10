@@ -89,3 +89,22 @@ fn missing_key_reports_openrouter_credential_error() {
 
     assert_eq!(error.to_string(), "OpenRouter API key is not configured");
 }
+
+use crate::llm::backend::test_support::{lock_env_test, EnvVarGuard};
+
+#[test]
+fn generate_openrouter_image_returns_mock_without_network_when_env_set() {
+    let _lock = lock_env_test();
+    let _guard = EnvVarGuard::set("PODCAST_MOCK_LLM", "1");
+    // No OpenRouter key loaded — this would normally fail with
+    // MissingCredential the moment `resolve_openrouter_request` runs. The
+    // mock short-circuits before the store/settings are even read.
+    let store = Arc::new(Mutex::new(PodcastStore::new()));
+    let request = ImageGenerationRequest {
+        prompt: "cover art".to_string(),
+        model: None,
+    };
+
+    let image = generate_openrouter_image(store, &request).unwrap();
+    assert!(!image.bytes.is_empty());
+}
